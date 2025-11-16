@@ -1,0 +1,212 @@
+hello world.
+@c this is a comment
+this is still a comment
+@p
+now things are being printed again
+this is a new line.
+@c now to begin memwrite commands, 'm' mode.
+the first thing that will be implemented will be constants
+the following code will push hex value 0x1A onto the stack
+and then print the value.
+@l test_pr:
+@p @m 1A rv pr
+@c with any luck, that should print "1a" to standard ouput
+@c this command should clear the word register and print '0'.
+@l test_clear:
+@p @m cl pr
+@c more printing stuff. try to get ABCD to print properly
+note that nibbles are pushed to the MSB and shifted left.
+the 'rv' command is used to reverse the bits before printing
+so that ABCD is 0xABCD and not 0xDCBA0000.
+@l test_pr_abcd:
+@p @m cl ABCD rv pr
+@c 'pl' means "print label". The idea here is to set up unit tests where
+each unit test produces a line like test_foo: output. 
+These lines would then be written to a file.
+A program could then regenerate this file, and compare it against
+a reference. Tests that fail would show up in a tool like 'diff'.
+The following should produce a single line that says "test_label: testing 123"
+@l test_label: @p testing 123
+@c Thinking about getting a core "write" command working with
+memwrite. Reading/writing words will come first.
+There's currently only one "word" that constants can write to
+at the moment, which is a problem because a write command
+really needs two constants: an address, and value. So, perhaps
+there's a position or goto operation, and then the write/read
+commands just read from wherever the cursor is?
+@l test_rw:
+@c the following program will write ABCD1234 to address 0x10
+and print the results.
+To make sure that read/write/go is working. An additional value
+will be written to address 0 before jumping back and printing.
+@p @m clr 10 rv go ABCD1234 rv wr cl 0 go 11111111 wr clr 10 rv go rd pr
+@c some initial blocklist tests
+@l test_blocklist:
+@p
+@c initialize the blocklist
+@m cl go bi
+@c allocate 4 blocks by popping them off the stack
+and print their block IDs.
+@m bapr bapr bapr bapr
+@c free one of the blocks, then allocate two more blocks
+@m 3FE rv bf bapr bapr
+@c free another block (out of order), then allocate two more blocks
+@m 3FF rv bf bapr bapr
+@l test_bitset:
+@p
+@c
+A bitset for the domain of 0-1023 is required for the
+cache implementation. This program tests some of the
+bitset operations: init (si), add (sa), remove (sr), and
+exists (se). I'm starting to get the hang of this silly
+command language. Spaces are optional, which allows these
+two letter commands to behave like syllables that can be
+grouped into words. 'sasepr' means 'append, exists?, print'.
+'sepr' means 'exists?, print'. 'srsepr' means 'remove, exists?, print'.
+It almost starts to look like latin mottos.
+@m cl go si sasepr clFFrv sepr clFFrv sasepr clFFrv srsepr
+@c working on a 'buddy system' allocator for efficiently allocating
+small chunks of memory inside of single block. The implementation needs
+3 words for overhead, which leaves a pool of 61 blocks to to divide up
+into block sizes that are power of 2.
+The buddy system block needs to be initialized with
+data, which requires hard coding the system itself
+to pre-allocate blocks. This data will be constant,
+so to test this, allocate a new system, and make
+sure the constants match.
+Currently, this little ad-hoc testing system does
+not have a way to read words from a block, so
+test that out first.
+@l test_read_block:
+@p
+@c the following program writes some values to
+a sequence of words, and uses 'rb' to read them
+as if they were values from a block.
+first, write values 3, 6, 9 in addresses 0, 1, 2:
+@m cl0rv go cl3rvwr cl1rvgo cl6rvwr cl2rvgo cl9rvwr
+@c next, use 'rb' to read these as block addresses.
+@m cl0rv go cl0rv rbpr cl1rv rbpr cl2rv rbpr
+@l test_array_init:
+@c a basic array, bounded to a single block. Can hold up to 63 words.
+@c initialize block 0 as an array, print the length
+@m cl0rv gb ai al sp pw
+@p
+@l test_array_append:
+@c append values 1, 2, 3, onto the array
+@c as each item gets appended, print the length
+also print the length before appending the first
+item
+@m al sp pw sp cl0Arv aa alpwsp cl0Brvaa alpwsp cl0Crvaa alpw
+@p
+@l test_array_pop:
+@c pop values from the array
+print the value, and then the length
+the length of the array should be the size
+after the pop operation.
+@m sp appwsp alpwsp appwsp alpwsp appwsp alpw
+@p
+@l test_array_pop_error:
+@c attempt to pop from an empty array
+this should set the IO register to be 0, but also flip on some kind
+of error flag. Print the flag to ensure that it has been set, then
+reset it.
+@m sp appwsppe
+@p
+@l test_stack:
+@c building off of what was done previously, do some append/pop
+operations on the stack, and then print the items in
+the stack.
+@c app A, app B, pop, app C, app D, pop, app E. pop print (E)
+pop print (C), pop print (A)
+@m sp ai cl0Arv aa cl0Brv aa ap cl0Crv aa cl0Drv aa ap cl0Erv aa
+ap pwsp ap pwsp appw
+@p
+@c for granular allocations smaller than a block,
+a buddy system allocator is utilized.
+This allocator was adopted from the algorithm
+descriped in Knuth's TAOCP volume 1, chapter 2.5.
+The following test was adapted from the prototype
+developed separately.
+@c blocks 0, 1, and 2 will be used.
+block 0 will be utilized as a stack. block 1 will be
+the temp block for the buddy system, and block 2 will be
+used for the memory itself
+@l test_mem_init:
+@c initialize a stack at block address 0
+@m #0bw ai
+@c the memory allocator needs 4 segments of memory
+TOP is a 4-word segment containing the addresses
+of the other memory segments, and is what is passed
+around when allocating memory.
+BLOCK is the block of memory used for allocation.
+AVAIL is a 8 word segment containing the block
+lists of various 2^k sizes in the buddy system
+algorithm.
+TAGS is a 2-word segment used to indicate if
+a particular sub-block of memory is being used.
+These memory addresses will be fixed. Using block
+address notation block.word, they will be the
+following:
+TOP=B1.0=#100.
+BLOCK=B2.0=#200.
+AVAIL=B1.4=#104.
+TAGS=B1.12=#10C.
+@c push TOP, BLOCK, AVAIL, TAGS onto the stack,
+and then call the memory initializer.
+@m #0 gb #100bwaa #200bwaa #104bwaa #10Cbwaa mi
+@c print an initial checksum of the initialized memory allocator
+@m #100bw mc sppw
+@p
+@l test_mem_alloc:
+@c allocate a single word (k = 0).
+@m #0rvaa #100bwaa ma
+@c the generated stack is used again because the
+allocator needs two arguments: the pointer to
+the allocator, and an argument specifying the
+k-size. k=0, so it's one word.
+@c the allocator returns an address and stores
+it in the word register. Extract the block offset
+from this address.
+@m sp bo pw
+@c it's expected to be at offset 0
+@c allocate 4 words (k = 2)
+@m #2rvaa #100bwaa ma
+@c and print the results, (expected: offset of 4)
+@m sp bo pw
+@c finally, print the checksum of current state
+@m sp #100bw mc pw
+@c note how the stack is not used since there
+is only one argument.
+@p
+@l test_mem_alloc_fail:
+@c (attempt to) allocate the entire block. (k = 6).
+This should fail.
+@m #6rvaa #100bwaa ma
+@c to verify failure, print the return address and error flag. the checksum will also be computed as well.
+the return address is -1, or FFFFFFFF, the error flag should be 1
+@m sp pw sp pe sp #100bw mc pw ce
+@p
+@l test_mem_alloc_2:
+@c allocate 16 words (k = 4)
+@m #4rvaa #100bwaa ma
+@c print the relative block offset and checksum
+@m sp bo pw sp #100bw mc pw
+@p
+@l test_mem_free:
+@c free the previously allocated chunks of memory.
+this gets a little tricky with the test harness
+I've made. I'm not actually storing the previously
+allocated addresses anywhere. I do, however, know
+what the expected relative offsets should be:
+0, 4, 10. And the memory address of the block
+is also known (block 2).
+@c free block 0
+@c L = block + 0 = block, k = 0, memory = block 1
+@m #0rvaa #0rvaa #100bwaa mf
+@c free memory at offset 4
+@m #4rvaa #2rvaa #100bwaa mf
+@c free memory at offset 10
+@m #10rvaa #4rvaa #100bwaa mf
+@c print the checksum
+@m sp #100bw mc pw
+@p

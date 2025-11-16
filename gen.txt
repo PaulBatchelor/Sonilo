@@ -1,0 +1,37 @@
+hello world.
+
+now things are being printed again
+this is a new line.
+test_pr: 1a
+test_clear: 0
+test_pr_abcd: abcd
+test_label: testing 123
+test_rw: abcd1234
+test_blocklist:
+400
+3ff
+3fe
+3fd
+3fe
+3fc
+3ff
+3fb
+test_bitset:
+1
+0
+1
+0
+test_read_block:
+3
+6
+9
+test_array_init: 0
+test_array_append: 0 1 2 3
+test_array_pop: c 2 b 1 a 0
+test_array_pop_error: 0 1
+test_stack: e c a
+test_mem_init: 8040000
+test_mem_alloc: 0 4 7609209
+test_mem_alloc_fail: ffffffff 1 7609209
+test_mem_alloc_2: 10 5608209
+test_mem_free: 8040000

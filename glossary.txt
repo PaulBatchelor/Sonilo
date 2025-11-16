@@ -1,0 +1,29 @@
+bi:init blocklist
+ba:allocate block
+bf:free block
+wr:write word to memory
+rd:read word from memory to word register
+go:set cursor location
+cl:clear the word register
+rv:reverse nibbles in word register
+pr:print word to standard output
+si:intialize bitset
+sa:add item from rw to bitset at cursor
+sr:remove item from rw to bitset at cursor
+se:check to see if item in rw exists at cursor. writes to rw
+rb: read word from block. rw contains the offset (last bits only) from the current cursor location. 0-63.
+mi: initialize memory allocator.
+ma: allocate memory of size 2^k. k is in range 0-6. returns word address for start of segment. 0 if memory could not be allocated.
+mf: frees memory starting a word address. if word does not belong to block, nothing happens.
+gb: go to block. given a block address, sets the cursor to the corresponding word address
+pw: print word
+ai: initialize array
+al: get array length
+sp: print space
+aa: append word to array
+ap: pop word from array
+pe: print error flag
+ce: clear error flag
+bw: convert block.offset #BBB00 notation into a word address
+rc: read cursor into word register
+bo: extract block offset from a word address

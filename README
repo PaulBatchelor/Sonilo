@@ -1,0 +1,15 @@
+Sonilo is (will be a) small system for creating sound.
+
+Build: ./build.sh
+
+Test: ./test.sh
+
+mem.c, mem.h: memory allocation system for fixed memory
+
+t.c: interactive testing environment.
+
+input.txt: the test, written in the command language
+
+glossary.txt: a list of commands to use in the testing language
+
+ref.txt: expected output when running the test program
