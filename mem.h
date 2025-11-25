@@ -13,3 +13,6 @@ void mem_init(uint32_t *mem,
 int mem_alloc(uint32_t *mem, uint16_t p_top, uint16_t k);
 uint32_t mem_cksum(uint32_t *mem, uint16_t p_top);
 void mem_free(uint32_t *mem, uint16_t p_top, int L, int k);
+int mem_array_init(uint32_t *mem, uint16_t a);
+int mem_array_append(uint32_t *mem, uint16_t a, uint32_t x);
+int mem_array_pop(uint32_t *mem, uint16_t a, uint32_t *x);

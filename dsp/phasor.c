@@ -1,17 +1,5 @@
 #include <stdint.h>
-#define CONSTANT 0x10000
-
-int push(uint32_t *stk, uint32_t x);
-int pop(uint32_t *stk, uint32_t *x);
-uint32_t ftoi(float f);
-float itof(uint32_t i);
-
-typedef struct sonilo {
-    uint32_t *mem;
-    /* data stack / stack pointer */
-    int *ds;
-    int *sp;
-} sonilo;
+#include "util.h"
 
 struct dsp_phasor {
     uint32_t freq;
@@ -19,51 +7,6 @@ struct dsp_phasor {
     float phs;
     float onedsr;
 };
-
-int sonilo_blksz(uint32_t *mem)
-{
-    return 64;
-}
-
-uint32_t sonilo_sr(uint32_t *mem)
-{
-    return 44100;
-}
-
-void sonilo_port_writef(uint32_t *mem, uint32_t p, int i, float x)
-{
-    uint32_t ival;
-    uint32_t type;
-    uint32_t pos;
-
-    pos = p & 0xFFFF;
-    type = (p >> 16) & 0xFFFF;
-    ival = ftoi(x);
-
-    if (type == CONSTANT) {
-        mem[pos] = ival;
-        return;
-    }
-
-    mem[pos + i] = ival;
-}
-
-float sonilo_port_readf(uint32_t *mem, uint32_t p, int i)
-{
-    uint32_t type;
-    uint32_t pos;
-    float f;
-
-    pos = p & 0xFFFF;
-    type = (p >> 16) & 0xFFFF;
-
-    if (type == CONSTANT) {
-        f = itof(mem[pos]);
-        return f;
-    }
-    return itof(mem[pos + i]);
-}
-
 
 void dsp_phasor_init(uint32_t *mem, uint32_t p, uint32_t out)
 {
@@ -113,7 +56,32 @@ void dsp_phasor_compute(uint32_t *mem, uint32_t p)
     }
 }
 
-void ugen_phasor(uint32_t *mem, uint32_t pstk)
+int ugen_phasor_init(uint32_t *mem, uint32_t pstk)
+{
+    uint32_t *stk;
+    uint32_t out;
+    uint32_t ph;
+    int rc;
+
+    stk = &mem[pstk];
+
+    rc = stack_pop(stk, &ph);
+
+    if (rc) {
+        return 1;
+    }
+
+    rc = stack_pop(stk, &out);
+
+    if (rc) {
+        return 1;
+    }
+
+    dsp_phasor_init(mem, ph, out);
+    return 0;
+}
+
+int ugen_phasor(uint32_t *mem, uint32_t pstk)
 {
     uint32_t *stk;
     uint32_t pfreq;
@@ -124,16 +92,16 @@ void ugen_phasor(uint32_t *mem, uint32_t pstk)
     stk = &mem[pstk];
     pfreq = p = 0;
 
-    rc = pop(stk, &p);
+    rc = stack_pop(stk, &p);
 
     if (rc) {
-        /* TODO: error handling */
+        return 1;
     }
 
-    rc = pop(stk, &pfreq);
+    rc = stack_pop(stk, &pfreq);
 
     if (rc) {
-        /* TODO: error handling */
+        return 1;
     }
 
     ph = (struct dsp_phasor *) &mem[p];
@@ -142,9 +110,11 @@ void ugen_phasor(uint32_t *mem, uint32_t pstk)
 
     dsp_phasor_compute(mem, p);
 
-    rc = push(stk, ph->out);
+    rc = stack_push(stk, ph->out);
 
     if (rc) {
-        /* TODO: error handling */
+        return 1;
     }
+
+    return 0;
 }

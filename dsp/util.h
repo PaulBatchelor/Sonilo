@@ -1,0 +1,10 @@
+int stack_pop(uint32_t *stk, uint32_t *x);
+int stack_push(uint32_t *stk, uint32_t x);
+uint32_t ftoi(float f);
+float itof(uint32_t i);
+int sonilo_blksz(uint32_t *mem);
+uint32_t sonilo_sr(uint32_t *mem);
+void sonilo_port_writef(uint32_t *mem, uint32_t p, int i, float x);
+float sonilo_port_readf(uint32_t *mem, uint32_t p, int i);
+uint32_t sonilo_constant(uint16_t a);
+uint32_t sonilo_block(uint16_t a);

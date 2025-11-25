@@ -3,52 +3,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include "mem.h"
+#include "util.h"
 
 #define MEMSIZE (1 << 16)
 #define NUMBLOCKS 1024
-#define CONSTANT 0x10000
 
-void dsp_phasor_init(uint32_t *mem, uint32_t p, uint32_t out);
+int ugen_phasor_init(uint32_t *mem, uint32_t pstk);
 
 void ugen_phasor(uint32_t *mem, uint32_t pstk);
-
-
-uint32_t ftoi(float f)
-{
-    return *(uint32_t *)(&f);
-}
-
-float itof(uint32_t i)
-{
-    return *(float *)&i;
-}
-
-int pop(uint32_t *stk, uint32_t *x)
-{
-    uint32_t sp;
-
-    sp = stk[0];
-    if (sp == 0) return 1;
-    *x = stk[sp];
-    sp--;
-    stk[0] = sp;
-
-    return 0;
-}
-
-int push(uint32_t *stk, uint32_t x)
-{
-    uint32_t sp;
-
-    sp = stk[0];
-    if (sp >= 64) return 1;
-    sp++;
-    stk[sp] = x;
-    stk[0] = sp;
-
-
-    return 0;
-}
 
 static void write_block(FILE *fp, uint32_t *mem, uint32_t *stk)
 {
@@ -57,7 +19,7 @@ static void write_block(FILE *fp, uint32_t *mem, uint32_t *stk)
     float *blk;
 
     out = 0;
-    rc = pop(stk, &out);
+    rc = stack_pop(stk, &out);
 
     if (rc) return;
 
@@ -99,16 +61,17 @@ int main(int argc, char *argv[])
     freq = ph + 5;
 
     /* output: block 2 */
-
     out = 128;
 
     mem[freq] = ftoi(321.123);
 
-    dsp_phasor_init(mem, ph, out);
+    stack_push(stk, sonilo_block(out));
+    stack_push(stk, ph);
+    ugen_phasor_init(mem, pstk);
 
     for (i = 0; i < NUMBLOCKS; i++) {
-        push(stk, freq | CONSTANT);
-        push(stk, ph);
+        stack_push(stk, sonilo_constant(freq));
+        stack_push(stk, ph);
         ugen_phasor(mem, pstk);
         write_block(fp, mem, stk);
     }
