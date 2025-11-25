@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include "mem.h"
 
 #define MEMSIZE (1 << 16)
@@ -10,6 +11,17 @@
 void dsp_phasor_init(uint32_t *mem, uint32_t p, uint32_t out);
 
 void ugen_phasor(uint32_t *mem, uint32_t pstk);
+
+
+uint32_t ftoi(float f)
+{
+    return *(uint32_t *)(&f);
+}
+
+float itof(uint32_t i)
+{
+    return *(float *)&i;
+}
 
 int pop(uint32_t *stk, uint32_t *x)
 {
@@ -38,23 +50,22 @@ int push(uint32_t *stk, uint32_t x)
     return 0;
 }
 
-static void write_block(FILE *fp, uint32_t *stk)
+static void write_block(FILE *fp, uint32_t *mem, uint32_t *stk)
 {
     int rc;
     uint32_t out;
+    float *blk;
 
     out = 0;
     rc = pop(stk, &out);
 
     if (rc) return;
 
+    blk = (float *)&mem[out];
+
+    fwrite(blk, sizeof(float), 64, fp);
+
     return;
-}
-
-
-static void wordf(uint32_t *mem, uint32_t p, float x)
-{
-    mem[p] = *(uint32_t *)(&x);
 }
 
 int main(int argc, char *argv[])
@@ -69,7 +80,6 @@ int main(int argc, char *argv[])
     uint32_t out;
 
     mem = malloc(MEMSIZE * sizeof(uint32_t));
-
 
     for (i = 0; i < MEMSIZE; i++) {
         mem[i] = 0;
@@ -92,7 +102,7 @@ int main(int argc, char *argv[])
 
     out = 128;
 
-    wordf(mem, freq, 321.123);
+    mem[freq] = ftoi(321.123);
 
     dsp_phasor_init(mem, ph, out);
 
@@ -100,7 +110,7 @@ int main(int argc, char *argv[])
         push(stk, freq | CONSTANT);
         push(stk, ph);
         ugen_phasor(mem, pstk);
-        write_block(fp, stk);
+        write_block(fp, mem, stk);
     }
 
     fclose(fp);

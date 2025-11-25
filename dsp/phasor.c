@@ -3,6 +3,8 @@
 
 int push(uint32_t *stk, uint32_t x);
 int pop(uint32_t *stk, uint32_t *x);
+uint32_t ftoi(float f);
+float itof(uint32_t i);
 
 typedef struct sonilo {
     uint32_t *mem;
@@ -36,7 +38,7 @@ void sonilo_port_writef(uint32_t *mem, uint32_t p, int i, float x)
 
     pos = p & 0xFFFF;
     type = (p >> 16) & 0xFFFF;
-    ival = *(uint32_t *)&x;
+    ival = ftoi(x);
 
     if (type == CONSTANT) {
         mem[pos] = ival;
@@ -56,10 +58,10 @@ float sonilo_port_readf(uint32_t *mem, uint32_t p, int i)
     type = (p >> 16) & 0xFFFF;
 
     if (type == CONSTANT) {
-        f = mem[pos];
+        f = itof(mem[pos]);
         return f;
     }
-    return mem[pos + i];
+    return itof(mem[pos + i]);
 }
 
 
