@@ -3,6 +3,8 @@ gcc -std=c89 -Wall -pedantic \
     -g \
     -o test_dsp \
     phasor.c \
+    blsaw.c \
     util.c \
     ../mem.c \
-    test_dsp.c
+    test_dsp.c \
+    -l m

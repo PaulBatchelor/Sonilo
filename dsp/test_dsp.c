@@ -9,8 +9,10 @@
 #define NUMBLOCKS 1024
 
 int ugen_phasor_init(uint32_t *mem, uint32_t pstk);
+int ugen_phasor(uint32_t *mem, uint32_t pstk);
 
-void ugen_phasor(uint32_t *mem, uint32_t pstk);
+int ugen_blsaw_init(uint32_t *mem, uint32_t pstk);
+int ugen_blsaw(uint32_t *mem, uint32_t pstk);
 
 static void write_block(FILE *fp, uint32_t *mem, uint32_t *stk)
 {
@@ -58,7 +60,8 @@ int main(int argc, char *argv[])
     /* output begins at second block */
 
     /* memory address for constant is right after phasor */
-    freq = ph + 5;
+    /* freq = ph + 5; */
+    freq = ph + 17;
 
     /* output: block 2 */
     out = 128;
@@ -67,12 +70,14 @@ int main(int argc, char *argv[])
 
     stack_push(stk, sonilo_block(out));
     stack_push(stk, ph);
-    ugen_phasor_init(mem, pstk);
+    /* ugen_phasor_init(mem, pstk); */
+    ugen_blsaw_init(mem, pstk);
 
     for (i = 0; i < NUMBLOCKS; i++) {
         stack_push(stk, sonilo_constant(freq));
         stack_push(stk, ph);
-        ugen_phasor(mem, pstk);
+        /* ugen_phasor(mem, pstk); */
+        ugen_blsaw(mem, pstk);
         write_block(fp, mem, stk);
     }
 
