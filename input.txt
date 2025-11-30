@@ -140,7 +140,7 @@ of the other memory segments, and is what is passed
 around when allocating memory.
 BLOCK is the block of memory used for allocation.
 AVAIL is a 8 word segment containing the block
-lists of various 2^k sizes in the buddy system
+lists of various $2^k$ sizes in the buddy system
 algorithm.
 TAGS is a 2-word segment used to indicate if
 a particular sub-block of memory is being used.
