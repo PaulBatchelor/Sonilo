@@ -210,3 +210,28 @@ is also known (block 2).
 @c print the checksum
 @m sp #100bw mc pw
 @p
+@c buddy slots. In practice, it is likely that more than one block of memory
+will be used for allocating small segments of memory, and therefore more
+than one instance of a buddy allocator will be required.
+A single block of memory can be used to house the metadata of multiple
+instances of a buddy allocator. One instance takes up 10 words of space
+without any padding (AVAIL is 7 words, TAGS is 2 words, the address of BLOCK is 1 word).
+A maximum of 6 instances can fit on a block.
+Each memory region associated with a potential instance will be referred
+to as a "slot". 4 words are a left over. These will be used to construct
+a TOP struct that can be passed into calls to the buddy memory allocator.
+A slot is selected, and then the addresses of AVAIL, BLOCK, and TAGS will
+be set in the TOP struct before the buddy memory allocator is called.
+@c TODO. unit test setup. the process of setting up the allocator
+is a bit vague in my head right now, though I did write some
+things down a few days ago.
+@c Instead of taking a power-of-2 k value for allocating words,
+this allocator will take in the size in words, and then find the
+nearest k value that will fit.
+@c Once a k value is found, a procedure will iterate through
+all available slots, attempting to find an available region.
+@c if no address has been returned after iterating through
+all available slots, attempt to find a free slot and allocate
+a new block via the blocklist.
+@c if there are no free slots left or the block allocation fails,
+the allocator should fail.
