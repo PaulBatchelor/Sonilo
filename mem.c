@@ -226,7 +226,7 @@ void bitset_init(uint32_t *mem, uint16_t bm)
 
     /* 1024 bits requires 32 words (half a block) */
     for (i = 0; i < 32; i++) {
-        mem[32] = 0;
+        mem[i] = 0;
     }
 }
 
