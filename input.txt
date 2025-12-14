@@ -9,7 +9,7 @@ the first thing that will be implemented will be constants
 the following code will push hex value 0x1A onto the stack
 and then print the value.
 @l test_pr:
-@p @m 1A rv pr
+@p @m 1A pr
 @c with any luck, that should print "1a" to standard ouput
 @c this command should clear the word register and print '0'.
 @l test_clear:
@@ -19,7 +19,7 @@ note that nibbles are pushed to the MSB and shifted left.
 the 'rv' command is used to reverse the bits before printing
 so that ABCD is 0xABCD and not 0xDCBA0000.
 @l test_pr_abcd:
-@p @m cl ABCD rv pr
+@p @m cl ABCD pr
 @c 'pl' means "print label". The idea here is to set up unit tests where
 each unit test produces a line like test_foo: output. 
 These lines would then be written to a file.
@@ -39,7 +39,7 @@ commands just read from wherever the cursor is?
 and print the results.
 To make sure that read/write/go is working. An additional value
 will be written to address 0 before jumping back and printing.
-@p @m clr 10 rv go ABCD1234 rv wr cl 0 go 11111111 wr clr 10 rv go rd pr
+@p @m clr 10 go ABCD1234 wr cl 0 go 11111111 wr clr 10 go rd pr
 @c some initial blocklist tests
 @l test_blocklist:
 @p
@@ -49,9 +49,9 @@ will be written to address 0 before jumping back and printing.
 and print their block IDs.
 @m bapr bapr bapr bapr
 @c free one of the blocks, then allocate two more blocks
-@m 3FE rv bf bapr bapr
+@m 3FE bf bapr bapr
 @c free another block (out of order), then allocate two more blocks
-@m 3FF rv bf bapr bapr
+@m 3FF bf bapr bapr
 @l test_bitset:
 @p
 @c
@@ -64,7 +64,7 @@ two letter commands to behave like syllables that can be
 grouped into words. 'sasepr' means 'append, exists?, print'.
 'sepr' means 'exists?, print'. 'srsepr' means 'remove, exists?, print'.
 It almost starts to look like latin mottos.
-@m cl go si sasepr clFFrv sepr clFFrv sasepr clFFrv srsepr
+@m cl go si sasepr clFF sepr clFF sasepr clFF srsepr
 @c working on a 'buddy system' allocator for efficiently allocating
 small chunks of memory inside of single block. The implementation needs
 3 words for overhead, which leaves a pool of 61 blocks to to divide up
@@ -83,20 +83,20 @@ test that out first.
 a sequence of words, and uses 'rb' to read them
 as if they were values from a block.
 first, write values 3, 6, 9 in addresses 0, 1, 2:
-@m cl0rv go cl3rvwr cl1rvgo cl6rvwr cl2rvgo cl9rvwr
+@m cl0 go cl3wr cl1go cl6wr cl2go cl9wr
 @c next, use 'rb' to read these as block addresses.
-@m cl0rv go cl0rv rbpr cl1rv rbpr cl2rv rbpr
+@m cl0 go cl0 rbpr cl1 rbpr cl2 rbpr
 @l test_array_init:
 @c a basic array, bounded to a single block. Can hold up to 63 words.
 @c initialize block 0 as an array, print the length
-@m cl0rv gb ai al sp pw
+@m cl0 gb ai al sp pw
 @p
 @l test_array_append:
 @c append values 1, 2, 3, onto the array
 @c as each item gets appended, print the length
 also print the length before appending the first
 item
-@m al sp pw sp cl0Arv aa alpwsp cl0Brvaa alpwsp cl0Crvaa alpw
+@m al sp pw sp cl0A aa alpwsp cl0Baa alpwsp cl0Caa alpw
 @p
 @l test_array_pop:
 @c pop values from the array
@@ -118,7 +118,7 @@ operations on the stack, and then print the items in
 the stack.
 @c app A, app B, pop, app C, app D, pop, app E. pop print (E)
 pop print (C), pop print (A)
-@m sp ai cl0Arv aa cl0Brv aa ap cl0Crv aa cl0Drv aa ap cl0Erv aa
+@m sp ai cl0A aa cl0B aa ap cl0C aa cl0D aa ap cl0E aa
 ap pwsp ap pwsp appw
 @p
 @c for granular allocations smaller than a block,
@@ -159,7 +159,7 @@ and then call the memory initializer.
 @p
 @l test_mem_alloc:
 @c allocate a single word (k = 0).
-@m #0rvaa #100bwaa ma
+@m #0aa #100bwaa ma
 @c the generated stack is used again because the
 allocator needs two arguments: the pointer to
 the allocator, and an argument specifying the
@@ -170,7 +170,7 @@ from this address.
 @m sp bo pw
 @c it's expected to be at offset 0
 @c allocate 4 words (k = 2)
-@m #2rvaa #100bwaa ma
+@m #2aa #100bwaa ma
 @c and print the results, (expected: offset of 4)
 @m sp bo pw
 @c finally, print the checksum of current state
@@ -181,14 +181,14 @@ is only one argument.
 @l test_mem_alloc_fail:
 @c (attempt to) allocate the entire block. (k = 6).
 This should fail.
-@m #6rvaa #100bwaa ma
+@m #6aa #100bwaa ma
 @c to verify failure, print the return address and error flag. the checksum will also be computed as well.
 the return address is -1, or FFFFFFFF, the error flag should be 1
 @m sp pw sp pe sp #100bw mc pw ce
 @p
 @l test_mem_alloc_2:
 @c allocate 16 words (k = 4)
-@m #4rvaa #100bwaa ma
+@m #4aa #100bwaa ma
 @c print the relative block offset and checksum
 @m sp bo pw sp #100bw mc pw
 @p
@@ -202,11 +202,11 @@ what the expected relative offsets should be:
 is also known (block 2).
 @c free block 0
 @c L = block + 0 = block, k = 0, memory = block 1
-@m #0rvaa #0rvaa #100bwaa mf
+@m #0aa #0aa #100bwaa mf
 @c free memory at offset 4
-@m #4rvaa #2rvaa #100bwaa mf
+@m #4aa #2aa #100bwaa mf
 @c free memory at offset 10
-@m #10rvaa #4rvaa #100bwaa mf
+@m #10aa #4aa #100bwaa mf
 @c print the checksum
 @m sp #100bw mc pw
 @p

@@ -77,8 +77,8 @@ void parse_memwrite(memwrite *mw, char c)
         uint32_t w;
         w = mw->rw;
         x = (uint8_t)(c - '0');
-        w >>= 4;
-        w |= (x << 28);
+        w <<= 4;
+        w |= x;
         mw->rw = w;
         return;
     } else if (c >= 'A' && c <= 'F') {
@@ -87,8 +87,8 @@ void parse_memwrite(memwrite *mw, char c)
         w = mw->rw;
         x = (uint8_t)(c - 'A');
         x += 10;
-        w >>= 4;
-        w |= (x << 28);
+        w <<= 4;
+        w |= x;
         mw->rw = w;
         return;
     }
@@ -356,7 +356,7 @@ void parse_memwrite(memwrite *mw, char c)
         uint16_t addr;
         mw->prev = 0;
 
-        addr = reverse_nibbles(mw->rw);
+        addr = mw->rw;
         mw->rw = (addr >> 8) * 64 + (addr & 63);
 
         /* see: 'gb' */
