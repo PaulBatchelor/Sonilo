@@ -235,3 +235,52 @@ all available slots, attempt to find a free slot and allocate
 a new block via the blocklist.
 @c if there are no free slots left or the block allocation fails,
 the allocator should fail.
+@c TODO: test_zp.
+This program will test the "zero page" command.
+Given an address to the block stack, it will allocate
+a block (the to-be zero page), zero the block, then
+set word slot 0 to be the address of the block stack.
+@c TODO: test code. I imagine it will look something
+like "$0 go bi zp pr".
+@c TODO: test_jf.
+@c jf will jump forward some amount.
+@c TODO: code. the test should do some jumps and print
+addresses. something like: $0go $1jf rcpr $2jf rcpr $3jf rcpr.
+Addresses printed should be 1, 3, 6.
+@c TODO: test_jb. Jump back. A mirror of jf.
+@c TODO: code. mirror jf that just happened.
+$3jb rcpr $2jb rcpr $1jb rcpr
+Addresses should be 3, 1, 0
+@c TODO: test_sc.
+sc, or "switch cursor" tests the cursor functionality.
+@c TODO: test_sc code.
+Switch between two memory locations, print the current
+location after switching.
+Something like: clA go sc clB go scpr scpr.
+That should print addresses "A" and "B".
+@c TODO: test_aa.
+The "aa" takes 16-bit address stored in the cursor and
+a 16-bit address stored in the word register, and merges
+them together in a 32-bit word (MSB, LSB), or (W, C).
+@c TODO: test_aa code.
+Should look something like: cl5678go cl1234 aa pr.
+This should print 12345678.
+@c TODO: test_sn.
+"sn" gets number of elements in a bitset.
+@c TODO: test_sn code.
+something like: cl0go si cl1sa cl2sa cl3sa snpr cl2se snpr cl1sa snpr
+should print 3, 2, 2
+@c TODO: test_bb.
+"bb" is an extension of "ba", the command for allocating
+a block off the block stack. It will read from the word
+register a packed word containing a bitset and a blockstack,
+allocate a block, mark that block in the set, and return
+the address (overwriting the args supplied).
+@c TODO: test_bb code.
+Writing a test for this is a bit more involved than previous
+tests because it requires both setting up a bitset and a blockstack,
+and merging those addresses together.
+@c this ought to do it: cl0go bi ba sc go bi rc sc aa bb sc snpr
+@c we're using the two cursor addresses to store the block stack and
+the bitset. Allocating a new block should add it to the register.
+Counting the number of items in the set "sn" should yield a count of 1.
