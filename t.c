@@ -66,6 +66,17 @@ static uint32_t reverse_nibbles(uint32_t w)
     return w;
 }
 
+static uint16_t block_to_word(uint16_t b)
+{
+    /* multiply by 64 to get word address,
+     * then add an offset to skip the block list
+     * block list size: 2^16/64 = 1024. 1024 blocks = 1024 words
+     * 1024 is 0x400 in hex.
+     * NOTE: this assumes blocklist address is 0.
+     */
+    return (b << 6) + BLOCKLIST_OFFSET;
+}
+
 void parse_memwrite(memwrite *mw, char c)
 {
 #ifdef DEBUG
@@ -227,7 +238,7 @@ void parse_memwrite(memwrite *mw, char c)
          * then add an offset to skip the block list
          * block list size: 2^16/64 = 1024. 1024 blocks = 1024 words
          */
-        mw->cursor = (mw->rw << 6) + BLOCKLIST_OFFSET; 
+        mw->cursor = block_to_word(mw->rw); 
         mw->prev = 0;
         return;
     }
@@ -412,6 +423,33 @@ void parse_memwrite(memwrite *mw, char c)
         stk[0] = sp;
         return;
     }
+
+
+    /* zp: initialize zero page */
+    if (mw->prev == 'z' && c == 'p') {
+        uint16_t zp;
+        uint16_t i;
+        mw->prev = 0;
+        /* get zero page address from rw register */
+        zp = mw->rw;
+
+        /* convert block to word */
+        zp = block_to_word(zp);
+
+        /* zero out block */
+        for (i = 0; i < 64; i++) {
+            mw->mem[zp + i] = 0;
+        }
+
+        /* set block stack (in cursor) to be slot 0 in zp */
+
+        mw->mem[zp] = mw->cursor;
+
+        /* return the zp memory address */
+        mw->rw = zp;
+        return;
+    }
+
     /* TODO su: subtract two numbers from a stack, store in word register */
     /* TODO di : divide two numbers from a stack, store in word register */
     /* TODO mu : multiply two numbers from a stack, store in word register */
