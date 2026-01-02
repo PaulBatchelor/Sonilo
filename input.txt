@@ -259,7 +259,7 @@ addresses. something like: $0go $1jf rcpr $2jf rcpr $3jf rcpr.
 Addresses printed should be 1, 3, 6.
 @c TODO: test_jb. Jump back. A mirror of jf.
 @c TODO: code. mirror jf that just happened.
-$3jb rcpr $2jb rcpr $1jb rcpr
+\$3jb rcpr \$2jb rcpr \$1jb rcpr
 Addresses should be 3, 1, 0
 @c TODO: test_sc.
 sc, or "switch cursor" tests the cursor functionality.

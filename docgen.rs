@@ -84,13 +84,13 @@ fn main() -> io::Result<()> {
     for o in obj {
         match o {
             Object::Label(s) => {
-                println!("\\label{{{}}}" , s); 
+                println!("\\label{{{}}}" , s);
             },
             Object::Code(s) => {
-                println!("\\code{{{}}}", s); 
+                println!("\\code{{{}}}", s.replace("$", "\\$"));
             },
             Object::Comment(s) => {
-                println!("\\comment{{{}}}" , s); 
+                println!("\\comment{{{}}}" , s);
             }
         };
     }
