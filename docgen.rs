@@ -28,7 +28,6 @@ fn main() -> io::Result<()> {
     mode = ParserMode::PRINT;
 
     for c in data {
-
         if matches!(mode, ParserMode::UPDATE) {
             if c == b'l' {
                 mode = ParserMode::LABEL;
@@ -43,6 +42,7 @@ fn main() -> io::Result<()> {
             continue
         }
 
+        // TODO: check for terminal character?
         if c == b'@' {
             let str = match String::from_utf8(buf.clone()) {
                 Ok(s) => s,
@@ -78,8 +78,10 @@ fn main() -> io::Result<()> {
                 buf.push(c)
             },
         };
-
     }
+
+    // TODO: process remaining things in buffer, or add
+    // some kind of terminal code in loop above
 
     for o in obj {
         match o {

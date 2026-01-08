@@ -500,3 +500,12 @@ void mem_free(uint32_t *mem, uint16_t p_top, int L, int k)
     /* AVAILF[k] <- L */
     availf_set(avail, k, L);
 }
+
+void bits_set(uint32_t *mem, uint32_t off, uint32_t sz, uint32_t w)
+{
+}
+
+uint32_t bits_get(uint32_t *mem, uint32_t off, uint32_t sz)
+{
+    return 0;
+}

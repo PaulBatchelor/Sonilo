@@ -16,3 +16,5 @@ void mem_free(uint32_t *mem, uint16_t p_top, int L, int k);
 int mem_array_init(uint32_t *mem, uint16_t a);
 int mem_array_append(uint32_t *mem, uint16_t a, uint32_t x);
 int mem_array_pop(uint32_t *mem, uint16_t a, uint32_t *x);
+void bits_set(uint32_t *mem, uint32_t off, uint32_t sz, uint32_t w);
+uint32_t bits_get(uint32_t *mem, uint32_t off, uint32_t sz);

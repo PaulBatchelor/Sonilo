@@ -106,6 +106,9 @@ void parse_memwrite(memwrite *mw, char c)
 
     if (c == ' ' || c == '\n') return;
 
+    /* '.' used to visually group nibbles */
+    if (c == '.') return;
+
     if (mw->prev == 'p' && c == 'r') {
         printf("%x\n", mw->rw);
         mw->prev = 0;
