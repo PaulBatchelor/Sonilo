@@ -297,8 +297,7 @@ Counting the number of items in the set "sn" should yield a count of 1.
 @c global bit array. The entire memory space can be treated as one big addressable
 bit array with $2^21$ bits, with the word boundaries abstracted away. Up to 32 bits
 can be read and written to a the same time.
-@l test_bits
-@p
+@l test_bits:
 @c the little test here for reading/writing bits should be
 designed to check that word boundary logic is being handled
 correctly. To do this, write some bits that spill over into
@@ -306,7 +305,7 @@ two words
 @c TODO. write 'ABC' (12 bits) to offset #16 (20 bit offset).
 This makes it so 10 bits go into the first word, 2 bits into
 the second word.
-@c such code could look like: #A go #016.C.0ABC xw
+@m #A go #016.C.0ABC xw
 @c the dots are helpers to split up the 32-bit word.
 @c the first 3 nibbles '016' refer to the local offset,
 in units of bits, appended to the cursor location (a word
@@ -315,4 +314,4 @@ number of bits to write (in the case C is 12 bits). The
 remaining 4 nibbles contain the data, left-padded with
 zeros.
 @c TODO. read the bits written, print the word. expect 'ABC'.
-@c such code could look like this: #016.C xr pr
+@m sp #016.C xr pr

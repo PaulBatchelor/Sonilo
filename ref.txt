@@ -36,3 +36,4 @@ test_mem_alloc_fail: ffffffff 1 7609209
 test_mem_alloc_2: 10 5608209
 test_mem_free: 8040000
 test_zp: 400 ??? 10
+test_bits: abc

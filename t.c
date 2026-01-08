@@ -462,7 +462,45 @@ void parse_memwrite(memwrite *mw, char c)
     /* TODO di : divide two numbers from a stack, store in word register */
     /* TODO mu : multiply two numbers from a stack, store in word register */
 
-    /* xr: read bits */
+    /* xw: write bits */
+    if (iscmd(mw, c, "xw")) {
+        uint32_t rw;
+        uint16_t off;
+        uint16_t val;
+        uint8_t sz;
+        mw->prev = 0;
+
+        rw = mw->rw;
+        off = val = sz = 0;
+
+        val = rw & 0xFFFF;
+        rw >>= 16;
+        sz = rw & 0xF;
+        rw >>= 4;
+        off = rw & 0xFFF;
+
+        bits_set(mw->mem, (mw->cursor << 4) + off, sz, val);
+
+        return;
+    }
+
+    if (iscmd(mw, c, "xr")) {
+        uint32_t rw;
+        uint16_t off;
+        uint8_t sz;
+        mw->prev = 0;
+
+        rw = mw->rw;
+        off = sz = 0;
+
+        sz = rw & 0xF;
+        rw >>= 4;
+        off = rw & 0xFFF;
+
+        mw->rw = bits_get(mw->mem, (mw->cursor << 4) + off, sz);
+
+        return;
+    }
 
     mw->prev = c;
 }
