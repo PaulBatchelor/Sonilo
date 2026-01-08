@@ -77,6 +77,11 @@ static uint16_t block_to_word(uint16_t b)
     return (b << 6) + BLOCKLIST_OFFSET;
 }
 
+static int iscmd(memwrite *mw, char c, const char *cmd)
+{
+    return mw->prev == cmd[0] && c == cmd[1];
+}
+
 void parse_memwrite(memwrite *mw, char c)
 {
 #ifdef DEBUG
@@ -109,13 +114,13 @@ void parse_memwrite(memwrite *mw, char c)
     /* '.' used to visually group nibbles */
     if (c == '.') return;
 
-    if (mw->prev == 'p' && c == 'r') {
+    if (iscmd(mw, c, "pr")) {
         printf("%x\n", mw->rw);
         mw->prev = 0;
         return;
     }
 
-    if (mw->prev == 'r' && c == 'v') {
+    if (iscmd(mw, c, "rv")) {
         mw->rw = reverse_nibbles(mw->rw); 
         mw->prev = 0;
         return;
@@ -129,77 +134,77 @@ void parse_memwrite(memwrite *mw, char c)
     }
 
     /* go: set cursor location */
-    if (mw->prev == 'g' && c == 'o') {
+    if (iscmd(mw, c, "go")) {
         mw->prev = 0;
         mw->cursor = mw->rw & 0xFFFF;
         return;
     }
 
     /* wr: write word to memory */
-    if (mw->prev == 'w' && c == 'r') {
+    if (iscmd(mw, c, "wr")) {
         mw->mem[mw->cursor] = mw->rw;
         mw->prev = 0;
         return;
     }
 
     /* read word from memory to word register */
-    if (mw->prev == 'r' && c == 'd') {
+    if (iscmd(mw, c, "rd")) {
         mw->rw = mw->mem[mw->cursor];
         mw->prev = 0;
         return;
     }
 
     /* bi: init blocklist */
-    if (mw->prev == 'b' && c == 'i') {
+    if (iscmd(mw, c, "bi")) {
         blocklist_init(mw->mem, mw->cursor);
         mw->prev = 0;
         return;
     }
 
     /* ba: allocate block, write block id to word register */
-    if (mw->prev == 'b' && c == 'a') {
+    if (iscmd(mw, c, "ba")) {
         mw->rw = blocklist_pop(mw->mem, mw->cursor);
         mw->prev = 0;
         return;
     }
 
     /* bf: free block, read block id from register word */
-    if (mw->prev == 'b' && c == 'f') {
+    if (iscmd(mw, c, "bf")) {
         blocklist_push(mw->mem, mw->cursor, mw->rw & 0x3ff);
         mw->prev = 0;
         return;
     }
 
     /* si: initialize bitset */
-    if (mw->prev == 's' && c == 'i') {
+    if (iscmd(mw, c, "si")) {
         bitset_init(mw->mem, mw->cursor);
         mw->prev = 0;
         return;
     }
 
     /* sa: add item to bitset */
-    if (mw->prev == 's' && c == 'a') {
+    if (iscmd(mw, c, "sa")) {
         bitset_add(mw->mem, mw->cursor, mw->rw);
         mw->prev = 0;
         return;
     }
 
     /* se: check to see if item exists in set */
-    if (mw->prev == 's' && c == 'e') {
+    if (iscmd(mw, c, "se")) {
         mw->rw = bitset_exists(mw->mem, mw->cursor, mw->rw);
         mw->prev = 0;
         return;
     }
 
     /* sr: remove item from bitset */
-    if (mw->prev == 's' && c == 'r') {
+    if (iscmd(mw, c, "sr")) {
         bitset_remove(mw->mem, mw->cursor, mw->rw);
         mw->prev = 0;
         return;
     }
 
     /* rb: read word from block */
-    if (mw->prev == 'r' && c == 'b') {
+    if (iscmd(mw, c, "rb")) {
         int offset;
         mw->prev = 0;
         /* 6-bit address 0 - 63 */
@@ -209,7 +214,7 @@ void parse_memwrite(memwrite *mw, char c)
     }
 
     /* mi: initialize memory */
-    if (mw->prev == 'm' && c == 'i') {
+    if (iscmd(mw, c, "mi")) {
         uint32_t *stk;
         uint16_t p_top, p_block, p_avail, p_tags;
         uint8_t sp;
@@ -236,7 +241,7 @@ void parse_memwrite(memwrite *mw, char c)
     }
 
     /* gb: goto block */
-    if (mw->prev == 'g' && c == 'b') {
+    if (iscmd(mw, c, "gb")) {
         /* multiply by 64 to get word address,
          * then add an offset to skip the block list
          * block list size: 2^16/64 = 1024. 1024 blocks = 1024 words
@@ -247,7 +252,7 @@ void parse_memwrite(memwrite *mw, char c)
     }
 
     /* ma: allocate a block */
-    if (mw->prev == 'm' && c == 'a') {
+    if (iscmd(mw, c, "ma")) {
         uint8_t sp;
         uint32_t *stk;
         uint16_t p_top, k;
@@ -269,7 +274,7 @@ void parse_memwrite(memwrite *mw, char c)
     }
 
     /* mf: free a block */
-    if (mw->prev == 'm' && c == 'f') {
+    if (iscmd(mw, c, "mf")) {
         uint8_t sp;
         uint32_t *stk;
         uint16_t p_top, L, k;
@@ -292,7 +297,7 @@ void parse_memwrite(memwrite *mw, char c)
     }
 
     /* pw: print word */
-    if (mw->prev == 'p' && c == 'w') {
+    if (iscmd(mw, c, "pw")) {
         printf("%x", mw->rw);
         fflush(stdout);
         mw->prev = 0;
@@ -300,14 +305,15 @@ void parse_memwrite(memwrite *mw, char c)
     }
 
     /* ai: initialize array */
-    if (mw->prev == 'a' && c == 'i') {
+    if (iscmd(mw, c, "ai")) {
         int n;
         for (n = 0; n < 64; n++) mw->mem[mw->cursor + n] = 0;
         mw->prev = 0;
         return;
     }
+
     /* al: get array length */
-    if (mw->prev == 'a' && c == 'l') {
+    if (iscmd(mw, c, "al")) {
         /* first word in block stores length */
         mw->rw = mw->mem[mw->cursor];
         mw->prev = 0;
@@ -316,7 +322,7 @@ void parse_memwrite(memwrite *mw, char c)
 
 
     /* sp: display space character */
-    if (mw->prev == 's' && c == 'p') {
+    if (iscmd(mw, c, "sp")) {
         putchar(' ');
         fflush(stdout);
         mw->prev = 0;
@@ -324,7 +330,7 @@ void parse_memwrite(memwrite *mw, char c)
     }
 
     /* aa: append value to array */
-    if (mw->prev == 'a' && c == 'a') {
+    if (iscmd(mw, c, "aa")) {
         int pos;
         mw->prev = 0;
         pos = mw->mem[mw->cursor];
@@ -335,7 +341,7 @@ void parse_memwrite(memwrite *mw, char c)
     }
 
     /* ap: pop word from array */
-    if (mw->prev == 'a' && c == 'p') {
+    if (iscmd(mw, c, "ap")) {
         int pos;
         pos = mw->mem[mw->cursor];
         mw->prev = 0;
@@ -350,7 +356,7 @@ void parse_memwrite(memwrite *mw, char c)
     }
 
     /* pe: print error flag */
-    if (mw->prev == 'p' && c == 'e') {
+    if (iscmd(mw, c, "pe")) {
         printf("%x", mw->err);
         fflush(stdout);
         mw->prev = 0;
@@ -358,7 +364,7 @@ void parse_memwrite(memwrite *mw, char c)
     }
 
     /* ce: clear error flag */
-    if (mw->prev == 'c' && c == 'e') {
+    if (iscmd(mw, c, "ce")) {
         mw->prev = 0;
         mw->err = 0;
         return;
@@ -366,7 +372,7 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* bw: convert block.offset #BBBOO notation into
      * a word address */
-    if (mw->prev == 'b' && c == 'w') {
+    if (iscmd(mw, c, "bw")) {
         uint16_t addr;
         mw->prev = 0;
 
@@ -380,21 +386,21 @@ void parse_memwrite(memwrite *mw, char c)
     }
 
     /* rc: read cursor into rw */
-    if (mw->prev == 'r' && c == 'c') {
+    if (iscmd(mw, c, "rc")) {
         mw->rw = mw->cursor;
         mw->prev = 0;
         return;
     }
 
     /* mc: generate 32-bit checksum of memory allocator */
-    if (mw->prev == 'm' && c == 'c') {
+    if (iscmd(mw, c, "mc")) {
         mw->rw = mem_cksum(mw->mem, mw->rw);
         mw->prev = 0;
         return;
     }
 
     /* bo: calculate block offset from word address */
-    if (mw->prev == 'b' && c == 'o') {
+    if (iscmd(mw, c, "bo")) {
         mw->prev = 0;
         /* assuming blocks are aligned, last 6 bits
          * should be the offset
@@ -404,7 +410,7 @@ void parse_memwrite(memwrite *mw, char c)
     }
 
     /* ad: add two numbers from a stack, store in word register */
-    if (mw->prev == 'a' && c == 'd') {
+    if (iscmd(mw, c, "ad")) {
         uint8_t sp;
         uint32_t *stk;
         uint16_t x, y;
@@ -427,9 +433,8 @@ void parse_memwrite(memwrite *mw, char c)
         return;
     }
 
-
     /* zp: initialize zero page */
-    if (mw->prev == 'z' && c == 'p') {
+    if (iscmd(mw, c, "zp")) {
         uint16_t zp;
         uint16_t i;
         mw->prev = 0;
@@ -456,6 +461,8 @@ void parse_memwrite(memwrite *mw, char c)
     /* TODO su: subtract two numbers from a stack, store in word register */
     /* TODO di : divide two numbers from a stack, store in word register */
     /* TODO mu : multiply two numbers from a stack, store in word register */
+
+    /* xr: read bits */
 
     mw->prev = c;
 }
