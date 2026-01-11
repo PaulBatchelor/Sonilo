@@ -526,9 +526,8 @@ void bits_set(uint32_t *mem, uint32_t off, uint32_t sz, uint32_t w)
     /* TODO: okay if p_a/p_b same? */
     p_a = off / 32; /* start >>= 5 ? */
     p_b = end / 32;
-    w_a = mem[p_a];
-    w_b = mem[p_b];
 
+    w_a = mem[p_a];
     /* write n_a bits to W_a, starting at offset i_a */
     i_a = off - p_a*32;
     /* calculate end position in relative bits */
@@ -541,6 +540,11 @@ void bits_set(uint32_t *mem, uint32_t off, uint32_t sz, uint32_t w)
     mask = (1 << n_a) - 1;
     w_a &= ~(mask << i_a);
     w_a |= (w & mask) << i_a;
+    mem[p_a] = w_a;
+
+    /* always read after writing previous word in case
+     * they are the same address */
+    w_b = mem[p_b];
 
     /* write n_b bits to W_b */
     n_b = sz - n_a;
@@ -550,8 +554,6 @@ void bits_set(uint32_t *mem, uint32_t off, uint32_t sz, uint32_t w)
     w_b &= ~mask;
     w_b |= (w >> n_a) & mask;
 
-    /* update words in memory */
-    mem[p_a] = w_a;
     mem[p_b] = w_b;
 }
 

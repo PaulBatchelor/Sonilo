@@ -314,4 +314,6 @@ number of bits to write (in the case C is 12 bits). The
 remaining 4 nibbles contain the data, left-padded with
 zeros.
 @c TODO. read the bits written, print the word. expect 'ABC'.
-@m sp #016.C xr pr
+@m sp #016.C xr pw
+@c make sure it's possible to read/write a single bit
+@m #000.1.0001 xw #000.1 xr sp pr
