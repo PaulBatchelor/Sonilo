@@ -503,9 +503,99 @@ void mem_free(uint32_t *mem, uint16_t p_top, int L, int k)
 
 void bits_set(uint32_t *mem, uint32_t off, uint32_t sz, uint32_t w)
 {
+    /* start/end bounds, in units of bits */
+    uint32_t end;
+    /* p: word pointer addresses */
+    uint32_t p_a, p_b;
+    /* w: temp variables for words */
+    uint32_t w_a, w_b;
+    /* i: bit offsets to write to */
+    uint32_t i_a;
+    /* n: number of bits to write for each word */
+    uint32_t n_a, n_b;
+    uint32_t mask;
+
+    /* compute end addr */
+    end = off + sz;
+
+    /* word size is max */
+    if (sz > 32) sz = 32;
+
+
+    /* determine word bounds */
+    /* TODO: okay if p_a/p_b same? */
+    p_a = off / 32; /* start >>= 5 ? */
+    p_b = end / 32;
+    w_a = mem[p_a];
+    w_b = mem[p_b];
+
+    /* write n_a bits to W_a, starting at offset i_a */
+    i_a = off - p_a*32;
+    /* calculate end position in relative bits */
+    n_a = i_a + sz;
+    /* truncate end position to word size (32) if needed */
+    n_a = n_a < 32 ? n_a : 32;
+    /* compute difference from start and end bounds */
+    n_a = n_a - i_a;
+
+    mask = (1 << n_a) - 1;
+    w_a &= ~(mask << i_a);
+    w_a |= (w & mask) << i_a;
+
+    /* write n_b bits to W_b */
+    n_b = sz - n_a;
+    mask = (1 << n_b) - 1;
+
+    /* always in lower "spillover" bits */
+    w_b &= ~mask;
+    w_b |= (w >> n_a) & mask;
+
+    /* update words in memory */
+    mem[p_a] = w_a;
+    mem[p_b] = w_b;
 }
 
 uint32_t bits_get(uint32_t *mem, uint32_t off, uint32_t sz)
 {
-    return 0;
+    uint32_t out;
+    /* start/end bounds, in units of bits */
+    uint32_t end;
+    /* p: word pointer addresses */
+    uint32_t p_a, p_b;
+    /* w: temp variables for words */
+    uint32_t w_a, w_b;
+    /* i: bit offsets to write to */
+    uint32_t i_a;
+    /* n: number of bits to write for each word */
+    uint32_t n_a, n_b;
+    uint32_t mask;
+
+    out = 0;
+
+    /* compute end addr */
+    end = off + sz;
+
+    /* determine word bounds */
+    p_a = off / 32;
+    p_b = end / 32;
+    i_a = off - p_a*32;
+
+    w_a = mem[p_a];
+    w_b = mem[p_b];
+
+    n_a = i_a + sz;
+    n_a = (n_a < 32) ? n_a : 32;
+    n_a = n_a - i_a;
+
+    /* append n_b bits from W_b region to output */
+    n_b = sz - n_a;
+    mask = (1 << n_b) - 1;
+    out = w_b & mask;
+
+    /* append n_a bits from W_a[i_a : i_a + n_a] to output */
+    mask = (1 << n_a) - 1;
+    out <<= n_a;
+    out |= (w_a >> i_a) & mask;
+
+    return out;
 }
