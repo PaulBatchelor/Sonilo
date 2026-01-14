@@ -8,14 +8,14 @@ test_pr_abcd: abcd
 test_label: testing 123
 test_rw: abcd1234
 test_blocklist:
-400
-3ff
-3fe
-3fd
-3fe
-3fc
-3ff
-3fb
+1
+2
+3
+4
+4
+5
+1
+6
 test_bitset:
 1
 0
@@ -35,5 +35,5 @@ test_mem_alloc: 0 4 7609209
 test_mem_alloc_fail: ffffffff 1 7609209
 test_mem_alloc_2: 10 5608209
 test_mem_free: 8040000
-test_zp: 400 400 10
+test_zp: 1 440 10
 test_bits: abc 1

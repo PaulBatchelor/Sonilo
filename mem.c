@@ -143,80 +143,69 @@ static uint32_t* get_word(uint32_t *mem, uint16_t p_top, int p)
     else return &avail[p - 64];
 }
 
+/* 10-bit array routines */
+static void a10set(uint32_t *mem, int a, int i, int x)
+{
+    bits_set(mem, (a << 5) + 10*i, 10, x);
+}
+
+static int a10get(uint32_t *mem, int a, int i)
+{
+    return bits_get(mem, (a << 5) + 10*i, 10);
+}
+
 void blocklist_init(uint32_t *mem, uint16_t list)
 {
-    uint32_t *lp;
-    uint16_t head;
     int i;
-    lp = &mem[list];
-
+    int head;
     head = 0;
 
-    for (i = 0; i < 1024; i++) {
-        uint16_t node_addr;
-        node_addr = list + i + 1;
-        lp[node_addr] = head;
-        head = node_addr;
+    for (i = 1023; i >= 1; i--) {
+        a10set(mem, list, i, head);
+        head = i;
     }
 
-    lp[0] = head;
-
-    /* TODO: first 16 blocks should be removed from list,
-     * as they contain the data for the block list */
+    a10set(mem, list, 0, head);
 }
 
 uint16_t blocklist_pop(uint32_t *mem, uint16_t list)
 {
-    uint32_t *lp;
-    uint16_t head;
-    uint16_t block;
-    lp = &mem[list];
+    int head;
+    int block;
 
-    head = lp[0];
+    head = a10get(mem, list, 0);
     block = 0;
 
-    if (head > 0) {
-        uint16_t prev;
-        prev = head;
+    if (head == 0) return 0;
 
-        /* head = node.next */
-        head = lp[head];
-
-        /* update new head */
-        lp[0] = head;
-
-        /* prev.next = null */
-        lp[prev] = 0;
-
-        /* compute block number based on offset from head of list */
-        block = prev - list;
-    }
-
+    block = head;
+    head = a10get(mem, list, head);
+    a10set(mem, list, 0, head);
+    /* mark the block as popped by pointing to itself */
+    a10set(mem, list, block, block);
 
     return block;
 }
 
-void blocklist_push(uint32_t *mem, uint16_t list, uint16_t block)
+int blocklist_push(uint32_t *mem, uint16_t list, uint16_t block)
 {
-    uint16_t node_addr;
-    uint16_t head;
-    uint32_t *lp;
+    int head;
 
-    lp = &mem[list];
+    /* bounds checking */
+    if (block <= 0 || block >= 1024) return 1;
 
-    /* get node address as memory offset based on block */
-    node_addr = list + block;
+    head = a10get(mem, list, 0);
 
-    head = lp[0];
+    /* make sure block has been marked as popped */
+    if (a10get(mem, list, block) != block) return 2;
 
-    /* node.next = head */
-    lp[node_addr] = head;
-
-    /* head = node */
-    head = node_addr;
+    /* block.next = head */
+    a10set(mem, list, block, head);
 
     /* update head */
-    lp[0] = head;
+    a10set(mem, list, 0, block);
+
+    return 0;
 }
 
 /* bitset: 1024 bitmap used for cache */

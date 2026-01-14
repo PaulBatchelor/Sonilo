@@ -49,9 +49,9 @@ will be written to address 0 before jumping back and printing.
 and print their block IDs.
 @m bapr bapr bapr bapr
 @c free one of the blocks, then allocate two more blocks
-@m 3FE bf bapr bapr
+@m #4 bf bapr bapr
 @c free another block (out of order), then allocate two more blocks
-@m 3FF bf bapr bapr
+@m #1 bf bapr bapr
 @l test_bitset:
 @p
 @c

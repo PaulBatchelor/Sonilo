@@ -164,13 +164,14 @@ void parse_memwrite(memwrite *mw, char c)
     /* ba: allocate block, write block id to word register */
     if (iscmd(mw, c, "ba")) {
         mw->rw = blocklist_pop(mw->mem, mw->cursor);
+        if (mw->rw == 0) mw->err = 1;
         mw->prev = 0;
         return;
     }
 
     /* bf: free block, read block id from register word */
     if (iscmd(mw, c, "bf")) {
-        blocklist_push(mw->mem, mw->cursor, mw->rw & 0x3ff);
+        mw->err = blocklist_push(mw->mem, mw->cursor, mw->rw & 0x3ff);
         mw->prev = 0;
         return;
     }
@@ -500,6 +501,12 @@ void parse_memwrite(memwrite *mw, char c)
         mw->rw = bits_get(mw->mem, (mw->cursor << 4) + off, sz);
 
         return;
+    }
+
+    /* nl: print newline */
+    if (iscmd(mw, c, "nl")) {
+        printf("\n");
+        mw->prev = 0;
     }
 
     mw->prev = c;

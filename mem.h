@@ -1,6 +1,6 @@
 void blocklist_init(uint32_t *mem, uint16_t list);
 uint16_t blocklist_pop(uint32_t *mem, uint16_t list);
-void blocklist_push(uint32_t *mem, uint16_t list, uint16_t block);
+int blocklist_push(uint32_t *mem, uint16_t list, uint16_t block);
 void bitset_add(uint32_t *mem, uint16_t bm, uint16_t val);
 void bitset_remove(uint32_t *mem, uint16_t bm, uint16_t val);
 int bitset_exists(uint32_t *mem, uint16_t bm, uint16_t val);
