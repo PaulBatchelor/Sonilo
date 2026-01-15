@@ -583,6 +583,14 @@ void parse_memwrite(memwrite *mw, char c)
 
         return;
     }
+    
+    /* sn: number of elements in bitset */
+    if (iscmd(mw, c, "sn")) {
+        mw->prev = 0;
+
+        mw->rw = bitset_len(mw->mem, mw->cursor);
+        return;
+    }
 
     mw->prev = c;
 }

@@ -5,6 +5,7 @@ void bitset_add(uint32_t *mem, uint16_t bm, uint16_t val);
 void bitset_remove(uint32_t *mem, uint16_t bm, uint16_t val);
 int bitset_exists(uint32_t *mem, uint16_t bm, uint16_t val);
 void bitset_init(uint32_t *mem, uint16_t bm);
+int bitset_len(uint32_t *mem, uint16_t bm);
 void mem_init(uint32_t *mem,
               uint16_t p_top,
               uint16_t p_block,

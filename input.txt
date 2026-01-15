@@ -281,11 +281,10 @@ a 16-bit address stored in the word register, and merges
 them together in a 32-bit word (MSB, LSB), or (W, C).
 @m sp #5678go #1234 pa pr
 @c This should print 12345678.
-@c TODO: test_sn.
-"sn" gets number of elements in a bitset.
-@c TODO: test_sn code.
-something like: cl0go si cl1sa cl2sa cl3sa snpr cl2se snpr cl1sa snpr
-should print 3, 2, 2
+@l test_sn:
+@c "sn" gets number of elements in a bitset.
+@m sp #0go si #1sa #2sa #3sa snpwsp #2sr snpwsp #1sa snpr
+@c should print 3, 2, 2
 @c TODO: test_bb.
 "bb" is an extension of "ba", the command for allocating
 a block off the block stack. It will read from the word

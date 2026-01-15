@@ -215,7 +215,7 @@ void bitset_init(uint32_t *mem, uint16_t bm)
 
     /* 1024 bits requires 32 words (half a block) */
     for (i = 0; i < 32; i++) {
-        mem[i] = 0;
+        mem[bm + i] = 0;
     }
 }
 
@@ -260,6 +260,22 @@ int bitset_exists(uint32_t *mem, uint16_t bm, uint16_t val)
     wpos = val / 32;
     bit = val % 32;
     return (mem[bm + wpos] & (1 << bit)) > 0;
+}
+
+int bitset_len(uint32_t *mem, uint16_t bm)
+{
+    uint16_t i, k;
+    int len;
+
+    len = 0;
+
+    for (i = 0; i < 32; i++) {
+        for (k = 0; k < 32; k++) {
+            len += (mem[bm + i] & (1 << k)) > 0;
+        }
+    }
+
+    return len;
 }
 
 void mem_init(uint32_t *mem,
