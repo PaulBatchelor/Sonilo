@@ -268,13 +268,13 @@ and subtracts them from the cursor.
 that happened previously.
 @m sp #3jb rcpwsp #2jb rcpwsp #1jb rcpr
 Addresses should be 3, 1, 0
-@c TODO: test_sc.
-sc, or "switch cursor" tests the cursor functionality.
-@c TODO: test_sc code.
-Switch between two memory locations, print the current
+@l test_sc:
+@c 'sc', or "switch cursor", is used to swap between two cursor
+locations.
+@c Switch between two memory locations, print the current
 location after switching.
-Something like: clA go sc clB go scpr scpr.
-That should print addresses "A" and "B".
+@m sp #A go sc #B go scrcpwsp scrcpwnl
+@c That should print addresses "A" and "B".
 @c TODO: test_aa.
 The "aa" takes 16-bit address stored in the cursor and
 a 16-bit address stored in the word register, and merges

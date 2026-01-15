@@ -41,6 +41,8 @@ typedef struct memwrite {
     char prev;
     /* cursor */
     uint16_t cursor;
+    /* alt cursor */
+    uint16_t alt;
 
     /* memory */
     uint32_t mem[0x10000];
@@ -56,6 +58,7 @@ void memwrite_init(memwrite *mw)
     mw->prev = 0;
     for (i = 0; i < 0x10000; i++) mw->mem[i] = 0;
     mw->err = 0;
+    mw->alt = 0;
 }
 
 static uint32_t reverse_nibbles(uint32_t w)
@@ -301,7 +304,6 @@ void parse_memwrite(memwrite *mw, char c)
     /* pw: print word */
     if (iscmd(mw, c, "pw")) {
         printf("%x", mw->rw);
-        fflush(stdout);
         mw->prev = 0;
         return;
     }
@@ -503,6 +505,7 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* nl: print newline */
     if (iscmd(mw, c, "nl")) {
+        mw->prev = 0;
         printf("\n");
         return;
     }
@@ -510,6 +513,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* bm: block to memory address */
     if (iscmd(mw, c, "bm")) {
         uint32_t blk;
+        mw->prev = 0;
         blk = mw->rw << 6;
         /* skip the blockstack address space */
         if (blk >= mw->cursor) {
@@ -520,7 +524,6 @@ void parse_memwrite(memwrite *mw, char c)
             blk += 5 << 6;
         }
         mw->rw = blk;
-        mw->prev = 0;
         return;
     }
 
@@ -555,6 +558,16 @@ void parse_memwrite(memwrite *mw, char c)
         jump = mw->rw & 0xFF;
         mw->rw >>= 8;
         mw->cursor -= jump;
+        return;
+    }
+
+    /* sc: swap cursor */
+    if (iscmd(mw, c, "sc")) {
+        uint16_t tmp;
+        mw->prev = 0;
+        tmp = mw->cursor;
+        mw->cursor = mw->alt;
+        mw->alt = tmp;
         return;
     }
 
