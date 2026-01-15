@@ -317,3 +317,24 @@ zeros.
 @m sp #016.C xr pw
 @c make sure it's possible to read/write a single bit
 @m #000.1.0001 xw #000.1 xr sp pr
+@l test_bm_mb:
+@c a blocklist returns a 10-bit integer value representing
+a particular block. in order to read/write data from the block,
+it needs to be mapped to a particular memory address.
+@c the 'bm' and 'mb' utilities employ a simple memory mapping
+strategy to convert block numbers to memory and vice versa.
+To convert a block to a memory address: multiply by 64, and skip
+the chunk of memory associated with the blockstack.
+@c The conversion utilities assume the cursor location is
+the start of the block stack. So, if the blocklist started
+at location 320 (140 hex), block ids 1-4 would map (1-4)*64, everything else
+adds a bias before multiplying by 64 to skip the blocklist itself, so
+block ids 5-8 would need to add a 5 block bias to their output
+(+320, +140 in hex) to yield 1cc, 20c, 24c, 28c.
+The hex values would be 280, 2c0, 300, and 340.
+@m sp #140 go #1bmpwsp #2bmpwsp #3bmpwsp #4bmpwsp
+#5bmpwsp #6bmpwsp #7bmpwsp #8bmpwnl
+@c converting back is the reverse process. memory values will
+truncate down to the nearest block.
+Convert a few values back to block IDs to test this truncation
+@m #40mbpwsp #45mbpwsp #C1mbpwsp #280mbpwsp #282mbpwnl

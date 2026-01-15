@@ -506,7 +506,38 @@ void parse_memwrite(memwrite *mw, char c)
     /* nl: print newline */
     if (iscmd(mw, c, "nl")) {
         printf("\n");
+        return;
+    }
+
+    /* bm: block to memory address */
+    if (iscmd(mw, c, "bm")) {
+        uint32_t blk;
+        blk = mw->rw << 6;
+        /* skip the blockstack address space */
+        if (blk >= mw->cursor) {
+            /* blockstack =
+             * 10 bits/number * 1024 numbers /
+             * (32 bits/word * 64 words/block) =
+             * 5 blocks */
+            blk += 5 << 6;
+        }
+        mw->rw = blk;
         mw->prev = 0;
+        return;
+    }
+
+    /* mb: memory address to block */
+    if (iscmd(mw, c, "mb")) {
+        uint32_t m;
+        mw->prev = 0;
+        m = mw->rw;
+        /* remove bias */
+        if (m >= mw->cursor) {
+            m -= (5 << 6);
+        }
+        m >>= 6;
+        mw->rw = m;
+        return;
     }
 
     mw->prev = c;

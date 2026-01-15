@@ -30,3 +30,5 @@ bo:extract block offset from a word address
 ad:add two numbers from the stack, write to word register
 xr: read bits. offset + cursor, size xxx.y
 xw: write bits. offset + cursor, size, data. xxx.y.zzzz
+bm: TODO. convert an index from a blocklist to memory address. blocklist should be at cursor
+mb: TODO. convert a memory address to a blocklist index. blocklist should be at cursor.
