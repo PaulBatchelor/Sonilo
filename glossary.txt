@@ -28,7 +28,9 @@ bw:convert block.offset #BBB00 notation into a word address
 rc:read cursor into word register
 bo:extract block offset from a word address
 ad:add two numbers from the stack, write to word register
-xr: read bits. offset + cursor, size xxx.y
-xw: write bits. offset + cursor, size, data. xxx.y.zzzz
-bm: TODO. convert an index from a blocklist to memory address. blocklist should be at cursor
-mb: TODO. convert a memory address to a blocklist index. blocklist should be at cursor.
+xr:read bits. offset + cursor, size xxx.y
+xw:write bits. offset + cursor, size, data. xxx.y.zzzz
+bm:convert an index from a blocklist to memory address. blocklist should be at cursor
+mb:convert a memory address to a blocklist index. blocklist should be at cursor.
+jf:jump forward. read the last 2 nibbles off the word, and add it to the cursor.
+jb:TODO. jump backward. read last 2 nibbles, subtract it from cursor.

@@ -537,6 +537,15 @@ void parse_memwrite(memwrite *mw, char c)
         mw->rw = m;
         return;
     }
+    /* mb: memory address to block */
+    if (iscmd(mw, c, "jf")) {
+        int jump;
+        mw->prev = 0;
+        jump = mw->rw & 0xFF;
+        mw->rw >>= 8;
+        mw->cursor += jump;
+        return;
+    }
 
     mw->prev = c;
 }
