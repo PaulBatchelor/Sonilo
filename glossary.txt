@@ -33,4 +33,4 @@ xw:write bits. offset + cursor, size, data. xxx.y.zzzz
 bm:convert an index from a blocklist to memory address. blocklist should be at cursor
 mb:convert a memory address to a blocklist index. blocklist should be at cursor.
 jf:jump forward. read the last 2 nibbles off the word, and add it to the cursor.
-jb:TODO. jump backward. read last 2 nibbles, subtract it from cursor.
+jb:jump backward. read last 2 nibbles, subtract it from cursor.

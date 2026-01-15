@@ -253,7 +253,7 @@ supposedly 0x1.
 @l test_jf:
 @c jf will jump forward some amount.
 @c the test should do some jumps and print
-addresses. something like: $0go $1jf rcpr $2jf rcpr $3jf rcpr.
+addresses.
 Addresses printed should be 1, 3, 6.
 @m sp #0go #1jf rcpwsp #2jf #rcpwsp #3jf rcpwsp
 @c also make sure the popping behavior works as
@@ -261,9 +261,12 @@ expected. if a register has a constant '65432100',
 the jf command should go nowhere, and be able to print
 the word '654321', and the location should be the same (6).
 @m #65432100 jf pwsp rcpw nl
-@c TODO: test_jb. Jump back. A mirror of jf.
-@c TODO: code. mirror jf that just happened.
-#3jb rcpr #2jb rcpr #1jb rcpr
+@l test_jb:
+@c 'jb' pops the last 2 nibbles off the register word,
+and subtracts them from the cursor.
+@c the code below is a mirror image of the jf test
+that happened previously.
+@m sp #3jb rcpwsp #2jb rcpwsp #1jb rcpr
 Addresses should be 3, 1, 0
 @c TODO: test_sc.
 sc, or "switch cursor" tests the cursor functionality.
