@@ -242,6 +242,7 @@ void parse_memwrite(memwrite *mw, char c)
     }
 
     /* gb: goto block */
+    /* TODO: replace with bm go */
     if (iscmd(mw, c, "gb")) {
         /* multiply by 64 to get word address,
          * then add an offset to skip the block list
@@ -441,9 +442,6 @@ void parse_memwrite(memwrite *mw, char c)
         mw->prev = 0;
         /* get zero page address from rw register */
         zp = mw->rw;
-
-        /* convert block to word */
-        zp = block_to_word(zp);
 
         /* zero out block */
         for (i = 0; i < 64; i++) {

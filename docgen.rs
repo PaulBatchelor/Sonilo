@@ -1,7 +1,5 @@
 use std::io;
 use std::fs;
-use std::collections::{BTreeMap, HashMap, BTreeSet};
-use std::error::Error;
 
 #[derive(PartialEq)]
 enum ParserMode {
@@ -27,7 +25,8 @@ fn main() -> io::Result<()> {
 
     mode = ParserMode::PRINT;
 
-    for c in data {
+    for i in 0..=data.len() {
+        let c = if i == data.len() { b' ' } else { data[i] };
         if matches!(mode, ParserMode::UPDATE) {
             if c == b'l' {
                 mode = ParserMode::LABEL;
@@ -42,21 +41,22 @@ fn main() -> io::Result<()> {
             continue
         }
 
-        // TODO: check for terminal character?
-        if c == b'@' {
+        if c == b'@' || i == data.len() {
             let str = match String::from_utf8(buf.clone()) {
                 Ok(s) => s,
                 Err(_) => panic!("oops could not decode"),
             };
-            let str = str.trim().to_string().replace("_", "\\_").replace("#", "\\#");
             match mode {
                 ParserMode::LABEL => {
+                    let str = str.trim().to_string().replace("_", "\\_").replace("#", "\\#");
                     obj.push(Object::Label(str));
                 },
                 ParserMode::COMMENT => {
+                    let str = str.trim().to_string().replace("_", "\\_").replace("#", "\\#");
                     obj.push(Object::Comment(str));
                 },
                 ParserMode::MEMWRITE => {
+                    let str = str.trim().to_string().replace("_", "\\_").replace("#", "\\#").replace("\n", "\\smallskip\n");
                     obj.push(Object::Code(str));
                 }
                 _ => {},
@@ -79,9 +79,6 @@ fn main() -> io::Result<()> {
             },
         };
     }
-
-    // TODO: process remaining things in buffer, or add
-    // some kind of terminal code in loop above
 
     for o in obj {
         match o {

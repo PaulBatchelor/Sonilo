@@ -243,15 +243,13 @@ set word slot 0 to be the address of the block stack.
 @c This procedure will initialize a block list in
 address 0x10, allocate a block, and then initialize
 it to be a zero page. The expected address of the
-zero page is block address 0x400 converted to a word address, and this is
+zero page is block address 1 converted to a word address, and this is
 the second item printed. The third item printed is
 the first slot in the zero page, which should be
 the address of the block list, 0x10.
 The first item printed will be the actual block address,
-supposedly 0x400.
-Zero page will take in a block address returned by 'ba',
-and turn it into a word address, and return that value.
-@m #10 go bi ba sppw zp sppw go rd sppr
+supposedly 0x1.
+@m #10 go bi ba sppw bm zp sppw go rd sppr
 @c TODO: test_jf.
 @c jf will jump forward some amount.
 @c TODO: code. the test should do some jumps and print
