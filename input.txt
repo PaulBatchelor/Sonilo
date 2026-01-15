@@ -275,13 +275,12 @@ locations.
 location after switching.
 @m sp #A go sc #B go scrcpwsp scrcpwnl
 @c That should print addresses "A" and "B".
-@c TODO: test_aa.
-The "aa" takes 16-bit address stored in the cursor and
+@l test_pa:
+@c The "pa" command takes a 16-bit address stored in the cursor and
 a 16-bit address stored in the word register, and merges
 them together in a 32-bit word (MSB, LSB), or (W, C).
-@c TODO: test_aa code.
-Should look something like: cl5678go cl1234 aa pr.
-This should print 12345678.
+@m sp #5678go #1234 pa pr
+@c This should print 12345678.
 @c TODO: test_sn.
 "sn" gets number of elements in a bitset.
 @c TODO: test_sn code.

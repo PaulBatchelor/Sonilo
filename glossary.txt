@@ -35,3 +35,4 @@ mb:convert a memory address to a blocklist index. blocklist should be at cursor.
 jf:jump forward. read the last 2 nibbles off the word, and add it to the cursor.
 jb:jump backward. read last 2 nibbles, subtract it from cursor.
 sc:swap cursor.
+pa:pack address. the LSB of rw and cursor get turned into (MSB,LSB)=(W,C)

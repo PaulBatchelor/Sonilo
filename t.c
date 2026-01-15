@@ -571,6 +571,19 @@ void parse_memwrite(memwrite *mw, char c)
         return;
     }
 
+    /* pa: pack addresses */
+    if (iscmd(mw, c, "pa")) {
+        uint16_t lsb, msb;
+
+        mw->prev = 0;
+        lsb = mw->cursor;
+        msb = mw->rw & 0xFFFF;
+
+        mw->rw = (msb << 16) | lsb;
+
+        return;
+    }
+
     mw->prev = c;
 }
 
