@@ -285,18 +285,17 @@ them together in a 32-bit word (MSB, LSB), or (W, C).
 @c "sn" gets number of elements in a bitset.
 @m sp #0go si #1sa #2sa #3sa snpwsp #2sr snpwsp #1sa snpr
 @c should print 3, 2, 2
-@c TODO: test_bb.
-"bb" is an extension of "ba", the command for allocating
+@l test_bb:
+@c "bb" is an extension of "ba", the command for allocating
 a block off the block stack. It will read from the word
 register a packed word containing a bitset and a blockstack,
 allocate a block, mark that block in the set, and return
 the address (overwriting the args supplied).
-@c TODO: test_bb code.
-Writing a test for this is a bit more involved than previous
+@c Writing a test for this is a bit more involved than previous
 tests because it requires both setting up a bitset and a blockstack,
 and merging those addresses together.
-@c this ought to do it: cl0go bi ba sc go bi rc sc aa bb sc snpr
-@c we're using the two cursor addresses to store the block stack and
+@m sp #0go bi ba sc go si rc sc pa bb sc snpr
+@c The two cursor addresses are used to store the block stack and
 the bitset. Allocating a new block should add it to the register.
 Counting the number of items in the set "sn" should yield a count of 1.
 @c global bit array. The entire memory space can be treated as one big addressable

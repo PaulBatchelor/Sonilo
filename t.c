@@ -324,7 +324,6 @@ void parse_memwrite(memwrite *mw, char c)
         return;
     }
 
-
     /* sp: display space character */
     if (iscmd(mw, c, "sp")) {
         putchar(' ');
@@ -589,6 +588,29 @@ void parse_memwrite(memwrite *mw, char c)
         mw->prev = 0;
 
         mw->rw = bitset_len(mw->mem, mw->cursor);
+        return;
+    }
+
+    /* bb: allocate and mark */
+    if (iscmd(mw, c, "bb")) {
+        uint16_t lsb, msb;
+        int blk;
+
+        mw->prev = 0;
+        lsb = mw->rw & 0xFFFF;
+        msb = mw->rw >> 16;
+
+        blk = blocklist_pop(mw->mem, lsb);
+
+        if (blk <= 0) {
+            mw->err = 1;
+            return;
+        }
+
+        bitset_add(mw->mem, msb, blk);
+
+        mw->rw = blk;
+
         return;
     }
 
