@@ -36,4 +36,7 @@ jf:jump forward. read the last 2 nibbles off the word, and add it to the cursor.
 jb:jump backward. read last 2 nibbles, subtract it from cursor.
 sc:swap cursor.
 pa:pack address. the LSB of rw and cursor get turned into (MSB,LSB)=(W,C)
-bb: allocate and mark. RW should be SSSS.BBBB where S is bitset and B is blockstack.
+bb:allocate and mark. RW should be SSSS.BBBB where S is bitset and B is blockstack.
+sm:TODO. make slot from block. args: block addr, blocklist addr
+sx:TODO. extend slots. pushes slot id onto stack
+ss:TODO. select slot.

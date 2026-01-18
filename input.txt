@@ -222,6 +222,38 @@ to as a "slot". 4 words are a left over. These will be used to construct
 a TOP struct that can be passed into calls to the buddy memory allocator.
 A slot is selected, and then the addresses of AVAIL, BLOCK, and TAGS will
 be set in the TOP struct before the buddy memory allocator is called.
+@l test_sm:
+@c the 'sm' command means 'slot make', and it is used to initialize
+a block to be used for buddy slots. The command uses a stack, and
+expects both the address of the new block and the global block list
+to be pushed onto the stack.
+@c first, set up the blocklist, zero page, bit set, and stack
+@c set up blocklist, allocate zero page, jump to zero page
+@m #0 go bi babm zp go
+@c read word 0 of zero page, denoted $w_0$. this stores the location
+of the blocklist. set the blocklist to the alternate cursor and
+allocate a new bitset.
+@m rdscgo babmgosi
+@c write address of bitset to zero page
+in position $w_1$.
+Note that the constants do not use the prefix '\#'.
+When the sigil is not used, numbers (4-bit nibbles) are
+appended to the rw register like a stack. the 'jf' and 'jb'
+commands 'pop' the last 2 nibbles off the stack and read them
+like an 8-bit number, leaving the rest of the data in the word
+untouched.
+@m sc 01jfwr01jb
+@c set the blocklist ($w_0$) to be cursor, and load
+the address of the bitset $w_1$ into the rw register.
+Merge these two together. The RW register should now be SSSS.BBBB
+@m rdscgo sc 01jfrd01jb sc pa
+@c update $w_0$ to include this bitset
+@m sc wr
+@c allocate and mark a new block, make it a stack, save it to $w_1$.
+@m rdscgo bbbmgo ai sc 01jfwr01jb
+@c select the stack, and print the address
+@m 01jfrd01jb scgo sppr
+@c TODO. set up args for 'sm'
 @c TODO. unit test setup. the process of setting up the allocator
 is a bit vague in my head right now, though I did write some
 things down a few days ago.
