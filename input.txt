@@ -236,7 +236,7 @@ allocate a new bitset.
 @m rdscgo babmgosi
 @c write address of bitset to zero page
 in position $w_1$.
-Note that the constants do not use the prefix '\#'.
+Note that the constants do not use the prefix '#'.
 When the sigil is not used, numbers (4-bit nibbles) are
 appended to the rw register like a stack. the 'jf' and 'jb'
 commands 'pop' the last 2 nibbles off the stack and read them
