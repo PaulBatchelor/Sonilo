@@ -40,3 +40,4 @@ bb:allocate and mark. RW should be SSSS.BBBB where S is bitset and B is blocksta
 sm:TODO. make slot from block. args: block addr, blocklist addr
 sx:TODO. extend slots. pushes slot id onto stack
 ss:TODO. select slot.
+ex:execute command. DDDD.CCCC where D is data, C is command code.

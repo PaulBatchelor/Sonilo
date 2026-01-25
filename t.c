@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "mem.h"
+#include "ins.h"
 
 #define BLOCKLIST_OFFSET 0x400
 
@@ -49,7 +50,18 @@ typedef struct memwrite {
 
     /* errors */
     uint32_t err;
+
+    /* instruction command lookup */
+    instr_map instr;
+
+    /* 5-bit encoding mode */
+    int encode;
 } memwrite;
+
+static uint32_t incr(uint32_t *mem, uint16_t dat)
+{
+    return dat + 1;
+}
 
 void memwrite_init(memwrite *mw)
 {
@@ -59,6 +71,9 @@ void memwrite_init(memwrite *mw)
     for (i = 0; i < 0x10000; i++) mw->mem[i] = 0;
     mw->err = 0;
     mw->alt = 0;
+    instr_map_init(&mw->instr);
+    instr_map_set(&mw->instr, instr_key("INC"), incr);
+    mw->encode = 0;
 }
 
 static uint32_t reverse_nibbles(uint32_t w)
@@ -90,6 +105,29 @@ void parse_memwrite(memwrite *mw, char c)
 #ifdef DEBUG
         fputc(c, stdout);
 #endif
+    /* handle 5-bit encoding mode */
+    if (mw->encode) {
+        int b;
+        if (c == '\'') {
+            mw->encode = 0;
+            /* shift 1-bit. assuming 3-characters, will make
+             * it align to 16 bits */
+            mw->rw <<= 1;
+            return;
+        }
+        b = instr_char_sym(c);
+        if (b < 0) return;
+        mw->rw <<= 5;
+        mw->rw |= b;
+
+        return;
+    }
+
+    if (c == '\'') {
+        mw->encode = 1;
+        return;
+    }
+
     /* process nibbles */
     if (c >= '0' && c <= '9') {
         uint8_t x;
@@ -613,6 +651,20 @@ void parse_memwrite(memwrite *mw, char c)
 
         return;
     }
+
+    if (iscmd(mw, c, "ex")) {
+        uint16_t cmd, dat;
+        instr_func f;
+
+        mw->prev = 0;
+        cmd = mw->rw & 0xFFFF;
+        dat = mw->rw >> 16;
+        f = instr_map_get(&mw->instr, cmd);
+        if (f != NULL) mw->rw = f(mw->mem, dat);
+
+        return;
+    }
+
 
     mw->prev = c;
 }

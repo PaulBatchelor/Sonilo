@@ -17,3 +17,4 @@ void instr_map_set(instr_map *map, uint16_t key, instr_func func);
 instr_func instr_map_get(instr_map *map, uint16_t key);
 int instr_char_sym(char c);
 int instr_sym_char(int sym);
+uint16_t instr_key(const char *str);

@@ -374,3 +374,15 @@ The hex values would be 280, 2c0, 300, and 340.
 truncate down to the nearest block.
 Convert a few values back to block IDs to test this truncation
 @m #40mbpwsp #45mbpwsp #C1mbpwsp #280mbpwsp #282mbpwnl
+@l test_ex:
+@c execute an instruction encoded in the word register.
+The instruction is encoded DDDD.CCCC where 'D' is the
+data passed into the instruction and 'C' is the command
+code used to call the command. Command codes are encoded
+using a 5-bit string allowing 3-letter characters. For
+this test harness, a test command called {\tt INC}
+will take in the data, increment the number by 1, and
+return that number.
+@c the test sets this up, passing in {\tt 1234}, and printing
+the result, which is edpected to be {\tt 0x1235}.
+@m sp #1234 'INC' ex pr

@@ -68,3 +68,21 @@ int instr_sym_char(int sym)
     if (sym < 0 || sym >= 32) return -1;
     return lookup[sym];
 }
+
+uint16_t instr_key(const char *str)
+{
+    int i;
+    uint16_t k;
+
+    k = 0;
+    for (i = 0; i < 3; i++) {
+        int b;
+        b = instr_char_sym(str[i]);
+        if (b < 0) continue;
+        k <<= 5;
+        k |= b;
+    }
+
+    /* shift the last bit to make it fit into 16 bits */
+    return k << 1;
+}
