@@ -51,3 +51,20 @@ instr_func instr_map_get(instr_map *map, uint16_t key)
 
     return NULL;
 }
+
+/* convert ASCII character into 5-bit encoding scheme */
+int instr_char_sym(char c)
+{
+    /* case insensitive a-zA-Z mapping */
+    if (c >= 'A' && c <= 'Z') return c - 'A';
+    if (c >= 'a' && c <= 'z') return c - 'a';
+    return -1;
+}
+
+/* convert symbol into ascii character */
+static const char *lookup = "ABCDEFGHIJKLMNOPQRSTUVWXYZ!*+-/=";
+int instr_sym_char(int sym)
+{
+    if (sym < 0 || sym >= 32) return -1;
+    return lookup[sym];
+}
