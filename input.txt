@@ -386,3 +386,36 @@ return that number.
 @c the test sets this up, passing in {\tt 1234}, and printing
 the result, which is edpected to be {\tt 0x1235}.
 @m sp #1234 'INC' ex pr
+@l test_bx:
+@c The {\tt bx} command is used to execute a block of commands.
+@c A block will utilize the already established block-array
+data structure.
+@c the test below is inspired by the konami code: up, up, down,
+down, left, left, right, right, A, B.
+@c The commands will be as follows: MVU, MVD, MVL, MVR, APR, BPR, SAY.
+All will manipulate items on a stack, which will be the argument
+passed into the data portion of their command.
+@c first, set up the stack and the blocks to be at the two cursors. Those
+will be at addresses 0 (stack) and 40 (array)
+@m #0 go ai sc #40 go ai sc
+@c Appending an instruction. Copy stack address to register,
+write instruction code, switch to array cursor, append word (instruction)
+to array.
+@m rc 'MVU' sc aa sc
+@c Do the same for the rest of the konami code. The 'SAY' command will
+be used to print the current word to verify things are working correctly.
+@m rc'MVU'scaasc rc'SAY'scaasc
+@m rc'MVD'scaasc rc'MVD'scaasc
+@m rc'MVL'scaasc rc'SAY'scaasc rc'MVL'scaasc
+@m rc'MVR'scaasc rc'MVR'scaasc rc'SAY'scaasc
+@m rc'PRA'scaasc rc'SAY'scaasc
+@m rc'PRB'scaasc rc'SAY'scaasc
+@c print the length of the array.
+@m sp scalpw
+@c with any luck, 15 (F) items should be appended
+@c Run the block of code with 'bx'
+A value of '6' is pushed onto the stack. The program
+operates with that as the starting value.
+@c at the end, print the number of elements remaining
+on the stack, which should be 1.
+@m sp sc #6 aa sc bx sc al pw nl

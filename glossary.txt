@@ -41,3 +41,4 @@ sm:TODO. make slot from block. args: block addr, blocklist addr
 sx:TODO. extend slots. pushes slot id onto stack
 ss:TODO. select slot.
 ex:execute command. DDDD.CCCC where D is data, C is command code.
+bx:execute a block of commands, stored as an array of words.

@@ -8,6 +8,8 @@
 
 static volatile int running = 0;
 
+static uint32_t reverse_nibbles(uint32_t w);
+
 enum {
     PRINT,
     COMMENT,
@@ -63,6 +65,100 @@ static uint32_t incr(uint32_t *mem, uint16_t dat)
     return dat + 1;
 }
 
+static uint32_t say(uint32_t *mem, uint16_t dat)
+{
+    uint32_t *stk;
+    uint32_t p;
+    stk = &mem[dat];
+    p = stk[0];
+
+    if (p == 0) return 1;
+    printf("%x ", stk[p]);
+    fflush(stdout);
+
+    return 0;
+}
+
+static uint32_t move_up(uint32_t *mem, uint16_t dat)
+{
+    uint32_t *stk;
+    uint32_t p;
+    stk = &mem[dat];
+    p = stk[0];
+
+    if (p == 0) return 1;
+    /* update in place instead of push, add, push */
+    stk[p] += 1;
+
+    return 0;
+}
+
+static uint32_t move_down(uint32_t *mem, uint16_t dat)
+{
+    uint32_t *stk;
+    uint32_t p;
+    stk = &mem[dat];
+    p = stk[0];
+
+    if (p == 0) return 1;
+    /* update in place instead of push, sub, push */
+    stk[p] -= 1;
+
+    return 0;
+}
+
+static uint32_t move_left(uint32_t *mem, uint16_t dat)
+{
+    uint32_t *stk;
+    uint32_t p;
+    stk = &mem[dat];
+    p = stk[0];
+
+    if (p == 0) return 1;
+    stk[p] <<= 1;
+
+    return 0;
+}
+
+static uint32_t move_right(uint32_t *mem, uint16_t dat)
+{
+    uint32_t *stk;
+    uint32_t p;
+    stk = &mem[dat];
+    p = stk[0];
+
+    if (p == 0) return 1;
+    stk[p] >>= 1;
+
+    return 0;
+}
+
+static uint32_t invert(uint32_t *mem, uint16_t dat)
+{
+    uint32_t *stk;
+    uint32_t p;
+    stk = &mem[dat];
+    p = stk[0];
+
+    if (p == 0) return 1;
+    stk[p] = ~stk[p];
+
+    return 0;
+}
+
+static uint32_t reverse(uint32_t *mem, uint16_t dat)
+{
+    uint32_t *stk;
+    uint32_t p;
+    stk = &mem[dat];
+    p = stk[0];
+
+    if (p == 0) return 1;
+    stk[p] = reverse_nibbles(stk[p]);
+
+    return 0;
+}
+
 void memwrite_init(memwrite *mw)
 {
     uint32_t i;
@@ -73,6 +169,13 @@ void memwrite_init(memwrite *mw)
     mw->alt = 0;
     instr_map_init(&mw->instr);
     instr_map_set(&mw->instr, instr_key("INC"), incr);
+    instr_map_set(&mw->instr, instr_key("SAY"), say);
+    instr_map_set(&mw->instr, instr_key("MVU"), move_up);
+    instr_map_set(&mw->instr, instr_key("MVD"), move_down);
+    instr_map_set(&mw->instr, instr_key("MVL"), move_left);
+    instr_map_set(&mw->instr, instr_key("MVR"), move_right);
+    instr_map_set(&mw->instr, instr_key("PRA"), invert);
+    instr_map_set(&mw->instr, instr_key("PRB"), reverse);
     mw->encode = 0;
 }
 
@@ -652,6 +755,7 @@ void parse_memwrite(memwrite *mw, char c)
         return;
     }
 
+    /* ex: execute command */
     if (iscmd(mw, c, "ex")) {
         uint16_t cmd, dat;
         instr_func f;
@@ -661,6 +765,29 @@ void parse_memwrite(memwrite *mw, char c)
         dat = mw->rw >> 16;
         f = instr_map_get(&mw->instr, cmd);
         if (f != NULL) mw->rw = f(mw->mem, dat);
+
+        return;
+    }
+   
+    /* bx: execute block */
+    if (iscmd(mw, c, "bx")) {
+        instr_func f;
+        uint32_t i;
+        uint32_t *blk;
+        uint32_t sz;
+        blk = &mw->mem[mw->cursor];
+        mw->prev = 0;
+        sz = blk[0];
+
+        for (i = 1; i <= sz; i++) {
+            uint16_t cmd, dat;
+            uint32_t instr;
+            instr = blk[i];
+            cmd = instr & 0xFFFF;
+            dat = instr >> 16;
+            f = instr_map_get(&mw->instr, cmd);
+            if (f != NULL) mw->rw = f(mw->mem, dat);
+        }
 
         return;
     }
