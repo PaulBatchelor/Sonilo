@@ -757,6 +757,7 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* ex: execute command */
     if (iscmd(mw, c, "ex")) {
+        /* TODO: wrap this into a function */
         uint16_t cmd, dat;
         instr_func f;
 
@@ -771,6 +772,7 @@ void parse_memwrite(memwrite *mw, char c)
    
     /* bx: execute block */
     if (iscmd(mw, c, "bx")) {
+        /* TODO: wrap this into a function */
         instr_func f;
         uint32_t i;
         uint32_t *blk;
