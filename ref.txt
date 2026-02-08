@@ -50,3 +50,6 @@ test_bx: f 8 c 6 fffffff9 9fffffff 1
 test_rc_add_del: 0 1 1 2 1 1 1 0
 test_rc_find: 1 2 0 ff 3 ff
 test_rc_incr_decr: 1 2 1 2 3
+test_rc_hold_unhold: 0 0 0 0 1 0 3 1 0
+test_rc_sweep: 3 3 3 2 2 0
+test_rc_get: 0 0 40 0 3

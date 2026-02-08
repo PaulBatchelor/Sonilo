@@ -51,6 +51,6 @@ test_bx: f 8 c 6 fffffff9 9fffffff 1
 test_rc_add_del: 0 0 0 0 0 0 0 0
 test_rc_find: 41 42 40 43 43 42
 test_rc_incr_decr: 401 401 401 411 421
-test_rc_hold_unhold:
-test_rc_collect:
-test_rc_get:
+test_rc_hold_unhold: 402 412 422 402 412 422 3 3 3
+test_rc_sweep: 3 3 3 3 3 3
+test_rc_get: 42 401 401 401 3

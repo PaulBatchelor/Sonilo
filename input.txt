@@ -492,8 +492,66 @@ the final total of each: 2 and 3.
 #41.1 rx sppw #42.1 rx sppw
 @p
 @l test_rc_hold_unhold:
+@c hold/unhold. In some situations, it makes more sense to explictly manage
+the lifetime of a particular reference. For this, the "hold" and "unhold"
+operations are used. When hold is called on a particular memory address,
+it will keep it marked as used until is explicitly freed by an "unhold"
+operation.
+@c To begin the test, set up an instance of the RC list, and add
+some memory addresses {\tt 0x40}, {\tt 0x41}, {\tt 0x42}.
+@m #0 go ri #40 ra #41 ra #42 ra
+@c Print the hold flag state of each memory address using
+the {\tt rx} mode 2 utility. This should be 3 0s.
+@m #40.2 rx sppw #41.2 rx sppw #42.2 rx sppw
+@c Mark {\tt 41} as held using {\tt rh}. '0' holds, '1' unholds.
+Print the results again, which should display 0, 1, 0.
+@m #41.0 rh #40.2 rx sppw #41.2 sppw #42.2 sppw
+@c Decrement all 3 addresses and perform a sweep. Printing the
+number of used addresses ({\tt rx} mode 3) should go from 3 to 1.
+@m #40.1 ru #41.1 ru #42.1 ru #3 rx sppw rs #3 rx sppw
+@c unhold {\tt 41}, and perform a sweep again. The active
+addresses should be 0 now.
+@m #41.1 rh rs #3 rx sppw
 @p
-@l test_rc_collect:
+@l test_rc_sweep:
+@c refcount sweep. A sweep action iterates through all active entries in the list,
+and marks any unheld entries with a count of 0 to be unused.
+@c set up the list with addresses {\tt 0x40}, {\tt 0x41}, and {\tt 0x42}.
+@m #0 go ri #40 ra #41 ra #42 ra
+@c The number of active addresses should be 3, both before
+and after the sweep. All the counts shoudl be at 1, so there is
+nothing to free yet.
+@m #3 rx sppw rs #3 rx sppw
+@c decrement {\tt 40}, perform a sweep, print used count before
+and after. it should go from 3 to 2.
+@m #40.1 ru #3 rx sppw rs #3 rx sppw
+@c decrement {\tt 41} and {\tt 42}, perform a sweep. Print used
+count before and after. it should go from 2 to 0.
+@m #41.1 ru #42.1 ru #3 rx sppw rs #3 rx sppw
 @p
 @l test_rc_get:
+@c refcount get. this action retrieves the next available memory
+address that is unused.
+@c The behavior of this might become a little bit unpredictable,
+and maybe not something to be overly concerned about (all that matters
+is that the memory address returned, if there is a one to return,
+is valid and unused, it does not matter which address that is).
+@c to keep things simple: this will only test for situations
+where there is at most one address available.
+@c Set up the RC list again, with some addresses.
+@c note that I'm setting it up in another address, just in case
+it uncovers some weird offset bugs.
+@m #11 go ri #40 ra #41 ra #42 ra
+@c attempt to get a value. It will return 0, an invalid address.
+@m rg sppw
+@c decrement {\tt 0x40}, which will set the count to 0. attempt
+to retrieve it. once again, 0.
+@m #40.1 ru rg sppw
+@c perform a sweep, and then try to retrieve it. the address wil
+be returned.
+@m rs rg sppw
+@c The address will be marked as used again, so, the call to get
+will return 0 once again. The number of used addresses should also
+be 3.
+@m rg sppw #3 rx sppw
 @p

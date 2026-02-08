@@ -49,3 +49,4 @@ rf:TODO. refcount find. finds an entry associated with a memory address, if it e
 rh:TODO. refcount hold/unhold. sets/unsets the hold/unhold flag, associated with a memory address
 rg:TODO. refcount get. gets an available address.
 rx:TODO. refcount aux functions. various things used in testing.
+rs:TODO. refcount sweep. marks any used unhold slots with 0-count as unused.
