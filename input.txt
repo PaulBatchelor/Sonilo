@@ -39,7 +39,7 @@ commands just read from wherever the cursor is?
 and print the results.
 To make sure that read/write/go is working. An additional value
 will be written to address 0 before jumping back and printing.
-@p @m clr 10 go ABCD1234 wr cl 0 go 11111111 wr clr 10 go rd pr
+@p @m cl 10 go ABCD1234 wr cl 0 go 11111111 wr cl 10 go rd pr
 @c some initial blocklist tests
 @l test_blocklist:
 @p
@@ -481,14 +481,14 @@ is the memory.
 @c now, increment the counter. This uses the argument syntax {\tt MM.0} where {\tt MM}
 is the address, and {\tt 0} is the mode to tell it to increment. The full
 address syntax can be {\tt MMMM.0} for a 16-bit memory address.
-@m #40.0 rp #40.1 rx sp pw
+@m #40.0 ru #40.1 rx sp pw
 @c the count should now be 2.
 @c now, to decrement. similar situation, only use the format {\tt MM.1}.
-@m #40.1 rp #40.1 rx sp pw
+@m #40.1 ru #40.1 rx sp pw
 @c the count should now go back to 1.
 @c add a few more addresses, and do some increments/decrements, and print
 the final total of each: 2 and 3.
-@m #41 ra #42 ra #41.0rp #42.0rp #41.0rp #42.0rp #41.1rp
+@m #41 ra #42 ra #41.0ru #42.0ru #41.0ru #42.0ru #41.1ru
 #41.1 rx sppw #42.1 rx sppw
 @p
 @l test_rc_hold_unhold:
@@ -505,7 +505,7 @@ the {\tt rx} mode 2 utility. This should be 3 0s.
 @m #40.2 rx sppw #41.2 rx sppw #42.2 rx sppw
 @c Mark {\tt 41} as held using {\tt rh}. '0' holds, '1' unholds.
 Print the results again, which should display 0, 1, 0.
-@m #41.0 rh #40.2 rx sppw #41.2 sppw #42.2 sppw
+@m #41.0 rh #40.2 rx sppw #41.2 rx sppw #42.2 rx sppw
 @c Decrement all 3 addresses and perform a sweep. Printing the
 number of used addresses ({\tt rx} mode 3) should go from 3 to 1.
 @m #40.1 ru #41.1 ru #42.1 ru #3 rx sppw rs #3 rx sppw

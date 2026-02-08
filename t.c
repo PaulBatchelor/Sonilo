@@ -794,6 +794,108 @@ void parse_memwrite(memwrite *mw, char c)
         return;
     }
 
+    /* ri: initialize rfcnt */
+    if (iscmd(mw, c, "ri")) {
+        mw->prev = 0;
+        rc_init(mw->mem, mw->cursor);
+        return;
+    }
+
+    /* ra: refcnt add */
+    if (iscmd(mw, c, "ra")) {
+        mw->prev = 0;
+        rc_add(mw->mem, mw->cursor, mw->rw);
+        return;
+    }
+
+    /* rm: refcnt remove */
+    if (iscmd(mw, c, "rm")) {
+        mw->prev = 0;
+        rc_del(mw->mem, mw->cursor, mw->rw);
+        return;
+    }
+
+    /* rx: refcnt aux */
+    if (iscmd(mw, c, "rx")) {
+        int mode;
+
+        mw->prev = 0;
+
+        mode = mw->rw & 0xF;
+        mw->rw >>= 4;
+
+        if (mode == 0) {
+            mw->rw = rc_length(mw->mem, mw->cursor);
+            return;
+        } else if (mode == 1) {
+            mw->rw = rc_get_count(mw->mem, mw->cursor, mw->rw);
+            return;
+        } else if (mode == 2) {
+            mw->rw = rc_get_hold(mw->mem, mw->cursor, mw->rw);
+            return;
+        } else if (mode == 3) {
+            mw->rw = rc_get_active(mw->mem, mw->cursor);
+            return;
+        }
+        return;
+    }
+
+    /* rf: refcount find */
+    if (iscmd(mw, c, "rf")) {
+        mw->prev = 0;
+        mw->rw = rc_find(mw->mem, mw->cursor, mw->rw);
+        return;
+    }
+    
+    /* ru: refcount update */
+    if (iscmd(mw, c, "ru")) {
+        int mode;
+
+        mw->prev = 0;
+        mode = mw->rw & 0xF;
+        mw->rw >>= 4;
+
+        if (mode) {
+            /* decrement */
+            mw->rw = rc_decr(mw->mem, mw->cursor, mw->rw);
+        } else {
+            /* increment */
+            mw->rw = rc_incr(mw->mem, mw->cursor, mw->rw);
+        }
+        return;
+    }
+
+    /* rh: refcount hold/unhold */
+    if (iscmd(mw, c, "rh")) {
+        int mode;
+
+        mw->prev = 0;
+        mode = mw->rw & 0xF;
+        mw->rw >>= 4;
+
+        if (mode) {
+            /* unhold */
+            rc_unhold(mw->mem, mw->cursor, mw->rw);
+        } else {
+            /* hold */
+            rc_hold(mw->mem, mw->cursor, mw->rw);
+        }
+        return;
+    }
+
+    /* rs: refcount sweep */
+    if (iscmd(mw, c, "rs")) {
+        mw->prev = 0;
+        rc_sweep(mw->mem, mw->cursor);
+        return;
+    }
+    
+    /* rg: refcount get */
+    if (iscmd(mw, c, "rg")) {
+        mw->prev = 0;
+        mw->rw = rc_get(mw->mem, mw->cursor);
+        return;
+    }
 
     mw->prev = c;
 }

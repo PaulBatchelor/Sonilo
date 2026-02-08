@@ -6,6 +6,9 @@
 #define TAGS(MEM, TOP) (MEM[TOP + 1])
 #define AVAIL(MEM, TOP) (MEM[TOP] & 0xFFFF)
 #define BLOCK(MEM, TOP) ((MEM[TOP] >> 16) & 0xFFFF)
+#define RC_ENTRY_SIZE 22 /* bits */
+#define RC_NENTRY 48
+#define RC_ADDR(E) (E & 0xFFFF)
 
 static uint32_t linkf_set(uint32_t w, int a)
 {
@@ -605,4 +608,331 @@ uint32_t bits_get(uint32_t *mem, uint32_t off, uint32_t sz)
     out |= (w_a >> i_a) & mask;
 
     return out;
+}
+
+static void rc_entry_set(uint32_t *mem, uint16_t r, int i, uint32_t e)
+{
+    bits_set(mem, (r << 3) + RC_ENTRY_SIZE*i, RC_ENTRY_SIZE, e);
+}
+
+void rc_init(uint32_t *mem, uint16_t r)
+{
+    int i;
+
+    for (i = 0; i < RC_NENTRY; i++) {
+        rc_entry_set(mem, r, i, 0);
+    }
+}
+
+static uint32_t rc_addr_set(uint32_t e, uint16_t m)
+{
+    e &= ~0xFFFF;
+    e |= m;
+    return e;
+}
+
+static uint32_t rc_entry_get(uint32_t *mem, uint16_t r, int i)
+{
+    return bits_get(mem, (r << 3) + RC_ENTRY_SIZE*i, RC_ENTRY_SIZE);
+}
+
+static void rc_entry_clear(uint32_t *mem, uint16_t r, int i)
+{
+    bits_set(mem, (r << 3) + RC_ENTRY_SIZE*i, RC_ENTRY_SIZE, 0);
+}
+
+static int rc_count_get(uint32_t e)
+{
+    return (e >> 16) & 0xF;
+}
+
+static uint32_t rc_count_set(uint32_t e, int c)
+{
+    e &= ~(0xF << 16);
+    e |= c << 16;
+    return e;
+}
+
+static int rc_used_get(uint32_t e)
+{
+    return (e >> 20) & 1;
+}
+
+static uint32_t rc_used_set(uint32_t e, int u)
+{
+    e &= ~(1 << 20);
+    e |= (u & 1) << 20;
+    return e;
+}
+
+static int rc_hold_get(uint32_t e)
+{
+    return (e >> 21) & 1;
+}
+
+static uint32_t rc_hold_set(uint32_t e, int u)
+{
+    e &= ~(1 << 21);
+    e |= (u & 1) << 21;
+    return e;
+}
+
+int rc_add(uint32_t *mem, uint16_t r, uint16_t m)
+{
+    int avail;
+    uint32_t e;
+    int i;
+    uint32_t start;
+
+    /* invalid address */
+    if (m == 0) return 2;
+
+    start = r << 3;
+
+    avail = -1;
+    for (i = 0; i < RC_NENTRY; i++) {
+        uint32_t e = bits_get(mem,
+            start + RC_ENTRY_SIZE*i,
+            RC_ENTRY_SIZE);
+        if (RC_ADDR(e) == 0) {
+            avail = i;
+            break;
+        }
+    }
+
+    if (avail < 0) {
+        /* no free slots found */
+        return 1;
+    }
+
+    e = rc_entry_get(mem, r, avail);
+   
+    e = rc_addr_set(e, m);
+    e = rc_count_set(e, 1);
+    e = rc_used_set(e, 1);
+
+    rc_entry_set(mem, r, avail, e);
+
+    return 0;
+}
+
+int rc_del(uint32_t *mem, uint16_t r, uint16_t m)
+{
+    int i;
+
+    i = rc_find(mem, r, m);
+
+    /* address not found */
+    if (r == 0xFF) return 1;
+
+    rc_entry_clear(mem, r, i);
+
+    return 0;
+}
+
+int rc_find(uint32_t *mem, uint16_t r, uint16_t m)
+{
+    int i;
+    uint32_t start;
+    int slot;
+
+    start = r << 3;
+    slot = 0xFF;
+
+    for (i = 0; i < RC_NENTRY; i++) {
+        uint32_t e = bits_get(mem,
+            start + RC_ENTRY_SIZE*i,
+            RC_ENTRY_SIZE);
+        if (RC_ADDR(e) == m) {
+            slot = i;
+            break;
+        }
+    }
+
+    return slot;
+}
+
+int rc_sweep(uint32_t *mem, uint16_t r)
+{
+    int i;
+    int count;
+
+    count = 0;
+
+    for (i = 0; i < RC_NENTRY; i++) {
+        uint32_t e = rc_entry_get(mem, r, i);
+        if (rc_used_get(e) && !rc_hold_get(e) && rc_count_get(e) == 0) {
+            e = rc_used_set(e, 0);
+            rc_entry_set(mem, r, i, e);
+            count++;
+        }
+    }
+
+    return count;
+}
+
+uint16_t rc_get(uint32_t *mem, uint16_t r)
+{
+    int i;
+    uint16_t avail;
+
+    avail = 0;
+
+    for (i = 0; i < RC_NENTRY; i++) {
+        uint32_t e = rc_entry_get(mem, r, i);
+        if (RC_ADDR(e) != 0 && !rc_used_get(e)) {
+            avail = RC_ADDR(e);
+            e = rc_used_set(e, 1);
+            e = rc_count_set(e, 1);
+            rc_entry_set(mem, r, i, e);
+            break;
+        }
+    }
+
+    return avail;
+}
+
+int rc_hold(uint32_t *mem, uint16_t r, uint16_t m)
+{
+    int i;
+    uint32_t e;
+    int h;
+    i = rc_find(mem, r, m);
+
+    if (i == 0xFF) return 1;
+
+    e = rc_entry_get(mem, r, i);
+    h = rc_hold_get(e);
+
+    if (h) {
+        /* already held */
+        return 2;
+    }
+
+    e = rc_hold_set(e, 1);
+
+    rc_entry_set(mem, r, i, e);
+
+    return 0;
+}
+
+int rc_unhold(uint32_t *mem, uint16_t r, uint16_t m)
+{
+    int i;
+    uint32_t e;
+    int h;
+    i = rc_find(mem, r, m);
+
+    if (i == 0xFF) return 1;
+
+    e = rc_entry_get(mem, r, i);
+    h = rc_hold_get(e);
+
+    if (!h) {
+        /* already unheld */
+        return 2;
+    }
+
+    e = rc_hold_set(e, 0);
+    e = rc_count_set(e, 0);
+
+    rc_entry_set(mem, r, i, e);
+
+    return 0;
+}
+
+int rc_length(uint32_t *mem, uint16_t r)
+{
+    int i;
+    uint32_t start;
+    int count;
+
+    start = r << 3;
+    count = 0;
+
+    for (i = 0; i < RC_NENTRY; i++) {
+        uint32_t e = bits_get(mem,
+            start + RC_ENTRY_SIZE*i,
+            RC_ENTRY_SIZE);
+        if (RC_ADDR(e) != 0) {
+            count++;
+        }
+    }
+
+    return count;
+}
+
+int rc_incr(uint32_t *mem, uint16_t r, uint16_t m)
+{
+    int i;
+    uint32_t e;
+    int c;
+    i = rc_find(mem, r, m);
+
+    if (i == 0xFF) return 1;
+
+    e = rc_entry_get(mem, r, i);
+    c = rc_count_get(e);
+    e = rc_count_set(e, c + 1);
+    rc_entry_set(mem, r, i, e);
+
+    return 0;
+}
+
+int rc_decr(uint32_t *mem, uint16_t r, uint16_t m)
+{
+    int i;
+    uint32_t e;
+    int c;
+    i = rc_find(mem, r, m);
+
+    if (i == 0xFF) return 1;
+
+    e = rc_entry_get(mem, r, i);
+    c = rc_count_get(e);
+
+    /* nothing to decrement */
+    if (c <= 0) return 2;
+
+    e = rc_count_set(e, c - 1);
+    rc_entry_set(mem, r, i, e);
+
+    return 0;
+}
+
+int rc_get_count(uint32_t *mem, uint16_t r, uint16_t m)
+{
+    int i;
+    uint32_t e;
+    i = rc_find(mem, r, m);
+    if (i == 0xFF) return i;
+    e = rc_entry_get(mem, r, i);
+    return rc_count_get(e);
+}
+
+int rc_get_hold(uint32_t *mem, uint16_t r, uint16_t m)
+{
+    int i;
+    uint32_t e;
+    i = rc_find(mem, r, m);
+    if (i == 0xFF) return i;
+    e = rc_entry_get(mem, r, i);
+    return rc_hold_get(e);
+}
+
+int rc_get_active(uint32_t *mem, uint16_t r)
+{
+    int i;
+    int count;
+
+    count = 0;
+
+    for (i = 0; i < RC_NENTRY; i++) {
+        uint32_t e = rc_entry_get(mem, r, i);
+        if (rc_used_get(e)) {
+            count++;
+        }
+    }
+
+    return count;
 }
