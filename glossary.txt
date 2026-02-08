@@ -42,3 +42,10 @@ sx:TODO. extend slots. pushes slot id onto stack
 ss:TODO. select slot.
 ex:execute command. DDDD.CCCC where D is data, C is command code.
 bx:execute a block of commands, stored as an array of words.
+ra:TODO. refcount add. adds memory address to refcounter instance.
+rm:TODO. refcount remove. removes an entry associated with a memory address.
+ru:TODO. refcount update. updates counter in positive/negative direction.
+rf:TODO. refcount find. finds an entry associated with a memory address, if it exists.
+rh:TODO. refcount hold/unhold. sets/unsets the hold/unhold flag, associated with a memory address
+rg:TODO. refcount get. gets an available address.
+rx:TODO. refcount aux functions. various things used in testing.

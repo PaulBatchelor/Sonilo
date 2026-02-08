@@ -48,3 +48,9 @@ test_bm_mb: 40 80 c0 100 280 2c0 300 340
 1 1 3 5 5
 test_ex: 1235
 test_bx: f 8 c 6 fffffff9 9fffffff 1
+test_rc_add_del: 0 0 0 0 0 0 0 0
+test_rc_find: 41 42 40 43 43 42
+test_rc_incr_decr: 401 401 401 411 421
+test_rc_hold_unhold:
+test_rc_collect:
+test_rc_get:

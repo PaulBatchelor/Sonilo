@@ -419,3 +419,81 @@ operates with that as the starting value.
 @c at the end, print the number of elements remaining
 on the stack, which should be 1.
 @m sp sc #6 aa sc bx sc al pw nl
+@l test_rc_add_del:
+@c reference counting add/delete. A reference counting structure
+needs the ability to add and remove addresses it is managing.
+An 'add' operation will take a word address, and add it to an
+available slot.
+A remove operation will take a word address, and clear it
+from the list, if it exists.
+Clearing works by zeroing out the entry.
+When a new address is added, it looks for a free slot by
+finding zero-entries. For this reason, memory address 0
+can't be managed by the reference counting system.
+@c The primary means of testing this program will involving
+adding and removing addresses, and checking the count.
+@c To begin, initialize an instance of a reference counter
+at block 0
+@m sp #0 go ri #00 rx pw
+@c the {\tt rx} command is used to get the length of the list,
+which should be 0.
+@c add memory address {\tt 0x40} to the list, and check the
+size. It should now be 1.
+@m sp #40 ra #00 rx pw
+@c attempt to add address {\tt 0x00} to the list. It shouldn't
+be able to add, so the size should remain at 1.
+@m sp #00 ra #00 rx pw
+@c add another address {\tt 0x41}, and get the size. It
+should be 2.
+@m sp #41 ra #00 rx pw
+@c now remove {\tt 0x40}. The length is 1 again. Removing it again should
+leave it unchanged.
+@m sp #40 rm #00 rx pw sp #40 rm #00 rx pw
+@c try to remove {\tt 0x43}. The length will remain 1.
+@m sp #43 rm #00 rx pw
+@c remove {\tt 41} to make the length 0 again.
+@m sp #41 rm #00 rx pw
+@p
+@l test_rc_find:
+@c refcount find. The "find" operation takes in a word address, and
+returns an entry position associated with that memory. If no such
+entry is found, it will return {\tt 0xFF}.
+@c to begin, initialize a list, add {\tt 0x40}, {\tt 0x41}, and {\tt 0x42}.
+@m #0 go ri #40 ra #41 ra #42 ra
+@c find {\tt 0x41}, {\tt 0x42}, and {\tt 40}, in that order. The output
+should print 1, 2, and 0.
+@m sp #41 rf pw sp #42 rf pw sp #40 rf pw
+@c attempt to find {\tt 0x43}, which should return {\tt 0xFF} because
+it does not exist. add it, then try to find it. it should return 3.
+@m sp #43 rf pw sp #43 ra #43 rf pw
+@c remove {\tt 0x42} and try to find it. it should return {\tt 0xFF}.
+@m sp #42 rm #42 rf pw
+@p
+@l test_rc_incr_decr:
+@c refcount increase/decrease. Update the count parameter, either
+increasing or decreasing it.
+@c Set up the list and add {\tt 0x40}, print the initial count.
+Should be 1.
+@c the {\tt rx} command for getting a reference count for a particular
+memory address is {\tt MM.1}, where {\tt 1} is the mode, and {\tt MM}
+is the memory.
+@m #0 go ri #40 ra #40.1 rx sp pw
+@c now, increment the counter. This uses the argument syntax {\tt MM.0} where {\tt MM}
+is the address, and {\tt 0} is the mode to tell it to increment. The full
+address syntax can be {\tt MMMM.0} for a 16-bit memory address.
+@m #40.0 rp #40.1 rx sp pw
+@c the count should now be 2.
+@c now, to decrement. similar situation, only use the format {\tt MM.1}.
+@m #40.1 rp #40.1 rx sp pw
+@c the count should now go back to 1.
+@c add a few more addresses, and do some increments/decrements, and print
+the final total of each: 2 and 3.
+@m #41 ra #42 ra #41.0rp #42.0rp #41.0rp #42.0rp #41.1rp
+#41.1 rx sppw #42.1 rx sppw
+@p
+@l test_rc_hold_unhold:
+@p
+@l test_rc_collect:
+@p
+@l test_rc_get:
+@p
