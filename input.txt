@@ -555,3 +555,66 @@ will return 0 once again. The number of used addresses should also
 be 3.
 @m rg sppw #3 rx sppw
 @p
+@l test_pstack_push:
+@c parameter stack push. this test will verify the expected behavior involved in pushing
+word addresses to the stack that are managed by the RC.
+@c to begin, initialize the RC, and the stack.
+@m #0 go ri pi
+@c add {\tt 0x40}, {\tt 0x41}, {\tt 0x42} to the RC.
+@m #40 ra #41 ra #42 ra
+@c print their counts. should be 1 1 1.
+@m #40.1 rx sppw #41.1 rx sppw #42.1 rx sppw
+@c push {\tt 0x40} 2 times, {\tt 0x41} 1 time, and {\tt 0x42} 0 times,
+and print the counts. 3 2 1 should be the output.
+@m #40.0 pu #41.0 pu #40.0 pu
+#40.1rx sppw #41.1rx sppw #42.1rx sppw
+@p
+@l test_pstack_pop:
+@c param stack pop. this test will verify pop behavior in a similar way that
+push was tested.
+@c initialize RC/stack.
+@m #0 go ri pi
+@c set up blocks.
+@m #40 ra #41 ra #42 ra
+@c push some blocks onto the stack. print the counts: (2 2 2).
+@m #40.0 pu #41.0 pu #42.0 pu #40.1 rxsppw #41.1 rxsppw #42.1 rxsppw
+@c pop once. print the counts: (2 2 1).
+@m po #40.1 rxsppw #41.1 rxsppw #42.1 rxsppw
+@c pop twice. print the counts: (1 1 1).
+@m po po #40.1 rxsppw #41.1 rxsppw #42.1 rxsppw
+@c attempt to pop again. print the error code (1)
+@m po sppe ce
+@p
+@l test_pstack_hold:
+@c param stack hold. the 'hold' operation performs hold/unhold on the
+last item pushed onto the stack.
+@c set up RC/stack. add blocks.
+@m #go ri pi #40 ra #41 ra #42 ra
+@c hold on an empty stack. error code should be 1.
+@m #0 ph sppece
+@c push three blocks onto the stack and print their hold flags: 0 0 0
+@m #40.0 pu #41.0 pu #42.0 pu #40.2 rxsppw #41.2 rxsppw #42.2 rxsppw
+@c hold pop: 0 0 1
+@m #0 ph po #40.2 rxsppw #41.2 rxsppw #42.2 rxsppw
+@c hold pop hold pop: 1 1 1
+@m #1 phpo #1 phpo #40.2 rxsppw #41.2 rxsppw #42.2 rxsppw
+@c push unhold push unhold: 1 0 1
+@m #40.0 pu #1 ph #42.0 pu #1 ph #40.2 rxsppw #41.2 rxsppw #42.2 rxsppw
+@p
+@l test_pstack_rot:
+@c parameter stack rotate. A standard forth stack rotation operation.
+@c The stack transitions $[a b c] \to [c a b]$.
+@c Set up blocks, stack.
+@m #0 go ri pi #40 ra #41 ra #42 ra
+@c Push {\tt 0x40}, {\tt 0x41}, {\tt 0x42}, pop and print: 42 41 40.
+@m #40.0 pu #41.0 pu #42.0 pu posppw posppw posppw
+@c push the blocks again. rotate. pop and print: 40 42 41.
+@m #40.0 pu #41.0 pu #42.0 pu pR posppw posppw posppw
+@p
+@l test_pstack_dup:
+@c pstack duplicate. dup operation. Stack goes $[a b] \to [a b b]$.
+@c set up stack with 2 blocks.
+@m #0 go ri pi #40 ra #41 ra
+@c push 2 blocks onto the stack, and duplicate. print results: 41 41 40.
+@m #40.0 pu #41.0 pu pd posppw posppw posppw
+@p

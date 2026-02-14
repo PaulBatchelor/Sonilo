@@ -42,6 +42,7 @@ sx:TODO. extend slots. pushes slot id onto stack
 ss:TODO. select slot.
 ex:execute command. DDDD.CCCC where D is data, C is command code.
 bx:execute a block of commands, stored as an array of words.
+ri:refcount init.
 ra:refcount add. adds memory address to refcounter instance.
 rm:prefcount remove. removes an entry associated with a memory address.
 ru:prefcount update. updates counter in positive/negative direction.
@@ -50,3 +51,9 @@ rh:prefcount hold/unhold. sets/unsets the hold/unhold flag, associated with a me
 rg:prefcount get. gets an available address.
 rx:prefcount aux functions. various things used in testing.
 rs:prefcount sweep. marks any used unhold slots with 0-count as unused.
+po:TODO. param stack pop.
+pu:TODO. param stack push.
+pi:TODO. param stack init.
+ph:TODO. param stack hold/unhold.
+pd:TODO. param stack dup.
+pR:TODO. param stack rotate.
