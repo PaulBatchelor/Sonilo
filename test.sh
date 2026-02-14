@@ -1,2 +1,2 @@
-./t < input.txt > gen.txt
+./t < input.txt | grep -v "^#" > gen.txt
 diff gen.txt ref.txt

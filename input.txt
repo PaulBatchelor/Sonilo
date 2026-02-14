@@ -222,7 +222,7 @@ to as a "slot". 4 words are a left over. These will be used to construct
 a TOP struct that can be passed into calls to the buddy memory allocator.
 A slot is selected, and then the addresses of AVAIL, BLOCK, and TAGS will
 be set in the TOP struct before the buddy memory allocator is called.
-@l test_sm:
+@l #test_sm:
 @c the 'sm' command means 'slot make', and it is used to initialize
 a block to be used for buddy slots. The command uses a stack, and
 expects both the address of the new block and the global block list
