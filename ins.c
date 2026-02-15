@@ -86,3 +86,37 @@ uint16_t instr_key(const char *str)
     /* shift the last bit to make it fit into 16 bits */
     return k << 1;
 }
+
+int instr_ex(uint32_t *mem, instr_map *map, uint32_t i, uint32_t *rw)
+{
+    /* TODO: wrap this into a function */
+    uint16_t cmd, dat;
+    instr_func f;
+    uint32_t w;
+
+    cmd = i & 0xFFFF;
+    dat = i >> 16;
+    f = instr_map_get(map, cmd);
+    if (f == NULL) return 1;
+    w = f(mem, dat);
+    if (rw != NULL) *rw = w;
+    return 0;
+}
+
+int instr_block(uint32_t *mem, instr_map *map, uint16_t p, uint32_t *rw)
+{
+    uint32_t i;
+    uint32_t *blk;
+    uint32_t sz;
+
+    blk = &mem[p];
+    sz = blk[0];
+
+    for (i = 1; i <= sz; i++) {
+        int rc;
+        rc = instr_ex(mem, map, blk[i], rw);
+        if (rc) return rc;
+    }
+
+    return 0;
+}

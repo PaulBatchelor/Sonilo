@@ -758,40 +758,18 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* ex: execute command */
     if (iscmd(mw, c, "ex")) {
-        /* TODO: wrap this into a function */
-        uint16_t cmd, dat;
-        instr_func f;
-
-        mw->prev = 0;
-        cmd = mw->rw & 0xFFFF;
-        dat = mw->rw >> 16;
-        f = instr_map_get(&mw->instr, cmd);
-        if (f != NULL) mw->rw = f(mw->mem, dat);
+        mw->err = instr_ex(mw->mem,
+                &mw->instr,
+                mw->rw,
+                &mw->rw);
 
         return;
     }
    
     /* bx: execute block */
     if (iscmd(mw, c, "bx")) {
-        /* TODO: wrap this into a function */
-        instr_func f;
-        uint32_t i;
-        uint32_t *blk;
-        uint32_t sz;
-        blk = &mw->mem[mw->cursor];
         mw->prev = 0;
-        sz = blk[0];
-
-        for (i = 1; i <= sz; i++) {
-            uint16_t cmd, dat;
-            uint32_t instr;
-            instr = blk[i];
-            cmd = instr & 0xFFFF;
-            dat = instr >> 16;
-            f = instr_map_get(&mw->instr, cmd);
-            if (f != NULL) mw->rw = f(mw->mem, dat);
-        }
-
+        mw->err = instr_block(mw->mem, &mw->instr, mw->cursor, &mw->rw);
         return;
     }
 
