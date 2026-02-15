@@ -597,8 +597,8 @@ last item pushed onto the stack.
 @c hold pop: 0 0 1
 @m #0 ph po #40.2 rxsppw #41.2 rxsppw #42.2 rxsppw
 @c hold pop hold pop: 1 1 1
-@m #1 phpo #1 phpo #40.2 rxsppw #41.2 rxsppw #42.2 rxsppw
-@c push unhold push unhold: 1 0 1
+@m #0 phpo #0 phpo #40.2 rxsppw #41.2 rxsppw #42.2 rxsppw
+@c push unhold push unhold: 0 1 0
 @m #40.0 pu #1 ph #42.0 pu #1 ph #40.2 rxsppw #41.2 rxsppw #42.2 rxsppw
 @p
 @l test_pstack_rot:
@@ -607,14 +607,24 @@ last item pushed onto the stack.
 @c Set up blocks, stack.
 @m #0 go ri pi #40 ra #41 ra #42 ra
 @c Push {\tt 0x40}, {\tt 0x41}, {\tt 0x42}, pop and print: 42 41 40.
-@m #40.0 pu #41.0 pu #42.0 pu posppw posppw posppw
-@c push the blocks again. rotate. pop and print: 40 42 41.
-@m #40.0 pu #41.0 pu #42.0 pu pR posppw posppw posppw
+@m #40.0 pu #41.0 pu #42.0 pu po0pxsppw po0pxsppw po0pxsppw
+@c push the blocks again. rotate. pop and print: 41 40 42.
+@m #40.0 pu #41.0 pu #42.0 pu pR po0pxsppw po0pxsppw po0pxsppw
 @p
 @l test_pstack_dup:
 @c pstack duplicate. dup operation. Stack goes $[a b] \to [a b b]$.
 @c set up stack with 2 blocks.
 @m #0 go ri pi #40 ra #41 ra
 @c push 2 blocks onto the stack, and duplicate. print results: 41 41 40.
-@m #40.0 pu #41.0 pu pd posppw posppw posppw
+@m #40.0 pu #41.0 pu pd po0pxsppw po0pxsppw po0pxsppw
+@p
+@l test_pstack_swap:
+@c pstack swap. swaps the last two items on the stack.
+The stack state goes from $[a, b] \to [b, a]$.
+@c initialize the stack, add some blocks.
+@m #0 go ri pi #40 ra #41 ra
+@c push blocks, pop and print: 41 40
+@m #40.0 pu #41.0 pu po0pxsppw po0pxsppw
+@c push blocks again. swap. pop and print: 40 41
+@m #40.0 pu #41.0 pu ps po0pxsppw po0pxsppw
 @p

@@ -51,9 +51,10 @@ rh:prefcount hold/unhold. sets/unsets the hold/unhold flag, associated with a me
 rg:prefcount get. gets an available address.
 rx:prefcount aux functions. various things used in testing.
 rs:prefcount sweep. marks any used unhold slots with 0-count as unused.
-po:TODO. param stack pop.
-pu:TODO. param stack push.
-pi:TODO. param stack init.
-ph:TODO. param stack hold/unhold.
-pd:TODO. param stack dup.
-pR:TODO. param stack rotate.
+po:param stack pop.
+pu:param stack push.
+pi:param stack init.
+ph:param stack hold/unhold.
+pd:param stack dup.
+pR:param stack rotate.
+ps:param stack swap.

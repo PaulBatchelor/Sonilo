@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "mem.h"
 #include "ins.h"
+#include "ugen.h"
 
 #define BLOCKLIST_OFFSET 0x400
 
@@ -894,6 +895,89 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "rg")) {
         mw->prev = 0;
         mw->rw = rc_get(mw->mem, mw->cursor);
+        return;
+    }
+
+    /* pi: pstack init */
+    if (iscmd(mw, c, "pi")) {
+        mw->prev = 0;
+        pstack_init(mw->mem, mw->cursor);
+        return;
+    }
+
+    /* pu: pstack push */
+    if (iscmd(mw, c, "pu")) {
+        int type;
+        int data;
+        mw->prev = 0;
+
+        type = mw->rw & 0xF;
+        mw->rw >>= 4;
+        data = mw->rw;
+        mw->err =
+            pstack_push(mw->mem,
+                mw->cursor,
+                pstack_param(type, data));
+
+        return;
+    }
+
+    /* po: pstack pop */
+    if (iscmd(mw, c, "po")) {
+        mw->prev = 0;
+        mw->err = pstack_pop(mw->mem, mw->cursor, &mw->rw);
+        return;
+    }
+
+    /* pd: pstack dup */
+    if (iscmd(mw, c, "pd")) {
+        mw->prev = 0;
+        mw->err = pstack_dup(mw->mem, mw->cursor);
+        return;
+    }
+
+    /* pR: pstack rot */
+    if (iscmd(mw, c, "pR")) {
+        mw->prev = 0;
+        mw->err = pstack_rot(mw->mem, mw->cursor);
+        return;
+    }
+
+    /* ph: pstack hold */
+    if (iscmd(mw, c, "ph")) {
+        int which;
+        mw->prev = 0;
+        which = mw->rw & 0xF;
+        mw->rw >>= 4;
+        if (which == 0) {
+            mw->err = pstack_hold(mw->mem, mw->cursor);
+        } else if (which == 1) {
+            mw->err = pstack_unhold(mw->mem, mw->cursor);
+        }
+        return;
+    }
+
+    /* ps: pstack swap */
+    if (iscmd(mw, c, "ps")) {
+        mw->prev = 0;
+        mw->err = pstack_swap(mw->mem, mw->cursor);
+        return;
+    }
+
+    /* px: pstack aux */
+    if (iscmd(mw, c, "px")) {
+        int type;
+
+        mw->prev = 0;
+        type = mw->rw & 0xF;
+        mw->rw >>= 4;
+
+        if (type == 0) {
+            /* extract data component from param word */
+            mw->rw >>= 2;
+            return;
+        }
+
         return;
     }
 

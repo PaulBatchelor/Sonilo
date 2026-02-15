@@ -55,6 +55,7 @@ test_rc_sweep: 3 3 3 2 2 0
 test_rc_get: 0 0 40 0 3
 test_pstack_push: 1 1 1 3 2 1
 test_pstack_pop: 2 2 2 2 2 1 1 1 1 1
-test_pstack_hold: 1 0 0 0 0 0 1 1 1 1 1 0 1
-test_pstack_rot: 42 41 40 40 42 41
+test_pstack_hold: 1 0 0 0 0 0 1 1 1 1 0 1 0
+test_pstack_rot: 42 41 40 41 40 42
 test_pstack_dup: 41 41 40
+test_pstack_swap: 41 40 40 41
