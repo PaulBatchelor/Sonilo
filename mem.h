@@ -37,6 +37,8 @@ int mem_array_pop(uint32_t *mem, uint16_t a, uint32_t *x);
 /* global bitmap */
 void bits_set(uint32_t *mem, uint32_t off, uint32_t sz, uint32_t w);
 uint32_t bits_get(uint32_t *mem, uint32_t off, uint32_t sz);
+uint16_t mem_find(uint32_t *mem, uint16_t p_top, uint16_t a);
+uint32_t mem_aux(uint32_t *mem, uint16_t pstk);
 
 /* reference counter */
 void rc_init(uint32_t *mem, uint16_t r);

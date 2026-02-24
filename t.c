@@ -915,6 +915,14 @@ void parse_memwrite(memwrite *mw, char c)
         return;
     }
 
+    /* mx: memory aux */
+    if (iscmd(mw, c, "mx")) {
+        mw->prev = 0;
+        mw->rw = mem_aux(mw->mem, mw->cursor);
+
+        return;
+    }
+
     mw->prev = c;
 }
 

@@ -5,6 +5,7 @@
 #define LOC_AVAIL(K) (K + AVAIL_OFFSET)
 #define TAGS(MEM, TOP) (MEM[TOP + 1])
 #define AVAIL(MEM, TOP) (MEM[TOP] & 0xFFFF)
+/* TODO: what is block again? */
 #define BLOCK(MEM, TOP) ((MEM[TOP] >> 16) & 0xFFFF)
 #define RC_ENTRY_SIZE 22 /* bits */
 #define RC_NENTRY 48
@@ -88,6 +89,7 @@ static void kval_set(uint32_t *mem, uint16_t p_top, int p, int k)
 
     p_block = BLOCK(mem, p_top);
     block = &mem[p_block];
+    /* TODO: what are the other 14 bits used for ? */
     block[p] &= ~(7 << 14);
     block[p] |= (k & 7) << 14;
 }
@@ -373,6 +375,7 @@ int mem_alloc(uint32_t *mem, uint16_t p_top, uint16_t k)
     *w = linkf_set(*w, LOC_AVAIL(j));
     /* TAG(L) <- 0 */
     tag_set(tags, L, 0);
+    kval_set(mem, p_top, L, k);
 
     /* R3: Split required? */
     while (j > k) {
@@ -1067,4 +1070,91 @@ int array_pop(uint32_t *mem, uint16_t a, uint32_t *x)
     if (x != NULL) *x = mem[a + pos];
     mem[a] = pos - 1;
     return 0;
+}
+
+/* see if word address A is being used in a buddy instance */
+uint16_t mem_find(uint32_t *mem, uint16_t p_top, uint16_t a)
+{
+    const uint32_t err = 0xF000;
+    int p;
+    int k;
+    uint32_t *tags;
+
+    /* check word address boundaries */
+    if (a < p_top || a >= (p_top + 64)) {
+        return err | 0;
+    }
+
+    /* convert address A to relative address p */
+    p = a - p_top;
+    k = -1;
+
+    /* check and see if it is being used or not */
+    tags = &mem[TAGS(mem, p_top)];
+
+    /* 1 (avail) means it is not being used */
+    if (tag_get(tags, p)) {
+        return err | 2;
+    }
+
+    /* retrive k value */
+    k = kval_get(mem, p_top, p); 
+
+    /* TODO: confirm if address is start of block (needed?) */
+
+    return (p & 63) | ((k & 7) << 6);
+
+    return err | 1;
+}
+
+uint32_t mem_aux(uint32_t *mem, uint16_t pstk)
+{
+    uint32_t *stk;
+    uint32_t mode;
+    uint32_t top;
+    uint32_t sp;
+    const uint32_t err = 0xF0000000;
+
+    sp = mem[pstk];
+    stk = &mem[pstk + 1];
+
+    if (sp < 2) {
+        return err | 1;
+    }
+
+
+    mode = stk[sp - 2];
+    top = stk[sp - 1];
+
+    if (mode == 0) {
+        uint32_t L;
+
+        if (sp < 3) {
+            return err | 2;
+        }
+
+        L = stk[sp - 3];
+
+        mem[pstk] -= 3;
+        return kval_get(mem, top, L);
+    }
+
+    if (mode == 1) {
+        uint32_t L;
+        uint32_t *tags;
+
+        if (sp < 3) {
+            return err | 2;
+        }
+
+        L = stk[sp - 3];
+        tags = &mem[TAGS(mem, top)];
+
+        mem[pstk] -= 3;
+        return tag_get(tags, L);
+    }
+
+    mem[pstk] -= 2;
+
+    return err | 3;
 }
