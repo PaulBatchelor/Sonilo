@@ -3,4 +3,5 @@ gcc -g -Wall -pedantic -std=c89 \
     mem.c \
     ins.c \
     ugen.c \
+    port.c \
     -o t
