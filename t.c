@@ -188,7 +188,7 @@ static uint32_t reverse_nibbles(uint32_t w)
     return w;
 }
 
-static uint16_t block_to_word(uint16_t b)
+static uint16_t old_block_to_word(uint16_t b)
 {
     /* multiply by 64 to get word address,
      * then add an offset to skip the block list
@@ -393,7 +393,7 @@ void parse_memwrite(memwrite *mw, char c)
          * then add an offset to skip the block list
          * block list size: 2^16/64 = 1024. 1024 blocks = 1024 words
          */
-        mw->cursor = block_to_word(mw->rw); 
+        mw->cursor = old_block_to_word(mw->rw); 
         mw->prev = 0;
         return;
     }
@@ -409,7 +409,7 @@ void parse_memwrite(memwrite *mw, char c)
         sp = stk[0];
 
         if (sp < 2) {
-            mw->err = 1;
+            mw->err = 2;
             return;
         }
         p_top = stk[sp]; sp--;
@@ -417,6 +417,8 @@ void parse_memwrite(memwrite *mw, char c)
         stk[0] = sp;
 
         mw->rw = mem_alloc(mw->mem, p_top, k);
+        /* check for out of bounds results */
+        mw->err = mw->rw > 63;
         return;
     }
 
@@ -452,17 +454,15 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* ai: initialize array */
     if (iscmd(mw, c, "ai")) {
-        int n;
-        for (n = 0; n < 64; n++) mw->mem[mw->cursor + n] = 0;
         mw->prev = 0;
+        array_init(mw->mem, mw->cursor);
         return;
     }
 
     /* al: get array length */
     if (iscmd(mw, c, "al")) {
-        /* first word in block stores length */
-        mw->rw = mw->mem[mw->cursor];
         mw->prev = 0;
+        mw->rw = array_length(mw->mem, mw->cursor);
         return;
     }
 
@@ -476,27 +476,15 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* aa: append value to array */
     if (iscmd(mw, c, "aa")) {
-        int pos;
         mw->prev = 0;
-        pos = mw->mem[mw->cursor];
-        /* first word in block stores length */
-        mw->mem[mw->cursor + pos + 1] = mw->rw;
-        mw->mem[mw->cursor] = pos + 1;
+        mw->err = array_append(mw->mem, mw->cursor, mw->rw);
         return;
     }
 
     /* ap: pop word from array */
     if (iscmd(mw, c, "ap")) {
-        int pos;
-        pos = mw->mem[mw->cursor];
+        mw->err = array_pop(mw->mem, mw->cursor, &mw->rw);
         mw->prev = 0;
-        if (pos == 0) {
-            mw->err = 1;
-            return;
-        }
-        /* first word in block stores length */
-        mw->rw = mw->mem[mw->cursor + pos];
-        mw->mem[mw->cursor] = pos - 1;
         return;
     }
 
@@ -580,23 +568,8 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* zp: initialize zero page */
     if (iscmd(mw, c, "zp")) {
-        uint16_t zp;
-        uint16_t i;
         mw->prev = 0;
-        /* get zero page address from rw register */
-        zp = mw->rw;
-
-        /* zero out block */
-        for (i = 0; i < 64; i++) {
-            mw->mem[zp + i] = 0;
-        }
-
-        /* set block stack (in cursor) to be slot 0 in zp */
-
-        mw->mem[zp] = mw->cursor;
-
-        /* return the zp memory address */
-        mw->rw = zp;
+        mw->rw = zero_page_init(mw->mem, mw->cursor, mw->rw);
         return;
     }
 
@@ -653,32 +626,15 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* bm: block to memory address */
     if (iscmd(mw, c, "bm")) {
-        uint32_t blk;
         mw->prev = 0;
-        blk = mw->rw << 6;
-        /* skip the blockstack address space */
-        if (blk >= mw->cursor) {
-            /* blockstack =
-             * 10 bits/number * 1024 numbers /
-             * (32 bits/word * 64 words/block) =
-             * 5 blocks */
-            blk += 5 << 6;
-        }
-        mw->rw = blk;
+        mw->rw = block_to_word(mw->cursor, mw->rw);
         return;
     }
 
     /* mb: memory address to block */
     if (iscmd(mw, c, "mb")) {
-        uint32_t m;
         mw->prev = 0;
-        m = mw->rw;
-        /* remove bias */
-        if (m >= mw->cursor) {
-            m -= (5 << 6);
-        }
-        m >>= 6;
-        mw->rw = m;
+        mw->rw = word_to_block(mw->cursor, mw->rw);
         return;
     }
 

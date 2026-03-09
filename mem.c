@@ -936,3 +936,135 @@ int rc_get_active(uint32_t *mem, uint16_t r)
 
     return count;
 }
+
+uint16_t context_init(uint32_t *mem, uint16_t blist)
+{
+    int err;
+    uint16_t zp;
+    uint16_t bsm, bst;
+    uint16_t stk;
+    int blk[4];
+    int bp;
+    int i;
+
+    bp = 0;
+    err = 0x8000;
+
+    /* create zero page */
+    zp = blocklist_pop(mem, blist);
+    if (zp == 0) return err | 1;
+    blk[bp++] = zp;
+    zp = block_to_word(blist, zp);
+    zp = zero_page_init(mem, blist, zp);
+
+    /* create main and temp bitsets */
+
+    bsm = blocklist_pop(mem, blist);
+    if (bsm == 0) return err | 2;
+    blk[bp++] = bsm;
+    bsm = block_to_word(blist, bsm);
+
+    /* temp is in second half of block */
+    bst = bsm + 32;
+
+    bitset_init(mem, bsm);
+    bitset_init(mem, bst);
+
+    /* create stack */
+    stk = blocklist_pop(mem, blist);
+    if (stk == 0) return err | 3;
+    blk[bp++] = stk;
+    stk = block_to_word(blist, stk);
+    array_init(mem, stk);
+
+    /* store stack, zero page, and set addresses in temp */
+    for (i = 0; i < bp; i++) {
+        bitset_add(mem, bst, blk[i]);
+    }
+
+    /* interleave addresses into words */
+    mem[zp] = bst << 16 | blist;
+    mem[zp + 1] = bsm << 16 | stk;
+
+    /* return zero page address */
+
+    return zp;
+}
+
+uint16_t block_to_word(uint16_t blist, uint16_t blk)
+{
+    blk <<= 6;
+    /* skip the blockstack address space */
+    if (blk >= blist) {
+        /* blockstack =
+         * 10 bits/number * 1024 numbers /
+         * (32 bits/word * 64 words/block) =
+         * 5 blocks */
+        blk += 5 << 6;
+    }
+    return blk;
+}
+
+uint16_t word_to_block(uint16_t blist, uint16_t wrd)
+{
+    /* remove bias */
+    if (wrd >= blist) {
+        wrd -= (5 << 6);
+    }
+    wrd >>= 6;
+    return wrd;
+}
+
+uint16_t zero_page_init(uint32_t *mem, uint16_t blist, uint16_t zp)
+{
+    uint16_t i;
+
+    /* zero out block */
+    for (i = 0; i < 64; i++) {
+        mem[zp + i] = 0;
+    }
+
+    /* set block stack (in cursor) to be slot 0 in zp */
+    mem[zp] = blist;
+
+    return zp;
+}
+
+void array_init(uint32_t *mem, uint16_t a)
+{
+    int n;
+    for (n = 0; n < 64; n++) mem[a + n] = 0;
+}
+
+uint32_t array_length(uint32_t *mem, uint16_t a)
+{
+    /* first word in block stores length */
+    return mem[a];
+}
+
+int array_append(uint32_t *mem, uint16_t a, uint32_t x)
+{
+    int pos;
+    pos = mem[a];
+
+    /* no room left in array */
+    if (pos >= 64) return 1;
+
+    /* first word in block stores length */
+    mem[a + pos + 1] = x;
+    mem[a] = pos + 1;
+
+    return 0;
+}
+
+int array_pop(uint32_t *mem, uint16_t a, uint32_t *x)
+{
+    int pos;
+    pos = mem[a];
+    if (pos == 0) {
+        return 1;
+    }
+    if (x != NULL) *x = mem[a + pos];
+    mem[a] = pos - 1;
+    return 0;
+}

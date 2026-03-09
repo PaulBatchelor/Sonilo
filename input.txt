@@ -110,7 +110,7 @@ after the pop operation.
 this should set the IO register to be 0, but also flip on some kind
 of error flag. Print the flag to ensure that it has been set, then
 reset it.
-@m sp appwsppe
+@m sp appwsppece
 @p
 @l test_stack:
 @c building off of what was done previously, do some append/pop
