@@ -628,3 +628,63 @@ The stack state goes from $[a, b] \to [b, a]$.
 @c push blocks again. swap. pop and print: 40 41
 @m #40.0 pu #41.0 pu ps po0pxsppw po0pxsppw
 @p
+@l test_kavail:
+@p
+@c the {\bf kavail} command is an operation used with the buddy system
+to determine if the allocator can actually has space to allocate a $2^k$
+region of memory. This is required for the buddy slot system in the step
+that selects a buddy slot instance for allocation.
+@c To begin, initialize a stack (address 0).
+@m #go ai
+@c Push TOP, BLOCK, AVAIL, TAGS, to stack, and initialize the buddy allocator.
+@c ${\tt TOP} = {\tt B1.0} = {\tt 0x40}$
+(4 words, pointers to other places)
+@c ${\tt BLOCK} = {\tt B2.0} = {\tt 0x80}$
+(64 words, for bookkeeping)
+@c ${\tt AVAIL} = {\tt B1.4} = ({\tt 0x40} + 4) = {\tt 0x44}$
+(6 words inside of 8 words)
+@c ${\tt TAGS} = {\tt B1.12} = ({\tt 0x40 + 12}) = {\tt 0x4C}$ (2 words)
+@m #40aa #80aa #44aa #4Caa mi
+@c allocate some memory in 1-word chunks, print addresses
+@m #0aa #40aa ma pwsp #0aa #40aa ma pwsp
+@c allocate some memory in 2-word chunks, print addresses
+@m #2aa #40aa ma pwsp #2aa #40aa ma pwnl
+@c get k value for address 4 (should be k=2)
+@c In memory aux utility ({\tt mx}), mode 0 will get the k
+value for a memory location
+@c Print some other k-values as well.
+@m #0aa #0aa #40aa mx pwsp
+#1aa #0aa #40aa mx pwsp
+#4aa #0aa #40aa mx pwsp
+#8aa #0aa #40aa mx pwnl
+@c print the state of some AVAIL flags using the memory aux
+utility in mode 1.
+@m #0aa #1aa #40aa mx pwsp
+#1aa #1aa #40aa mx pwsp
+#2aa #1aa #40aa mx pwsp
+#3aa #1aa #40aa mx pwsp
+#4aa #1aa #40aa mx pwsp
+#5aa #1aa #40aa mx pwsp
+#8aa #1aa #40aa mx pwnl
+@c attempting to free a value (addr 4), and print the
+k value and avail tag.
+@m #4aa #1aa #40aa #mx pwsp
+#4aa #2aa #40aa mf
+#4aa #1aa #40aa mx pwsp
+#4aa #0aa #40aa mx pwnl
+@c print the lengths of various k-lists. in the expected results,
+it is observed that $k=3$ is an empty list, while $k=4$ is nonempty.
+What it means that is that if a $2^3$ sized region of space is requested,
+it should be able produce this region by splitting the $k=4$ block. This
+observation will be utilized after this check.
+@c the aux memory utility {\tt mx} is used in mode 2 to print the sizes
+of k-lists.
+@m #6aa #2aa #40aa mx pwsp
+#5aa #2aa #40aa mx pwsp
+#4aa #2aa #40aa mx pwsp
+#3aa #2aa #40aa mx pwnl
+@c check the availability allocating a $k=3$ block (available) vs a $k=6$
+block (unavailable).
+@c the memory aux utility {\tt mx} in mode 3 is used to run the {\tt kavail} operation.
+@m #3aa #3aa #40aa mx pwsp
+@m #6aa #3aa #40aa mx pwnl

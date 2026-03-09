@@ -59,3 +59,10 @@ test_pstack_hold: 1 0 0 0 0 0 1 1 1 1 0 1 0
 test_pstack_rot: 42 41 40 41 40 42
 test_pstack_dup: 41 41 40
 test_pstack_swap: 41 40 40 41
+test_kavail:
+0 1 4 8
+0 0 2 2
+0 0 1 0 0 0 0
+0 1 2
+0 1 1 0
+1 0
