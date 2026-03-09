@@ -403,33 +403,57 @@ int mem_alloc(uint32_t *mem, uint16_t p_top, uint16_t k)
     return L;
 }
 
-uint32_t mem_cksum(uint32_t *mem, uint16_t p_top)
+int mem_klen(uint32_t *mem, uint16_t p_top, int k)
 {
     int L;
+    int navail;
+    uint32_t *block;
+    uint32_t *avail;
+
+    block = &mem[BLOCK(mem, p_top)];
+    avail = get_avail(mem, p_top);
+
+    navail = 0;
+    L = availf_get(avail, k);
+
+    while (L != LOC_AVAIL(k)) {
+        navail++;
+        L = linkf_get(block[L]);
+    }
+
+    return navail;
+}
+
+int mem_kavail(uint32_t *mem, uint16_t p_top, int k)
+{
+    int i;
+
+    if (k < 0 || k > 6) return -1;
+
+    for (i = k; i < 6; i++) {
+        if (mem_klen(mem, p_top, i)) return 1;
+    }
+
+    return 0;
+}
+
+uint32_t mem_cksum(uint32_t *mem, uint16_t p_top)
+{
     int k;
     int navail;
     int nwords;
     uint32_t cksum;
     int b;
-    uint32_t *block;
-    uint32_t *avail;
 
     nwords = 0;
     cksum = 0;
-    avail = get_avail(mem, p_top);
 
     k = 6;
     b = 0;
-    block = &mem[BLOCK(mem, p_top)];
 
     for (k = 0; k <= 6; k++) {
-        L = availf_get(avail, k);
-        navail = 0;
+        navail = mem_klen(mem, p_top, k);
 
-        while (L != LOC_AVAIL(k)) {
-            navail++;
-            L = linkf_get(block[L]);
-        }
         nwords += navail * (1 << k);
         cksum &= ~(7 << b);
         cksum |= (navail & 7) << b;
@@ -1126,6 +1150,7 @@ uint32_t mem_aux(uint32_t *mem, uint16_t pstk)
     mode = stk[sp - 2];
     top = stk[sp - 1];
 
+    /* mode 0: get k value for memory address */
     if (mode == 0) {
         uint32_t L;
 
@@ -1139,6 +1164,7 @@ uint32_t mem_aux(uint32_t *mem, uint16_t pstk)
         return kval_get(mem, top, L);
     }
 
+    /* mode 1: get AVAIL tag for memory address */
     if (mode == 1) {
         uint32_t L;
         uint32_t *tags;
@@ -1152,6 +1178,30 @@ uint32_t mem_aux(uint32_t *mem, uint16_t pstk)
 
         mem[pstk] -= 3;
         return tag_get(tags, L);
+    }
+
+    /* mode 2: get length of list of k-sized blocks */
+    if (mode == 2) {
+        int k;
+        if (sp < 3) return err | 2;
+        k = stk[sp - 3];
+
+        if (k < 0 || k > 6) return err | 4;
+
+        mem[pstk] -= 3;
+        return mem_klen(mem, top, k);
+    }
+
+    /* mode 3: check to see if k-size is available */
+    if (mode == 3) {
+        int k;
+        if (sp < 3) return err | 2;
+        k = stk[sp - 3];
+
+        if (k < 0 || k > 6) return err | 4;
+
+        mem[pstk] -= 3;
+        return mem_kavail(mem, top, k);
     }
 
     mem[pstk] -= 2;

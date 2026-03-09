@@ -30,15 +30,14 @@ void mem_init(uint32_t *mem,
 int mem_alloc(uint32_t *mem, uint16_t p_top, uint16_t k);
 uint32_t mem_cksum(uint32_t *mem, uint16_t p_top);
 void mem_free(uint32_t *mem, uint16_t p_top, int L, int k);
-int mem_array_init(uint32_t *mem, uint16_t a);
-int mem_array_append(uint32_t *mem, uint16_t a, uint32_t x);
-int mem_array_pop(uint32_t *mem, uint16_t a, uint32_t *x);
+uint16_t mem_find(uint32_t *mem, uint16_t p_top, uint16_t a);
+uint32_t mem_aux(uint32_t *mem, uint16_t pstk);
+int mem_klen(uint32_t *mem, uint16_t p_top, int k);
+int mem_kavail(uint32_t *mem, uint16_t p_top, int k);
 
 /* global bitmap */
 void bits_set(uint32_t *mem, uint32_t off, uint32_t sz, uint32_t w);
 uint32_t bits_get(uint32_t *mem, uint32_t off, uint32_t sz);
-uint16_t mem_find(uint32_t *mem, uint16_t p_top, uint16_t a);
-uint32_t mem_aux(uint32_t *mem, uint16_t pstk);
 
 /* reference counter */
 void rc_init(uint32_t *mem, uint16_t r);
