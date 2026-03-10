@@ -14,6 +14,7 @@ void bitset_remove(uint32_t *mem, uint16_t bm, uint16_t val);
 int bitset_exists(uint32_t *mem, uint16_t bm, uint16_t val);
 void bitset_init(uint32_t *mem, uint16_t bm);
 int bitset_len(uint32_t *mem, uint16_t bm);
+void bitset_free(uint32_t *mem, uint16_t bm, uint16_t blist);
 
 /* array */
 void array_init(uint32_t *mem, uint16_t a);
@@ -57,3 +58,11 @@ int rc_get_active(uint32_t *mem, uint16_t r);
 
 /* context */
 uint16_t context_init(uint32_t *mem, uint16_t blist);
+uint16_t context_mktemp(uint32_t *mem, uint16_t ctx);
+uint16_t context_mkblock(uint32_t *mem, uint16_t ctx);
+void context_destroy(uint32_t *mem, uint16_t ctx);
+
+/* buddy slot allocator */
+uint16_t allocator_init(uint32_t *mem, uint16_t ctx);
+uint16_t allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz);
+uint16_t allocator_free(uint32_t *mem, uint16_t a, uint16_t m);

@@ -1208,3 +1208,68 @@ uint32_t mem_aux(uint32_t *mem, uint16_t pstk)
 
     return err | 3;
 }
+
+/* allocate a temporary block */
+uint16_t context_mktemp(uint32_t *mem, uint16_t ctx)
+{
+    /* TODO: pop block from free list*/
+    /* TODO: store block in temp bitset */
+    return 0;
+}
+
+/* allocate a block */
+uint16_t context_mkblock(uint32_t *mem, uint16_t ctx)
+{
+    /* TODO: pop block from free list */
+    /* TODO: store block in main bitset */
+    return 0;
+}
+
+/* returns all blocks in set to the block list, and clears the set */
+void bitset_free(uint32_t *mem, uint16_t bm, uint16_t blist)
+{
+    /* TODO: iterate through each word */
+    /* Find the MSBs, compute block address, and turn bits off */
+}
+
+/* frees memory used for context, preserves allocated main blocks */
+void context_destroy(uint32_t *mem, uint16_t ctx)
+{
+    /* TODO: free blocks in temp set */
+}
+
+/* initialize buddy-slot allocator */
+uint16_t allocator_init(uint32_t *mem, uint16_t ctx)
+{
+    /* TODO: Allocate and zero out top-block for allocator */
+    /* TODO: store context address */
+    /* TODO: create initial "buddy data" block */
+    /* TODO: initialize slot count */
+    return 0;
+}
+
+uint16_t allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz)
+{
+    /* TODO: ensure requested size is between 1 and 63 */
+    /* TODO: compute closest power of 2 k-value */
+    /* TODO: search for next buddy slot with space */
+    /* TODO: instantiate new buddy allocator if nothing available */
+
+    /* Buddy slot instantiation */
+    /* TODO: allocate block to main */
+    /* TODO: allocate buddy temp block */
+    /* TODO: allocate buddy data segment */
+
+    /* TODO: push args onto stack (base, k, buddy) */
+    return 0;
+}
+
+uint16_t allocator_free(uint32_t *mem, uint16_t a, uint16_t m)
+{
+    /* TODO: find slot that could be associated with memory address */
+    /* TODO: compute local address */
+    /* TODO: determine if it can be freed */
+    /* TODO: find associated k value */
+    /* TODO: push results on to stack */
+    return 0;
+}
