@@ -64,5 +64,5 @@ void context_destroy(uint32_t *mem, uint16_t ctx);
 
 /* buddy slot allocator */
 int allocator_init(uint32_t *mem, uint16_t ctx, uint16_t *out);
-uint16_t allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz);
+int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz, uint16_t *addr);
 uint16_t allocator_free(uint32_t *mem, uint16_t a, uint16_t m);

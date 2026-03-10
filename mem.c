@@ -10,6 +10,10 @@
 #define RC_ENTRY_SIZE 22 /* bits */
 #define RC_NENTRY 48
 #define RC_ADDR(E) (E & 0xFFFF)
+#define NSLOTS(MEM, A) MEM[A + 1]
+#define SLOT(MEM, A, S) MEM[A + 2 + S]
+#define BUDSLOT_SIZE 12
+#define BUDBLK_HEADER_SIZE 4
 
 static uint32_t linkf_set(uint32_t w, int a)
 {
@@ -1299,19 +1303,103 @@ int allocator_init(uint32_t *mem, uint16_t ctx, uint16_t *out)
     return 0;
 }
 
-uint16_t allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz)
+int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz, uint16_t *addr)
 {
-    /* TODO: ensure requested size is between 1 and 63 */
+    int k;
+    int slot, nslots, s;
+    uint32_t slt;
+    uint16_t stk;
+    uint16_t ctx;
+    uint16_t bd;
+
+    /* ensure requested size is between 1 and 63 */
+    if (sz < 1 || sz > 63) return 1;
+
+    k = 0;
     /* TODO: compute closest power of 2 k-value */
-    /* TODO: search for next buddy slot with space */
-    /* TODO: instantiate new buddy allocator if nothing available */
+    while ((1 << k) < sz) k++;
 
-    /* Buddy slot instantiation */
-    /* TODO: allocate block to main */
-    /* TODO: allocate buddy temp block */
-    /* TODO: allocate buddy data segment */
+    slot = -1;
+    nslots = NSLOTS(mem, a);
 
-    /* TODO: push args onto stack (base, k, buddy) */
+    /* search for next buddy slot with space */
+    for (s = 0; s < nslots; s++) {
+        uint16_t sa;
+        sa = SLOT(mem, a, s) & 0xFFFF;
+        if (mem_kavail(mem, sa, k)) {
+            slot = s;
+        }
+    }
+
+    /* instantiate new buddy allocator if nothing available */
+
+    ctx = mem[a] & 0xFFFF;
+    bd = (mem[a] >> 16) & 0xFFFF;
+    if (slot < 0) {
+        uint16_t memblk;
+        uint16_t budblk;
+        int budcnt;
+        int rc;
+        uint16_t budtop;
+
+        /* make sure there's a slot available */
+        if (nslots >= 64) return 1;
+
+        /* allocate block to main (this holds the interesting things) */
+        memblk = 0;
+        rc = context_mkblock(mem, ctx, &memblk);
+        if (rc) return rc;
+
+        /* allocate buddy "bookkeeping" block */
+        budblk = 0;
+        rc = context_mktemp(mem, ctx, &budblk);
+        if (rc) return rc;
+        /* allocate buddy data segment */
+        /* examine to see if there's a free slot in current block,
+         * otherwise make another block */
+        budcnt = mem[bd];
+        if (budcnt >= 5) {
+            uint16_t tmp;
+            tmp = 0;
+            rc = context_mktemp(mem, ctx, &tmp);
+            if (rc) return rc;
+            zeroblock(mem, tmp);
+            /* TODO: link to old block somehow */
+            bd = tmp;
+            budcnt = 0;
+        }
+        /* set up top struct */
+        budtop = budcnt * BUDSLOT_SIZE + BUDBLK_HEADER_SIZE;
+        mem_init(mem,
+                budtop, budblk,
+                /* AVAIL */
+                budtop + 4,
+                /* TAGS */
+                budtop + 10);
+
+        /* store top and memory block address as pair
+         * in next slot position */
+        slot = nslots;
+        SLOT(mem, a, slot) = ((memblk << 16) & 0xFFFF) | (budtop & 0xFFFF);
+        NSLOTS(mem, a)++;
+    }
+
+    /* push args onto stack (base, k, buddy) */
+    stk = mem[ctx + 1] & 0xFFFF;
+    slt = SLOT(mem, a, slot);
+
+    /* base: base address to apply offset to */
+    array_append(mem, stk, (slt >> 16) & 0xFFFF);
+
+    /* k value arg */
+    array_append(mem, stk, k);
+
+    /* address of buddy instance */
+    array_append(mem, stk, slt & 0xFFFF);
+
+    /* update buddy data address (it could have been changed) */
+    mem[a] |= bd << 16;
+
     return 0;
 }
 
