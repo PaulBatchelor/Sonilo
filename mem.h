@@ -58,8 +58,8 @@ int rc_get_active(uint32_t *mem, uint16_t r);
 
 /* context */
 uint16_t context_init(uint32_t *mem, uint16_t blist);
-uint16_t context_mktemp(uint32_t *mem, uint16_t ctx);
-uint16_t context_mkblock(uint32_t *mem, uint16_t ctx);
+int context_mktemp(uint32_t *mem, uint16_t ctx, uint16_t *addr);
+int context_mkblock(uint32_t *mem, uint16_t ctx, uint16_t *addr);
 void context_destroy(uint32_t *mem, uint16_t ctx);
 
 /* buddy slot allocator */

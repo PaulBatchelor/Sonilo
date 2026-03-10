@@ -1210,18 +1210,44 @@ uint32_t mem_aux(uint32_t *mem, uint16_t pstk)
 }
 
 /* allocate a temporary block */
-uint16_t context_mktemp(uint32_t *mem, uint16_t ctx)
+int context_mktemp(uint32_t *mem, uint16_t ctx, uint16_t *addr)
 {
-    /* TODO: pop block from free list*/
-    /* TODO: store block in temp bitset */
+    uint16_t blist;
+    uint16_t bst;
+    uint16_t blk;
+
+    blist = mem[ctx] & 0xFFFF;
+    bst = (mem[ctx + 1] >> 16) & 0xFF;
+
+    blk = blocklist_pop(mem, blist);
+    if (blk == 0) return 1;
+    bitset_add(mem, bst, blk);
+
+    if (addr != NULL) {
+        *addr = block_to_word(bst, blk);
+    }
+
     return 0;
 }
 
 /* allocate a block */
-uint16_t context_mkblock(uint32_t *mem, uint16_t ctx)
+int context_mkblock(uint32_t *mem, uint16_t ctx, uint16_t *addr)
 {
-    /* TODO: pop block from free list */
-    /* TODO: store block in main bitset */
+    uint16_t blist;
+    uint16_t bsm;
+    uint16_t blk;
+
+    blist = mem[ctx] & 0xFFFF;
+    bsm = (mem[ctx + 1] >> 16) & 0xFF;
+
+    blk = blocklist_pop(mem, blist);
+    if (blk == 0) return 1;
+    bitset_add(mem, bsm, blk);
+
+    if (addr != NULL) {
+        *addr = block_to_word(bsm, blk);
+    }
+
     return 0;
 }
 
