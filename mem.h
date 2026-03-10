@@ -63,6 +63,6 @@ int context_mkblock(uint32_t *mem, uint16_t ctx, uint16_t *addr);
 void context_destroy(uint32_t *mem, uint16_t ctx);
 
 /* buddy slot allocator */
-uint16_t allocator_init(uint32_t *mem, uint16_t ctx);
+int allocator_init(uint32_t *mem, uint16_t ctx, uint16_t *out);
 uint16_t allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz);
 uint16_t allocator_free(uint32_t *mem, uint16_t a, uint16_t m);

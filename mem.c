@@ -148,6 +148,12 @@ static uint32_t* get_word(uint32_t *mem, uint16_t p_top, int p)
     else return &avail[p - 64];
 }
 
+static void zeroblock(uint32_t *m, uint16_t b)
+{
+    int i;
+    for (i = 0; i < 64; i++) m[b + i] = 0;
+}
+
 /* 10-bit array routines */
 static void a10set(uint32_t *mem, int a, int i, int x)
 {
@@ -1265,12 +1271,31 @@ void context_destroy(uint32_t *mem, uint16_t ctx)
 }
 
 /* initialize buddy-slot allocator */
-uint16_t allocator_init(uint32_t *mem, uint16_t ctx)
+int allocator_init(uint32_t *mem, uint16_t ctx, uint16_t *out)
 {
+    uint16_t a;
+    uint16_t bd;
+    int rc;
     /* TODO: Allocate and zero out top-block for allocator */
-    /* TODO: store context address */
-    /* TODO: create initial "buddy data" block */
-    /* TODO: initialize slot count */
+    a = 0;
+    rc = context_mktemp(mem, ctx, &a);
+    if (rc) return rc;
+    zeroblock(mem, a);
+
+    /* store context address */
+    mem[a] = ctx;
+
+    /* create initial "buddy data" block and store it
+     * these will contiguously store the top-level struct, along with
+     * AVAIL, and TAGS
+     */
+    rc = context_mktemp(mem, ctx, &bd);
+    if (rc) return rc;
+    zeroblock(mem, bd);
+    mem[a] |= bd << 16;
+
+    if (out != NULL) *out = a;
+
     return 0;
 }
 
