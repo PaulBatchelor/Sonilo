@@ -1303,7 +1303,7 @@ int allocator_init(uint32_t *mem, uint16_t ctx, uint16_t *out)
     return 0;
 }
 
-int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz, uint16_t *addr)
+int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz)
 {
     int k;
     int slot, nslots, s;
@@ -1331,10 +1331,11 @@ int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz, uint16_t *addr)
         }
     }
 
-    /* instantiate new buddy allocator if nothing available */
 
     ctx = mem[a] & 0xFFFF;
     bd = (mem[a] >> 16) & 0xFFFF;
+
+    /* instantiate new buddy allocator if nothing available */
     if (slot < 0) {
         uint16_t memblk;
         uint16_t budblk;
@@ -1388,6 +1389,7 @@ int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz, uint16_t *addr)
     stk = mem[ctx + 1] & 0xFFFF;
     slt = SLOT(mem, a, slot);
 
+    /* TODO: add error checking */
     /* base: base address to apply offset to */
     array_append(mem, stk, (slt >> 16) & 0xFFFF);
 
@@ -1405,10 +1407,57 @@ int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz, uint16_t *addr)
 
 uint16_t allocator_free(uint32_t *mem, uint16_t a, uint16_t m)
 {
-    /* TODO: find slot that could be associated with memory address */
-    /* TODO: compute local address */
-    /* TODO: determine if it can be freed */
-    /* TODO: find associated k value */
-    /* TODO: push results on to stack */
+    int s;
+    int nslots;
+    int slot;
+    uint16_t p;
+    uint16_t bud;
+    uint32_t w;
+    int k;
+    uint16_t stk;
+    uint16_t ctx;
+
+    /* find slot that could be associated with memory address */
+    slot = -1;
+    nslots = NSLOTS(mem, a);
+
+    for (s = 0; s < nslots; s++) {
+        uint16_t sa;
+        sa = SLOT(mem, a, s) & 0xFFFF;
+        if (m >= sa && m < (sa + 64)) {
+            slot = s;
+        }
+    }
+
+    /* memory out of bounds */
+    if (slot < 0) return 1;
+
+    /* compute local address */
+    w = SLOT(mem, a, slot);
+    p = m - (w & 0xFFFF);
+    bud = w >> 16;
+
+    /* TODO: I may need to do more to determine if the address
+     * provided is actually the start of a memory segment or not
+     */
+
+    /* check TAGS list to determine if it can be freed */
+    if (tag_get(&mem[TAGS(mem, bud)], p)) {
+        /* TAGS returned 1, meaning it was already free */
+        return 1;
+    }
+
+    /* find associated k value */
+    k = kval_get(mem, bud, p);
+
+    /* push results on to stack */
+    ctx = mem[a] & 0xFFFF;
+    stk = mem[ctx + 1] & 0xFFFF;
+
+    /* TODO: add error checking */
+    array_append(mem, stk, p);
+    array_append(mem, stk, k);
+    array_append(mem, stk, bud);
+
     return 0;
 }
