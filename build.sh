@@ -4,4 +4,5 @@ gcc -g -Wall -pedantic -std=c89 \
     ins.c \
     ugen.c \
     port.c \
+    sonilo.c \
     -o t
