@@ -20,7 +20,7 @@ struct sonilo {
 
 struct sonilo_ctx {
     sonilo *s;
-    int32_t *zpage;
+    uint32_t *zpage;
 };
 
 void sonilo_init(sonilo *s)
@@ -69,4 +69,33 @@ void sonilo_block_push(sonilo *s, uint32_t p)
 size_t sonilo_sizeof(void)
 {
     return sizeof(sonilo);
+}
+
+void sonilo_ugen_init(sonilo_ctx *ctx, sonilo_ugen *u, int nports, int sz)
+{
+    /* TODO */
+}
+
+int sonilo_iport(sonilo_ugen *u, int port)
+{
+    /* TODO */
+    return 0;
+}
+
+int sonilo_oport(sonilo_ugen *u, int port)
+{
+    /* TODO */
+    return 0;
+}
+
+int sonilo_constant(sonilo_context *ctx, float c)
+{
+    /* TODO */
+    return 0;
+}
+
+int sonlio_clean(sonlo_context *ctx)
+{
+    /* TODO */
+    return 0;
 }

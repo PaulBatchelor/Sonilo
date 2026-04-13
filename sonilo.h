@@ -25,6 +25,10 @@ uint32_t sonilo_alloc(sonilo_ctx *ctx, int sz);
 void sonilo_free(sonilo_ctx *ctx, uint32_t p);
 uint32_t sonilo_block_pop(sonilo *s);
 void sonilo_block_push(sonilo *s, uint32_t p);
-void sonilo_ugen_init(sonilo_ctx *ctx, sonilo_ugen *u);
+void sonilo_ugen_init(sonilo_ctx *ctx, sonilo_ugen *u, int nports, int sz);
+int sonilo_iport(sonilo_ugen *u, int port);
+int sonilo_oport(sonilo_ugen *u, int port);
+int sonilo_constant(sonilo_context *ctx, float c);
+int sonlio_clean(sonlo_context *ctx);
 
 #endif
