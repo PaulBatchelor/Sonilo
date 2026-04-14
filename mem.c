@@ -1280,7 +1280,6 @@ int allocator_init(uint32_t *mem, uint16_t ctx, uint16_t *out)
     uint16_t a;
     uint16_t bd;
     int rc;
-    /* TODO: Allocate and zero out top-block for allocator */
     a = 0;
     rc = context_mktemp(mem, ctx, &a);
     if (rc) return rc;
@@ -1316,7 +1315,6 @@ int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz)
     if (sz < 1 || sz > 63) return 1;
 
     k = 0;
-    /* TODO: compute closest power of 2 k-value */
     while ((1 << k) < sz) k++;
 
     slot = -1;
@@ -1330,7 +1328,6 @@ int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz)
             slot = s;
         }
     }
-
 
     ctx = mem[a] & 0xFFFF;
     bd = (mem[a] >> 16) & 0xFFFF;
@@ -1459,5 +1456,17 @@ uint16_t allocator_free(uint32_t *mem, uint16_t a, uint16_t m)
     array_append(mem, stk, k);
     array_append(mem, stk, bud);
 
+    return 0;
+}
+
+int context_allocator_setup(uint32_t *mem, uint16_t ctx)
+{
+    /* TODO: setup allocator at fixed slot in zero page */
+    return 0;
+}
+
+uint16_t context_allocator(uint32_t *mem, uint16_t ctx)
+{
+    /* TODO: return address at fixed slot in zero page */
     return 0;
 }

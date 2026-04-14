@@ -1,5 +1,4 @@
 #include <stdio.h>
-
 #include "sonilo.h"
 
 int main(int argc, char *argv[])
@@ -7,6 +6,7 @@ int main(int argc, char *argv[])
     sonilo *s;
     sonilo_ctx ctx;
     sonilo_ugen ugen;
+    uint32_t i;
 
     s = malloc(sonilo_sizeof());
     sonilo_init(s);
@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     /* create ugen */
     sonilo_ugen_init(&ctx, &ugen, 3, 0);
 
-    /* set up ports */
+    /* set up ports: two inputs, one output */
     sonilo_iport(&ugen, 0);
     sonilo_iport(&ugen, 1);
     sonilo_oport(&ugen, 2);
@@ -31,7 +31,10 @@ int main(int argc, char *argv[])
 
     /* get output of ugen */
 
-    /* compute some blocks and write to disk */
+    for (i = 0; i < 3500; i++) {
+        sonilo_ugen_compute(&ugen);
+        /* write contents of output to disk */
+    }
 
     /* cleanup */
     sonilo_ctx_destroy(&ctx);
