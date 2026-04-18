@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include "sonilo.h"
 #include "mem.h"
 #include "ins.h"
 #include "ugen.h"

@@ -1,7 +1,5 @@
 #define MAX_INSTR 512
 
-typedef uint32_t (*instr_func)(uint32_t *, uint16_t);
-
 typedef struct {
     uint32_t key;
     instr_func func;

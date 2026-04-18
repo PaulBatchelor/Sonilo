@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include "sonilo.h"
 #include "ins.h"
 
 void instr_map_init(instr_map *map)
@@ -89,7 +90,6 @@ uint16_t instr_key(const char *str)
 
 int instr_ex(uint32_t *mem, instr_map *map, uint32_t i, uint32_t *rw)
 {
-    /* TODO: wrap this into a function */
     uint16_t cmd, dat;
     instr_func f;
     uint32_t w;

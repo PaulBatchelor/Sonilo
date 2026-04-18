@@ -1,6 +1,7 @@
 #include "sonilo.h"
 #include "ins.h"
 #include "mem.h"
+#include "port.h"
 
 struct sonilo {
     /* linear memory */
@@ -54,24 +55,6 @@ void sonilo_ctx_destroy(sonilo_ctx *ctx)
     context_destroy(ctx->s->mem, ctx->context);
 }
 
-uint32_t* sonilo_mem(sonilo *s, uint16_t p)
-{
-    return &s->mem[p];
-}
-
-uint16_t sonilo_alloc(sonilo_ctx *ctx, int sz)
-{
-    /* TODO: get allocator via context_allocator() */
-    /* TODO: call allocator_alloc using internal allocator */
-    /* TODO: mem_alloc: takes args from allocator, returns local address */
-    /* TODO: mem_alloc() doesn't use a stack? */
-    /* TODO: add base address and local address */
-    /* TODO: create add operation */
-    /* TODO: pop values, return */
-
-    return 0;
-}
-
 void sonilo_free(sonilo_ctx *ctx, uint16_t p)
 {
     /* TODO: get allocator via context_allocator */
@@ -84,11 +67,13 @@ size_t sonilo_sizeof(void)
     return sizeof(sonilo);
 }
 
-void sonilo_ugen_init(sonilo_ctx *ctx, sonilo_ugen *u, int nports, int sz)
+int sonilo_ugen_init(sonilo_ctx *ctx, sonilo_ugen *u, uint16_t ukey, int nports, int sz)
 {
     /* TODO: allocate top struct */
     /* TODO: allocate and initialize port array */
-    /* TODO: set DSP callback to NOP */
+    /* TODO: set up DSP callback */
+    /* TODO: error checking */
+    return 0;
 }
 
 int sonilo_iport(sonilo_ugen *u, int port)
@@ -124,4 +109,33 @@ int sonlio_clean(sonilo_ctx *ctx)
 void sonilo_ugen_compute(sonilo_ugen *u)
 {
     /* TODO */
+}
+
+uint16_t sonilo_command_set(sonilo *s, uint16_t key, instr_func func)
+{
+    /* TODO */
+    return 0;
+}
+
+uint16_t sonilo_command_get(sonilo *s, uint16_t key)
+{
+    /* TODO */
+    return 0;
+}
+
+uint16_t sonilo_key(const char *key)
+{
+    return instr_key(key);
+}
+
+uint32_t sonilo_srate(uint32_t *mem)
+{
+    /* fixed 44.1kHZ samplerate (for now) */
+    return 44100;
+}
+
+int sonilo_ugen_port(uint32_t *mem, uint32_t w, ugen_port *p)
+{
+    /* TODO */
+    return 0;
 }

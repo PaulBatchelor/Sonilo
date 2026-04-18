@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stddef.h>
+#include "sonilo.h"
 #include "port.h"
 
 /* 30-bit Q16.13 with sign bit */
