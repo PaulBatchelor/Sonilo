@@ -100,7 +100,7 @@ int sonilo_constant(sonilo_ctx *ctx, float c)
     return 0;
 }
 
-int sonlio_clean(sonilo_ctx *ctx)
+int sonilo_clean(sonilo_ctx *ctx)
 {
     /* TODO: call rc_sweep */
     return 0;
@@ -134,7 +134,33 @@ uint32_t sonilo_srate(uint32_t *mem)
     return 44100;
 }
 
-int sonilo_ugen_port(uint32_t *mem, uint32_t w, ugen_port *p)
+int sonilo_sonilo_port(uint32_t *mem, uint32_t w, sonilo_port *p)
+{
+    /* TODO */
+    return 0;
+}
+
+uint16_t sonilo_command(sonilo *s, uint16_t key, instr_func func)
+{
+    /* TODO */
+    return 0;
+}
+
+/* block: gets block at port. errors if port is not a block */
+int sonilo_ugen_block(sonilo_ugen *u, int port, float **block)
+{
+    /* TODO */
+    return 0;
+}
+
+/* get a ugen from a sonilo memory location */
+int sonilo_ugen_get(uint32_t *mem, sonilo_ugen *u, uint16_t p)
+{
+    /* TODO */
+    return 0;
+}
+
+int sonilo_ugen_port(uint32_t *mem, uint32_t w, sonilo_port *p)
 {
     /* TODO */
     return 0;

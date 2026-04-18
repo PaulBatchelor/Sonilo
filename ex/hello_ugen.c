@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "sonilo.h"
 
 typedef struct {
@@ -18,27 +19,29 @@ static uint32_t render(uint32_t *mem, uint16_t p)
     sonilo_ugen_get(mem, &ugen, p);
 
     /* get ports */
-    sonilo_ugen_port(mem, ugen->ports[0], &freq);
-    sonilo_ugen_port(mem, ugen->ports[1], &amp);
-    sonilo_ugen_port(mem, ugen->ports[2], &out);
+    sonilo_ugen_port(mem, ugen.ports[0], &freq);
+    sonilo_ugen_port(mem, ugen.ports[1], &amp);
+    sonilo_ugen_port(mem, ugen.ports[2], &out);
 
     /* ugen state */
-    state = (sine_data *)ugen->state;
+    state = (sine_data *)ugen.state;
 
     /* global samplerate */
-    srate = sonilo_srate(mem);
+    sr = sonilo_srate(mem);
 
     for (n = 0; n < 64; n++) {
         float f, a, o;
-        f = sonilo_port_get(&freq, n);
-        a = sonilo_port_get(&amp, n);
+        f = sonilo_port_read(&freq, n);
+        a = sonilo_port_read(&amp, n);
         /* TODO: compute sample of audio */
         o = 0.0;
 
         /* TODO: update state */
-        state>phs = 0;
-        sonilo_port_set(&out, n, o);
+        state->phs = 0;
+        sonilo_port_write(&out, n, o);
     }
+
+    return 0;
 }
 
 int main(int argc, char *argv[])
@@ -58,16 +61,15 @@ int main(int argc, char *argv[])
     sonilo_ctx_init(&ctx, s);
 
     /* push amp/freq constants */
-    sonlio_constant(&ctx, 440);
-    sonlio_constant(&ctx, 0.5);
+    sonilo_constant(&ctx, 440);
+    sonilo_constant(&ctx, 0.5);
 
     /* bind DSP command to sonilo */
     ukey = sonilo_key("SIN");
     sonilo_command(s, ukey, render);
 
     /* allocate/initialize ugen */
-    sonilo_ugen_init(ctx, &ugen, ukey, 3, 4);
-    sonilo_ugen_init(&ctx, &ugen, 3, 0);
+    sonilo_ugen_init(&ctx, &ugen, ukey, 3, 4);
 
     /* set up ports: two inputs, one output */
     sonilo_iport(&ugen, 0);
@@ -78,7 +80,7 @@ int main(int argc, char *argv[])
     sonilo_clean(&ctx);
 
     /* initialize ugen internal state */
-    state = ugen->data;
+    state = (sine_data *)ugen.state;
     state->phs = 0;
 
     /* get output of ugen */

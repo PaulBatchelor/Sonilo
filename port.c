@@ -57,11 +57,11 @@ static uint32_t ftoq(float x)
     return o;
 }
 
-ugen_port ugen_port_from_word(uint32_t *mem, uint32_t w)
+sonilo_port sonilo_port_from_word(uint32_t *mem, uint32_t w)
 {
     int type;
     uint32_t data;
-    ugen_port p;
+    sonilo_port p;
 
     type = w >> 30;
     data = w & 0x3FFFFFFF;
@@ -81,7 +81,7 @@ ugen_port ugen_port_from_word(uint32_t *mem, uint32_t w)
     return p;
 }
 
-uint32_t ugen_port_to_word(uint32_t *mem, ugen_port *p)
+uint32_t sonilo_port_to_word(uint32_t *mem, sonilo_port *p)
 {
     uint32_t w;
     w = 0;
@@ -99,7 +99,7 @@ uint32_t ugen_port_to_word(uint32_t *mem, ugen_port *p)
     return w;
 }
 
-float ugen_port_read(ugen_port *p, int n)
+float sonilo_port_read(sonilo_port *p, int n)
 {
     if (p->type == PORT_CONSTANT) {
         return p->data.constant;
@@ -113,7 +113,7 @@ float ugen_port_read(ugen_port *p, int n)
     return 0;
 }
 
-void ugen_port_write(ugen_port *p, int n, float s)
+void sonilo_port_write(sonilo_port *p, int n, float s)
 {
     if (p->type == PORT_CONSTANT) {
         p->data.constant = s;
@@ -123,9 +123,9 @@ void ugen_port_write(ugen_port *p, int n, float s)
     }
 }
 
-ugen_port ugen_port_constant(float c)
+sonilo_port sonilo_port_constant(float c)
 {
-    ugen_port p;
+    sonilo_port p;
     p.type = PORT_CONSTANT;
     p.data.constant = ftoq(c);
     return p;

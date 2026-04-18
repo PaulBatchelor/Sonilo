@@ -1,0 +1,34 @@
+cflags = -g -Wall -pedantic -std=c89 -I.
+libs = -L. -lsonilo
+
+rule c89
+    command = gcc -std=c89 -c $cflags $in -o $out
+    description = c89 $in
+
+rule ar
+    command = ar rcs $out $in
+    description = creating $out
+
+rule link
+    command = gcc $cflags $in -o $out $ldflags $libs
+    description = creating $out
+
+
+build sonilo.o: c89 sonilo.c
+build t.o: c89 t.c
+build mem.o: c89 mem.c
+build ins.o: c89 ins.c
+build ugen.o: c89 ugen.c
+build port.o: c89 port.c
+build libsonilo.a: ar $
+    sonilo.o $
+    mem.o $
+    ins.o $
+    ugen.o $
+    port.o
+build ex/hello_ugen.o: c89 ex/hello_ugen.c
+
+build t: link t.o || libsonilo.a
+build ex/hello_ugen: link ex/hello_ugen.o || libsonilo.a
+
+default t ex/hello_ugen
