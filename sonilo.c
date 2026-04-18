@@ -154,14 +154,18 @@ int sonilo_ugen_block(sonilo_ugen *u, int port, float **block)
 }
 
 /* get a ugen from a sonilo memory location */
-int sonilo_ugen_get(uint32_t *mem, sonilo_ugen *u, uint16_t p)
+int sonilo_ugen_get(uint32_t *mem, sonilo_ugen_data *u, uint16_t p)
 {
-    /* TODO */
-    return 0;
-}
+    uint16_t m_ports, m_state, cmd;
+    /* ugen components: ports, data, opcode */
+    m_ports = mem[p] & 0xFFFF;
+    m_state = (mem[p] >> 16) & 0xFFFF;
+    cmd = mem[p + 1];
 
-int sonilo_ugen_port(uint32_t *mem, uint32_t w, sonilo_port *p)
-{
-    /* TODO */
+    u->ports = &mem[m_ports];
+    u->state = &mem[m_state];
+    u->cmd = cmd;
+    u->top = p;
+
     return 0;
 }

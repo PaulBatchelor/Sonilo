@@ -9,7 +9,7 @@ typedef struct {
 static uint32_t render(uint32_t *mem, uint16_t p)
 {
     int rc;
-    sonilo_ugen ugen;
+    sonilo_ugen_data ugen;
     sonilo_port freq, amp, out;
     sine_data *state;
     int n;
@@ -19,9 +19,9 @@ static uint32_t render(uint32_t *mem, uint16_t p)
     sonilo_ugen_get(mem, &ugen, p);
 
     /* get ports */
-    sonilo_ugen_port(mem, ugen.ports[0], &freq);
-    sonilo_ugen_port(mem, ugen.ports[1], &amp);
-    sonilo_ugen_port(mem, ugen.ports[2], &out);
+    freq = sonilo_port_from_word(mem, ugen.ports[0]);
+    amp = sonilo_port_from_word(mem, ugen.ports[1]);
+    out = sonilo_port_from_word(mem, ugen.ports[2]);
 
     /* ugen state */
     state = (sine_data *)ugen.state;
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
     sonilo_clean(&ctx);
 
     /* initialize ugen internal state */
-    state = (sine_data *)ugen.state;
+    state = (sine_data *)ugen.data.state;
     state->phs = 0;
 
     /* get output of ugen */

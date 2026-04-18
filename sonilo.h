@@ -12,12 +12,16 @@ typedef struct sonilo_ctx {
     uint16_t allocator;
 } sonilo_ctx;
 
-typedef struct sonilo_ugen {
-    sonilo_ctx *ctx;
+typedef struct sonilo_ugen_data {
     uint16_t top;
     uint32_t *ports;
     uint32_t *state;
-    uint16_t dsp;
+    uint16_t cmd;
+} sonilo_ugen_data;
+
+typedef struct sonilo_ugen {
+    sonilo_ctx *ctx;
+    sonilo_ugen_data data;
 } sonilo_ugen;
 
 enum {
@@ -56,8 +60,7 @@ int sonilo_iport(sonilo_ugen *u, int port);
 /* oport: output port. pushs block (signal) to pstack, stores in port */
 int sonilo_oport(sonilo_ugen *u, int port);
 
-/* port: set up a port C wrapper from port word */
-int sonilo_ugen_port(uint32_t *mem, uint32_t w, sonilo_port *p);
+/* ports */
 sonilo_port sonilo_port_constant(float c);
 sonilo_port sonilo_port_from_word(uint32_t *mem, uint32_t w);
 uint32_t sonilo_port_to_word(uint32_t *mem, sonilo_port *p);
@@ -77,7 +80,7 @@ void sonilo_ugen_compute(sonilo_ugen *u);
 int sonilo_ugen_block(sonilo_ugen *u, int port, float **block);
 
 /* get a ugen from a sonilo memory location */
-int sonilo_ugen_get(uint32_t *mem, sonilo_ugen *u, uint16_t p);
+int sonilo_ugen_get(uint32_t *mem, sonilo_ugen_data *u, uint16_t p);
 
 /* create key from 3-letter alphabetic (A-Z) combo */
 uint16_t sonilo_key(const char *key);
