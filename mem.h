@@ -56,17 +56,6 @@ int rc_get_count(uint32_t *mem, uint16_t r, uint16_t m);
 int rc_get_hold(uint32_t *mem, uint16_t r, uint16_t m);
 int rc_get_active(uint32_t *mem, uint16_t r);
 
-/* context */
-/* TODO: make a context.c? */
-uint16_t context_init(uint32_t *mem, uint16_t blist);
-int context_mktemp(uint32_t *mem, uint16_t ctx, uint16_t *addr);
-int context_mkblock(uint32_t *mem, uint16_t ctx, uint16_t *addr);
-void context_destroy(uint32_t *mem, uint16_t ctx);
-int context_allocator_setup(uint32_t *mem, uint16_t ctx);
-uint16_t context_allocator(uint32_t *mem, uint16_t ctx);
-int context_pstack_setup(uint32_t *mem, uint16_t ctx);
-uint16_t context_pstack(uint32_t *mem, uint16_t ctx);
-
 /* buddy slot allocator */
 int allocator_init(uint32_t *mem, uint16_t ctx, uint16_t *out);
 int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz);

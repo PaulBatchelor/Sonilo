@@ -20,12 +20,14 @@ build mem.o: c89 mem.c
 build ins.o: c89 ins.c
 build ugen.o: c89 ugen.c
 build port.o: c89 port.c
+build context.o: c89 context.c
 build libsonilo.a: ar $
     sonilo.o $
     mem.o $
     ins.o $
     ugen.o $
-    port.o
+    port.o $
+    context.o
 build ex/hello_ugen.o: c89 ex/hello_ugen.c
 
 build t: link t.o || libsonilo.a

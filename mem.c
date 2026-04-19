@@ -152,12 +152,6 @@ static uint32_t* get_word(uint32_t *mem, uint16_t p_top, int p)
     else return &avail[p - 64];
 }
 
-static void zeroblock(uint32_t *m, uint16_t b)
-{
-    int i;
-    for (i = 0; i < 64; i++) m[b + i] = 0;
-}
-
 /* 10-bit array routines */
 static void a10set(uint32_t *mem, int a, int i, int x)
 {
@@ -973,71 +967,6 @@ int rc_get_active(uint32_t *mem, uint16_t r)
 
     return count;
 }
-/* context: a set of components used together to form
- * a baseline setup for higher-level sonilo functionality,
- * formed from an initial global block list.
- * Components include: a zero page, with the first two
- * words containing two bitsets for tracking blocks
- * (main/temp), a pointer to the block list, and a local
- * argument stack.
- *
- * Returns address to zero page.
- */
-uint16_t context_init(uint32_t *mem, uint16_t blist)
-{
-    int err;
-    uint16_t zp;
-    uint16_t bsm, bst;
-    uint16_t stk;
-    int blk[4];
-    int bp;
-    int i;
-
-    bp = 0;
-    err = 0x8000;
-
-    /* create zero page */
-    zp = blocklist_pop(mem, blist);
-    if (zp == 0) return err | 1;
-    blk[bp++] = zp;
-    zp = block_to_word(blist, zp);
-    zp = zero_page_init(mem, blist, zp);
-
-    /* create main and temp bitsets */
-
-    bsm = blocklist_pop(mem, blist);
-    if (bsm == 0) return err | 2;
-    blk[bp++] = bsm;
-    bsm = block_to_word(blist, bsm);
-
-    /* temp is in second half of block */
-    bst = bsm + 32;
-
-    bitset_init(mem, bsm);
-    bitset_init(mem, bst);
-
-    /* create stack */
-    stk = blocklist_pop(mem, blist);
-    if (stk == 0) return err | 3;
-    blk[bp++] = stk;
-    stk = block_to_word(blist, stk);
-    array_init(mem, stk);
-
-    /* store stack, zero page, and set addresses in temp */
-    for (i = 0; i < bp; i++) {
-        bitset_add(mem, bst, blk[i]);
-    }
-
-    /* interleave addresses into words, MSBs contain bitsets */
-    /* zero page slot 0: temp | blocklist */
-    /* zero page slot 1: main | stack */
-    mem[zp] = bst << 16 | blist;
-    mem[zp + 1] = bsm << 16 | stk;
-
-    /* return zero page address */
-
-    return zp;
-}
 
 uint16_t block_to_word(uint16_t blist, uint16_t blk)
 {
@@ -1230,48 +1159,6 @@ uint32_t mem_aux(uint32_t *mem, uint16_t pstk)
     return err | 3;
 }
 
-/* allocate a temporary block */
-int context_mktemp(uint32_t *mem, uint16_t ctx, uint16_t *addr)
-{
-    uint16_t blist;
-    uint16_t bst;
-    uint16_t blk;
-
-    blist = mem[ctx] & 0xFFFF;
-    bst = (mem[ctx + 1] >> 16) & 0xFF;
-
-    blk = blocklist_pop(mem, blist);
-    if (blk == 0) return 1;
-    bitset_add(mem, bst, blk);
-
-    if (addr != NULL) {
-        *addr = block_to_word(bst, blk);
-    }
-
-    return 0;
-}
-
-/* allocate a block */
-int context_mkblock(uint32_t *mem, uint16_t ctx, uint16_t *addr)
-{
-    uint16_t blist;
-    uint16_t bsm;
-    uint16_t blk;
-
-    blist = mem[ctx] & 0xFFFF;
-    bsm = (mem[ctx + 1] >> 16) & 0xFF;
-
-    blk = blocklist_pop(mem, blist);
-    if (blk == 0) return 1;
-    bitset_add(mem, bsm, blk);
-
-    if (addr != NULL) {
-        *addr = block_to_word(bsm, blk);
-    }
-
-    return 0;
-}
-
 /* returns all blocks in set to the block list, and clears the set */
 void bitset_free(uint32_t *mem, uint16_t bm, uint16_t blist)
 {
@@ -1279,11 +1166,13 @@ void bitset_free(uint32_t *mem, uint16_t bm, uint16_t blist)
     /* Find the MSBs, compute block address, and turn bits off */
 }
 
-/* frees memory used for context, preserves allocated main blocks */
-void context_destroy(uint32_t *mem, uint16_t ctx)
+static void zeroblock(uint32_t *m, uint16_t b)
 {
-    /* TODO: free blocks in temp set */
+    int i;
+    for (i = 0; i < 64; i++) m[b + i] = 0;
 }
+
+
 
 /* initialize buddy-slot allocator */
 int allocator_init(uint32_t *mem, uint16_t ctx, uint16_t *out)
@@ -1468,32 +1357,4 @@ uint16_t allocator_free(uint32_t *mem, uint16_t a, uint16_t m)
     array_append(mem, stk, bud);
 
     return 0;
-}
-
-int context_allocator_setup(uint32_t *mem, uint16_t ctx)
-{
-    /* TODO: allocate temp block */
-    /* TODO: allocate buddy slot allocator using temp block */
-    /* TODO: store allocator address at fixed slot in zero page */
-    return 0;
-}
-
-uint16_t context_allocator(uint32_t *mem, uint16_t ctx)
-{
-    /* zero page slot 2 LSB */
-    return mem[ctx + 2] & 0xFFFF;
-}
-
-int context_pstack_setup(uint32_t *mem, uint16_t ctx)
-{
-    /* TODO: allocate temp block */
-    /* TODO: initialize pstack and reference counter */
-    /* TODO: store pstack at fixed slot in zero page */
-    return 0;
-}
-
-uint16_t context_pstack(uint32_t *mem, uint16_t ctx)
-{
-    /* zero page slot 2 MSB */
-    return mem[ctx + 2] >> 16;
 }

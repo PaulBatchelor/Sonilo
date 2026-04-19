@@ -2,6 +2,7 @@
 #include "ins.h"
 #include "mem.h"
 #include "ugen.h"
+#include "context.h"
 
 #define MAX_PORTS 16
 
