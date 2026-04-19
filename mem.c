@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "mem.h"
+#include "context.h"
 #define AVAIL_OFFSET 64
 #define LOC_AVAIL(K) (K + AVAIL_OFFSET)
 #define TAGS(MEM, TOP) (MEM[TOP + 1])
@@ -300,7 +301,7 @@ void mem_init(uint32_t *mem,
     uint32_t *w;
     uint32_t *block;
 
-    /* write virutal pointer addresses to memory */
+    /* write virtual pointer addresses to memory */
     mem[p_top] = p_avail  | (p_block << 16);
     mem[p_top + 1] = p_tags;
 

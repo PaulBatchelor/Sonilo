@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "mem.h"
 #include "context.h"
+#include "ugen.h"
 
 /* context: a set of components used together to form
  * a baseline setup for higher-level sonilo functionality,
@@ -69,13 +70,21 @@ uint16_t context_init(uint32_t *mem, uint16_t blist)
     return zp;
 }
 
-
-
 int context_allocator_setup(uint32_t *mem, uint16_t ctx)
 {
-    /* TODO: allocate temp block */
-    /* TODO: allocate buddy slot allocator using temp block */
-    /* TODO: store allocator address at fixed slot in zero page */
+    uint16_t al;
+    int err;
+
+    /* instantiate allocator */
+    al = 0;
+    err = allocator_init(mem, ctx, &al);
+    if (err) return 1;
+
+    /* store address at slot 2 LSB in zero page */
+    /* zero out LSB, and OR in the allocator */
+    mem[ctx + 2] &= 0xFFFF0000;
+    mem[ctx + 2] |= al;
+
     return 0;
 }
 
@@ -87,9 +96,23 @@ uint16_t context_allocator(uint32_t *mem, uint16_t ctx)
 
 int context_pstack_setup(uint32_t *mem, uint16_t ctx)
 {
-    /* TODO: allocate temp block */
-    /* TODO: initialize pstack and reference counter */
-    /* TODO: store pstack at fixed slot in zero page */
+    uint16_t pstack;
+    int err;
+    /* allocate temp block for the stack */
+    pstack = 0;
+    err = context_mktemp(mem, ctx, &pstack);
+    if (err) return 1;
+
+    /* initialize pstack and reference counter */
+    pstack_init(mem, pstack);
+    /* NOTE: pstack base address is used for both RC and pstack */
+    rc_init(mem, pstack);
+
+    /* store pstack address at slot 2 MSB in zero page */
+    /* zero out MSB, and OR in the pstack */
+    mem[ctx + 2] &= 0xFFFF;
+    mem[ctx + 2] |= pstack << 16;
+
     return 0;
 }
 
@@ -145,4 +168,7 @@ int context_mkblock(uint32_t *mem, uint16_t ctx, uint16_t *addr)
 void context_destroy(uint32_t *mem, uint16_t ctx)
 {
     /* TODO: free blocks in temp set */
+    /* TODO: retrieve BST (MSB in slot 0) */
+    /* TODO: iterate over 32 words */
+    /* TODO: free blocks in each word */
 }
