@@ -46,7 +46,10 @@ int pstack_push(uint32_t *mem, uint16_t p, uint32_t w)
 
     /* update RC if param is a block */
     if ((w & 3) == PARAM_BLOCK) {
-        return rc_incr(mem, p, w >> 2);
+        int rc;
+        rc = rc_incr(mem, p, w >> 2);
+        /* address not found */
+        if (rc) return 2;
     }
 
     return 0;

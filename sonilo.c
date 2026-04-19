@@ -73,15 +73,50 @@ size_t sonilo_sizeof(void)
  * memory using the buddy slot allocator */
 int sonilo_alloc(sonilo_ctx *ctx, int sz, uint16_t *p)
 {
+    int rc;
+    uint32_t stk, bud, k, base;
+    int offset;
+    uint32_t *mem;
+
     /* basic bounds checking: this is only for sub-block non-zero sizes */
     if (sz <= 0 || sz >= 64) return 1;
 
-    /* TODO: call buddy slot allocator (stack: base, buddy args) */
-    /* TODO: error handling? */
-    /* TODO: call buddy allocator (stack: base, local offset) */
-    /* TODO: error handling? */
+    mem = ctx->s->mem;
+    /* call buddy slot allocator (stack: base, buddy args) */
+    rc = allocator_alloc(mem, ctx->allocator, sz); 
+
+    /* error handling */
+    if (rc) return 2;
+
+    /* call buddy allocator (stack: base, local offset) */
+    /* NOTE: there isn't a great abstraction for this yet.
+     * Ideally, stack operations would be implicit, but that
+     * hasn't been built out yet.
+     */
+
+    /* get stack (slot 1 LSB) */
+    stk = mem[ctx->context + 1] & 0xFFFF;
+
+    /* pop bud and k params */
+    rc = array_pop(mem, stk, &bud);
+    if (rc) return 3;
+    rc = array_pop(mem, stk, &k);
+    if (rc) return 4;
+
+    /* call buddy allocator */
+    offset = mem_alloc(mem, bud, k);
+
+    if (offset < 0) return 5;
+
     /* TODO: add offset and base address, store result in p */
-    return 1;
+    rc = array_pop(mem, stk, &base);
+    if (rc) return 6;
+
+    if (p == NULL) return 7;
+
+    *p = offset + base;
+
+    return 0;
 }
 
 int sonilo_ugen_init(sonilo_ctx *ctx, sonilo_ugen *u, uint16_t ukey, int nports, int sz)
@@ -199,7 +234,12 @@ int sonilo_constant(sonilo_ctx *ctx, float c)
 
     /* push param onto stack */
     rc = pstack_push(mem, ctx->pstack, w);
-    if (rc) return 1;
+    if (rc) {
+        /* err 1 or 2: overflow or RC address not found for block */
+        if (rc < 3) return rc;
+        /* unknown error */
+        else return 3;
+    }
 
     return 0;
 }

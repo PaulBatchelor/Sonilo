@@ -62,8 +62,8 @@ sonilo_port sonilo_port_from_word(uint32_t *mem, uint32_t w)
     uint32_t data;
     sonilo_port p;
 
-    type = w >> 30;
-    data = w & 0x3FFFFFFF;
+    type = w & 3;
+    data = w >> 2;
 
     if (type == PORT_CONSTANT) {
         p.type = PORT_CONSTANT;
@@ -87,12 +87,10 @@ uint32_t sonilo_port_to_word(uint32_t *mem, sonilo_port *p)
 
     if (p->type == PORT_BLOCK) {
         w = PORT_BLOCK;
-        w <<= 2;
-        w |= p->data.block.addr;
+        w |= (p->data.block.addr) << 2;
     } else if (p->type == PORT_CONSTANT) {
         w = PORT_CONSTANT;
-        w <<= 2;
-        w |= ftoq(p->data.constant);
+        w |= (ftoq(p->data.constant)) << 2;
     }
 
     return w;

@@ -8,7 +8,6 @@ typedef struct {
 
 static uint32_t render(uint32_t *mem, uint16_t p)
 {
-    int rc;
     sonilo_ugen_data ugen;
     sonilo_port freq, amp, out;
     sine_data *state;
@@ -34,10 +33,10 @@ static uint32_t render(uint32_t *mem, uint16_t p)
         f = sonilo_port_read(&freq, n);
         a = sonilo_port_read(&amp, n);
         /* TODO: compute sample of audio */
-        o = 0.0;
+        o = -0.5;
 
         /* TODO: update state */
-        state->phs = 0;
+        state->phs = -1;
         sonilo_port_write(&out, n, o);
     }
 
@@ -55,26 +54,40 @@ int main(int argc, char *argv[])
     int rc;
     FILE *fp;
     sine_data *state;
+    unsigned long t;
+
+    fp = NULL;
 
     s = malloc(sonilo_sizeof());
     sonilo_init(s);
     sonilo_ctx_init(&ctx, s);
 
     /* push amp/freq constants */
-    sonilo_constant(&ctx, 440);
-    sonilo_constant(&ctx, 0.5);
+    rc = sonilo_constant(&ctx, 440);
+    if (rc) goto clean;
+    rc = sonilo_constant(&ctx, 0.5);
+    if (rc) goto clean;
 
     /* bind DSP command to sonilo */
     ukey = sonilo_key("SIN");
-    sonilo_command(s, ukey, render);
+    rc = sonilo_command(s, ukey, render);
+    if (rc) {
+        goto clean;
+    }
 
     /* allocate/initialize ugen */
-    sonilo_ugen_init(&ctx, &ugen, ukey, 3, 4);
+    rc = sonilo_ugen_init(&ctx, &ugen, ukey, 3, 4);
+    if (rc) {
+        goto clean;
+    }
 
     /* set up ports: two inputs, one output */
-    sonilo_iport(&ugen, 0);
-    sonilo_iport(&ugen, 1);
-    sonilo_oport(&ugen, 2);
+    rc = sonilo_iport(&ugen, 0);
+    if (rc) goto clean;
+    rc = sonilo_iport(&ugen, 1);
+    if (rc) goto clean;
+    rc = sonilo_oport(&ugen, 2);
+    if (rc) goto clean;
 
     /* perform GC sweep to return any freed buffers */
     sonilo_flush(&ctx);
@@ -93,16 +106,22 @@ int main(int argc, char *argv[])
     }
 
     fp = fopen("out.raw", "wb");
-    for (i = 0; i < 3500; i++) {
+    t = 0;
+    for (i = 0; i < 2; i++) {
+        int k;
         sonilo_ugen_compute(&ugen);
         /* write contents of output to disk */
         fwrite(out, sizeof(float), 64, fp);
+        for (k = 0; k < 64; k++) {
+            printf("%d, %g\n", t, out[k]);
+            t++;
+        }
     }
 
     /* cleanup */
 clean:
     sonilo_ctx_destroy(&ctx);
     free(s);
-    fclose(fp);
+    if (fp != NULL) fclose(fp);
     return 0;
 }

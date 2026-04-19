@@ -123,7 +123,19 @@ int instr_block(uint32_t *mem, instr_map *map, uint16_t p, uint32_t *rw)
 
 int instr_map_index(instr_map *map, uint16_t key)
 {
-    /* TODO */
+    uint16_t h, i;
+    h = hash(key);
+
+    for (i = 0; i < MAX_INSTR; i++) {
+        instr_entry *ent;
+        ent = &map->ent[h];
+        if (ent->func != NULL && ent->key == key) {
+            return h;
+        }
+        h += 1;
+        h %= MAX_INSTR;
+    }
+
     return -1;
 }
 
