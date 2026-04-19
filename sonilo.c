@@ -1,7 +1,9 @@
 #include "sonilo.h"
 #include "ins.h"
 #include "mem.h"
-#include "port.h"
+#include "ugen.h"
+
+#define MAX_PORTS 16
 
 struct sonilo {
     /* linear memory */
@@ -14,7 +16,7 @@ struct sonilo {
     uint16_t a, b;
 
     /* pointer to blocklist */
-    uint32_t blocklist;
+    uint16_t blocklist;
 
     /* instruction map lookup */
     instr_map instr;
@@ -45,9 +47,15 @@ void sonilo_ctx_init(sonilo_ctx *ctx, sonilo *s)
 {
     ctx->context = context_init(s->mem, s->blocklist);
     ctx->s = s;
+
+    /* set up allocator */
     /* TODO: error checking */
     context_allocator_setup(ctx->s->mem, ctx->context);
     ctx->allocator = context_allocator(ctx->s->mem, ctx->context);
+
+    /* TODO: error checking */
+    context_pstack_setup(ctx->s->mem, ctx->context);
+    ctx->pstack = context_pstack(ctx->s->mem, ctx->context);
 }
 
 void sonilo_ctx_destroy(sonilo_ctx *ctx)
@@ -55,72 +63,160 @@ void sonilo_ctx_destroy(sonilo_ctx *ctx)
     context_destroy(ctx->s->mem, ctx->context);
 }
 
-void sonilo_free(sonilo_ctx *ctx, uint16_t p)
-{
-    /* TODO: get allocator via context_allocator */
-    /* TODO: allocator_free() */
-    /* TODO: mem_free() */
-}
-
 size_t sonilo_sizeof(void)
 {
     return sizeof(sonilo);
 }
 
+/* an abstraction to handle the inner details of allocating
+ * memory using the buddy slot allocator */
+int sonilo_alloc(sonilo_ctx *ctx, int sz, uint16_t *p)
+{
+    /* basic bounds checking: this is only for sub-block non-zero sizes */
+    if (sz <= 0 || sz >= 64) return 1;
+
+    /* TODO: call buddy slot allocator (stack: base, buddy args) */
+    /* TODO: error handling? */
+    /* TODO: call buddy allocator (stack: base, local offset) */
+    /* TODO: error handling? */
+    /* TODO: add offset and base address, store result in p */
+    return 1;
+}
+
 int sonilo_ugen_init(sonilo_ctx *ctx, sonilo_ugen *u, uint16_t ukey, int nports, int sz)
 {
-    /* TODO: allocate top struct */
-    /* TODO: allocate and initialize port array */
-    /* TODO: set up DSP callback */
-    /* TODO: error checking */
+    int rc;
+    uint16_t top, ports, state;
+    int cmd;
+    uint32_t *mem;
+    mem = ctx->s->mem;
+
+    /* TODO: setting up this ugen should be moved to another
+     * more low-level function */
+
+    /* BEGIN low-level ugen set-up */
+    top = ports = state = 0;
+    /* allocate top struct (2 words) */
+    rc = sonilo_alloc(ctx, 2, &top);
+    if (rc) return 1;
+    
+    /* allocate and initialize port array (N words) */
+    if (nports > MAX_PORTS || nports <= 0) return 2;
+    rc = sonilo_alloc(ctx, nports, &ports);
+    if (rc) return 2;
+
+    /* allocate user data (SZ words) */
+    rc = sonilo_alloc(ctx, sz, &state);
+    if (rc) return 3;
+
+    /* resolve command key to function index pointer (instr_map_index) */
+    cmd = instr_map_index(&ctx->s->instr, ukey);
+
+    if (cmd < 0) return 4;
+
+    /* store ugen addresses in memory */
+    mem[top] = (state << 16) | ports;
+    mem[top + 1] = cmd;
+
+    /* END low-level ugen set-up */
+
+    if (u == NULL) return 5;
+
+    /* store information in ugen struct */
+    u->ctx = ctx;
+    u->data.top = top;
+    u->data.ports = &mem[ports];
+    u->data.state = &mem[state];
+    u->data.cmd = cmd;
+
     return 0;
 }
 
 int sonilo_iport(sonilo_ugen *u, int port)
 {
-    /* TODO: get param stack */
-    /* TODO: pop param from stack */
-    /* TODO: set param to port number */
+    uint32_t w;
+    int rc;
+
+    /* pop param from stack */
+    w = 0;
+    rc = pstack_pop(u->ctx->s->mem, u->ctx->pstack, &w);
+    if (rc) return 1;
+
+    /* set param to port number */
+    u->data.ports[port] = w;
     return 0;
+}
+
+static sonilo_port new_block_port(sonilo_ctx *ctx)
+{
+    sonilo_port p;
+    uint32_t b;
+
+    /* TODO: allocate block to main */
+    b = 0; /* not actual address */
+
+    /* TODO: sonilo_port_block */
+    p = sonilo_port_block(ctx->s->mem, b);
+    return p;
 }
 
 int sonilo_oport(sonilo_ugen *u, int port)
 {
-    /* TODO: get a block (somewhere) */
-    /* TODO: convert to param word data */
-    /* TODO: push param word onto stack */
-    /* TODO: save param word to port */
+    uint32_t w;
+    sonilo_port p;
+    uint32_t *mem;
+    int rc;
+
+    mem = u->ctx->s->mem;
+    /* allocate a block inside of a port */
+    p = new_block_port(u->ctx);
+
+    /* convert to param word data */
+    w = sonilo_port_to_word(mem, &p);
+
+    /* push param word onto stack */
+    rc = pstack_push(mem, u->ctx->pstack, w);
+    if (rc) return 1;
+
+    /* save param word to port */
+    u->data.ports[port] = w;
     return 0;
 }
 
 int sonilo_constant(sonilo_ctx *ctx, float c)
 {
-    /* TODO: convert constant to param */
-    /* TODO: push param onto stack */
+    sonilo_port p;
+    uint32_t w;
+    int rc;
+    uint32_t *mem;
+
+    mem = ctx->s->mem;
+
+    /* convert constant to param */
+    p = sonilo_port_constant(c);
+    w = sonilo_port_to_word(mem, &p);
+
+    /* push param onto stack */
+    rc = pstack_push(mem, ctx->pstack, w);
+    if (rc) return 1;
+
     return 0;
 }
 
-int sonilo_clean(sonilo_ctx *ctx)
+int sonilo_flush(sonilo_ctx *ctx)
 {
-    /* TODO: call rc_sweep */
-    return 0;
+    return pstack_sweep(ctx->s->mem, ctx->pstack);
 }
 
 void sonilo_ugen_compute(sonilo_ugen *u)
 {
-    /* TODO */
-}
+    instr_func f;
+    /* retrieve callback from sonilo VM (instr_map_get) */
+    f = instr_map_entry(&u->ctx->s->instr, u->data.cmd);
+    if (f == NULL) return;
 
-uint16_t sonilo_command_set(sonilo *s, uint16_t key, instr_func func)
-{
-    /* TODO */
-    return 0;
-}
-
-uint16_t sonilo_command_get(sonilo *s, uint16_t key)
-{
-    /* TODO */
-    return 0;
+    /* call, store result in rw */
+    u->ctx->s->rw = f(u->ctx->s->mem, u->data.top);
 }
 
 uint16_t sonilo_key(const char *key)
@@ -134,22 +230,28 @@ uint32_t sonilo_srate(uint32_t *mem)
     return 44100;
 }
 
-int sonilo_sonilo_port(uint32_t *mem, uint32_t w, sonilo_port *p)
-{
-    /* TODO */
-    return 0;
-}
-
 uint16_t sonilo_command(sonilo *s, uint16_t key, instr_func func)
 {
-    /* TODO */
+    instr_map_set(&s->instr, key, func);
     return 0;
 }
 
 /* block: gets block at port. errors if port is not a block */
-int sonilo_ugen_block(sonilo_ugen *u, int port, float **block)
+int sonilo_ugen_block(sonilo_ugen *u, int portnum, float **block)
 {
-    /* TODO */
+    sonilo_port p;
+    uint32_t *mem;
+    mem = u->ctx->s->mem;
+    /* TODO: retrieve port */
+    p = sonilo_port_from_word(mem, u->data.ports[portnum]);
+    /* if not a block, return error */
+    if (p.type != PORT_BLOCK) return 1;
+
+    /* TODO: am I null checking the right thing? */
+    if (block == NULL) return 2;
+
+    /* store pointer */
+    *block = p.data.block.block;
     return 0;
 }
 

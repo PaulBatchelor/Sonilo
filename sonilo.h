@@ -10,6 +10,7 @@ typedef struct sonilo_ctx {
     sonilo *s;
     uint16_t context;
     uint16_t allocator;
+    uint16_t pstack;
 } sonilo_ctx;
 
 typedef struct sonilo_ugen_data {
@@ -62,6 +63,7 @@ int sonilo_oport(sonilo_ugen *u, int port);
 
 /* ports */
 sonilo_port sonilo_port_constant(float c);
+sonilo_port sonilo_port_block(uint32_t *mem, uint32_t p);
 sonilo_port sonilo_port_from_word(uint32_t *mem, uint32_t w);
 uint32_t sonilo_port_to_word(uint32_t *mem, sonilo_port *p);
 float sonilo_port_read(sonilo_port *p, int n);
@@ -71,7 +73,7 @@ void sonilo_port_write(sonilo_port *p, int n, float s);
 int sonilo_constant(sonilo_ctx *ctx, float c);
 
 /* clean: perform RC sweep (call after ugen sets up ports) */
-int sonilo_clean(sonilo_ctx *ctx);
+int sonilo_flush(sonilo_ctx *ctx);
 
 /* compute: compute a block of audio from a ugen */
 void sonilo_ugen_compute(sonilo_ugen *u);

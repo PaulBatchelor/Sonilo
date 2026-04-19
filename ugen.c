@@ -3,7 +3,7 @@
 #include "mem.h"
 #include "ugen.h"
 
-/* location of pstack inside block */
+/* location of pstack inside block, RC is in beginning of block */
 #define PSTACK_OFFSET 2048
 #define STACK_SIZE 19
 
@@ -162,4 +162,9 @@ int pstack_swap(uint32_t *mem, uint16_t p)
     stk[sp - 1] = tmp;
 
     return 0;
+}
+
+int pstack_sweep(uint32_t *mem, uint16_t p)
+{
+    return rc_sweep(mem, p);
 }

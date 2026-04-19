@@ -76,8 +76,8 @@ int main(int argc, char *argv[])
     sonilo_iport(&ugen, 1);
     sonilo_oport(&ugen, 2);
 
-    /* perform GC to return any freed buffers */
-    sonilo_clean(&ctx);
+    /* perform GC sweep to return any freed buffers */
+    sonilo_flush(&ctx);
 
     /* initialize ugen internal state */
     state = (sine_data *)ugen.data.state;

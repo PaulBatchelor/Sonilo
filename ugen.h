@@ -11,3 +11,4 @@ int pstack_swap(uint32_t *mem, uint16_t p);
 int pstack_rot(uint32_t *mem, uint16_t p);
 int pstack_hold(uint32_t *mem, uint16_t p);
 int pstack_unhold(uint32_t *mem, uint16_t p);
+int pstack_sweep(uint32_t *mem, uint16_t p);

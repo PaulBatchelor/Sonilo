@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "sonilo.h"
-#include "port.h"
 
 /* 30-bit Q16.13 with sign bit */
 static float qtof(uint32_t w)
@@ -129,4 +128,15 @@ sonilo_port sonilo_port_constant(float c)
     p.type = PORT_CONSTANT;
     p.data.constant = ftoq(c);
     return p;
+}
+
+sonilo_port sonilo_port_block(uint32_t *mem, uint32_t p)
+{
+    sonilo_port port;
+
+    port.type = PORT_BLOCK;
+    port.data.block.addr = p;
+    port.data.block.block = (float *)&mem[p];
+
+    return port;
 }

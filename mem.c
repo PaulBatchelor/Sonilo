@@ -973,7 +973,16 @@ int rc_get_active(uint32_t *mem, uint16_t r)
 
     return count;
 }
-
+/* context: a set of components used together to form
+ * a baseline setup for higher-level sonilo functionality,
+ * formed from an initial global block list.
+ * Components include: a zero page, with the first two
+ * words containing two bitsets for tracking blocks
+ * (main/temp), a pointer to the block list, and a local
+ * argument stack.
+ *
+ * Returns address to zero page.
+ */
 uint16_t context_init(uint32_t *mem, uint16_t blist)
 {
     int err;
@@ -1019,7 +1028,9 @@ uint16_t context_init(uint32_t *mem, uint16_t blist)
         bitset_add(mem, bst, blk[i]);
     }
 
-    /* interleave addresses into words */
+    /* interleave addresses into words, MSBs contain bitsets */
+    /* zero page slot 0: temp | blocklist */
+    /* zero page slot 1: main | stack */
     mem[zp] = bst << 16 | blist;
     mem[zp + 1] = bsm << 16 | stk;
 
@@ -1461,12 +1472,28 @@ uint16_t allocator_free(uint32_t *mem, uint16_t a, uint16_t m)
 
 int context_allocator_setup(uint32_t *mem, uint16_t ctx)
 {
-    /* TODO: setup allocator at fixed slot in zero page */
+    /* TODO: allocate temp block */
+    /* TODO: allocate buddy slot allocator using temp block */
+    /* TODO: store allocator address at fixed slot in zero page */
     return 0;
 }
 
 uint16_t context_allocator(uint32_t *mem, uint16_t ctx)
 {
-    /* TODO: return address at fixed slot in zero page */
+    /* zero page slot 2 LSB */
+    return mem[ctx + 2] & 0xFFFF;
+}
+
+int context_pstack_setup(uint32_t *mem, uint16_t ctx)
+{
+    /* TODO: allocate temp block */
+    /* TODO: initialize pstack and reference counter */
+    /* TODO: store pstack at fixed slot in zero page */
     return 0;
+}
+
+uint16_t context_pstack(uint32_t *mem, uint16_t ctx)
+{
+    /* zero page slot 2 MSB */
+    return mem[ctx + 2] >> 16;
 }

@@ -120,3 +120,15 @@ int instr_block(uint32_t *mem, instr_map *map, uint16_t p, uint32_t *rw)
 
     return 0;
 }
+
+int instr_map_index(instr_map *map, uint16_t key)
+{
+    /* TODO */
+    return -1;
+}
+
+instr_func instr_map_entry(instr_map *map, int ent)
+{
+    if (ent < 0 || ent >= MAX_INSTR) return NULL;
+    return map->ent[ent].func;
+}
