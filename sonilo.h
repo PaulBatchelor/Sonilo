@@ -45,7 +45,7 @@ typedef struct sonilo_port {
 } sonilo_port;
 
 /* initialize sonilo VM */
-void sonilo_init(sonilo *s);
+int sonilo_init(sonilo *s);
 size_t sonilo_sizeof(void);
 
 /* mem: return word memory */
@@ -53,6 +53,7 @@ uint32_t *sonilo_mem(sonilo *s);
 
 /* set: set r/w register */
 int sonilo_set(sonilo *s, uint32_t w);
+int sonilo_get(sonilo *s, uint32_t *w);
 
 /* go: set cursor to location in rw */
 int sonilo_go(sonilo *s);
@@ -65,11 +66,12 @@ int sonilo_call(sonilo *s);
 int sonilo_call_direct(sonilo *s);
 
 /* sonilo context setup/teardown */
-void sonilo_ctx_init(sonilo_ctx *ctx, sonilo *s);
-void sonilo_ctx_destroy(sonilo_ctx *ctx);
+int sonilo_ctx_init(sonilo_ctx *ctx, sonilo *s);
+int sonilo_ctx_destroy(sonilo_ctx *ctx);
 
 /* ugen operations */
 int sonilo_ugen_init(sonilo_ctx *ctx, sonilo_ugen *u, uint16_t ukey, int nports, int sz);
+int sonilo_ugen_new(uint32_t *mem, uint16_t ukey, int nports, int sz);
 
 /* iport: input port. pops value from pstack, sets it to port */
 int sonilo_iport(sonilo_ugen *u, int port);
@@ -97,6 +99,9 @@ int sonilo_flush(sonilo_ctx *ctx);
 /* pop: pop value from system stack */
 int sonilo_pop(sonilo_ctx *ctx, uint32_t *w);
 
+/* push: push to system stack */
+int sonilo_push(sonilo_ctx *ctx, uint32_t w);
+
 /* peak: retrieve value from system stack without popping */
 int sonilo_peak(sonilo_ctx *ctx, uint32_t *w);
 
@@ -118,6 +123,9 @@ int sonilo_ugen_create(sonilo_ctx *ctx);
 /* create key from 3-letter alphabetic (A-Z) combo */
 uint16_t sonilo_key(const char *key);
 uint16_t sonilo_command(sonilo *s, uint16_t key, instr_func func);
+
+/* generate alternate lookup key from key */
+uint16_t sonilo_alt(uint16_t key);
 
 /* get sonilo samplerate (possibly from memory) */
 uint32_t sonilo_srate(uint32_t *mem);

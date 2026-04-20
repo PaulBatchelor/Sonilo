@@ -21,13 +21,20 @@ build ins.o: c89 ins.c
 build ugen.o: c89 ugen.c
 build port.o: c89 port.c
 build context.o: c89 context.c
+build dsp/load.o: c89 dsp/load.c
+build dsp/sink.o: c89 dsp/sink.c
+build dsp/sine.o: c89 dsp/sine.c
 build libsonilo.a: ar $
-    sonilo.o $
     mem.o $
     ins.o $
     ugen.o $
     port.o $
-    context.o
+    context.o $
+    dsp/load.o $
+    dsp/sink.o $
+    dsp/sine.o $
+    sonilo.o
+
 build ex/hello_ugen.o: c89 ex/hello_ugen.c
 build ex/sines.o: c89 ex/sines.c
 

@@ -6,6 +6,8 @@
 
 #define MAX_PORTS 16
 
+int sonilo_load_ugens(sonilo *s);
+
 struct sonilo {
     /* linear memory */
     uint32_t mem[65536];
@@ -24,9 +26,10 @@ struct sonilo {
     instr_map instr;
 };
 
-void sonilo_init(sonilo *s)
+int sonilo_init(sonilo *s)
 {
     uint32_t i;
+    int rc;
 
     /* zero out memory */
 
@@ -43,29 +46,41 @@ void sonilo_init(sonilo *s)
 
     /* setup blocklist */
 
-    blocklist_init(s->mem, s->blocklist);
+    rc = blocklist_init(s->mem, s->blocklist);
+    if (rc) return 1;
 
-    /* TODO: load ugens */
+    rc = sonilo_load_ugens(s);
+
+    if (rc) return 2;
+
+    return 0;
 }
 
-void sonilo_ctx_init(sonilo_ctx *ctx, sonilo *s)
+int sonilo_ctx_init(sonilo_ctx *ctx, sonilo *s)
 {
+    int rc;
+
     ctx->context = context_init(s->mem, s->blocklist);
     ctx->s = s;
 
     /* set up allocator */
-    /* TODO: error checking */
-    context_allocator_setup(ctx->s->mem, ctx->context);
+    rc = context_allocator_setup(ctx->s->mem, ctx->context);
+    if (rc) return 1;
+
     ctx->allocator = context_allocator(ctx->s->mem, ctx->context);
 
-    /* TODO: error checking */
-    context_pstack_setup(ctx->s->mem, ctx->context);
+    /* set up parameter stack */
+    rc = context_pstack_setup(ctx->s->mem, ctx->context);
+    if (rc) return 2;
     ctx->pstack = context_pstack(ctx->s->mem, ctx->context);
+
+    return 0;
 }
 
-void sonilo_ctx_destroy(sonilo_ctx *ctx)
+int sonilo_ctx_destroy(sonilo_ctx *ctx)
 {
     context_destroy(ctx->s->mem, ctx->context);
+    return 0;
 }
 
 size_t sonilo_sizeof(void)
@@ -354,10 +369,25 @@ int sonilo_pop(sonilo_ctx *ctx, uint32_t *w)
     uint32_t *mem;
 
     mem = ctx->s->mem;
+    /* TODO: use CTX_STACK */
     stk = mem[ctx->context + 1] & 0xFFFF;
     rc = array_pop(mem, stk, w);
     if (rc) return 1;
 
+    return 0;
+}
+
+int sonilo_push(sonilo_ctx *ctx, uint32_t w)
+{
+    int rc;
+    uint16_t stk;
+    uint32_t *mem;
+
+    mem = ctx->s->mem;
+    /* TODO: use CTX_STACK */
+    stk = mem[ctx->context + 1] & 0xFFFF;
+    rc = array_append(mem, stk, w);
+    if (rc) return 1;
     return 0;
 }
 
@@ -379,6 +409,13 @@ int sonilo_set(sonilo *s, uint32_t w)
 {
     if (s == NULL) return 1;
     s->rw = w;
+    return 0;
+}
+
+int sonilo_get(sonilo *s, uint32_t *w)
+{
+    if (s == NULL) return 1;
+    *w = s->rw;
     return 0;
 }
 
@@ -426,13 +463,23 @@ int sonilo_call(sonilo *s)
 int sonilo_ugen_create(sonilo_ctx *ctx)
 {
     uint32_t key;
+    int render;
+    uint32_t rw;
     int rc;
     sonilo *s;
 
     s = ctx->s;
-    /* peak key from stack, it will be needed for ugen init */
+    /* pop key from stack */
     rc = sonilo_pop(ctx, &key);
     if (rc) return 1;
+
+    /* look up entry for DSP callback (alt key) */
+    render = instr_map_index(&ctx->s->instr, sonilo_alt(key));
+    if (render < 0) return 6;
+
+    /* push function index of render callback to stack */
+    rc = sonilo_push(ctx, render);
+    if (rc) return 7;
 
     /* pack bits: CMD | INSTR */
     rc = sonilo_set(s, (ctx->context << 16) | (key & 0xFFFF));
@@ -442,5 +489,16 @@ int sonilo_ugen_create(sonilo_ctx *ctx)
     rc = sonilo_call(s);
     if (rc) return 3;
 
+    /* check return code of init function */
+    rw = 0;
+    rc = sonilo_get(s, &rw);
+    if (rc) return 4;
+    if (rw) return 5;
+
     return 0;
+}
+
+uint16_t sonilo_alt(uint16_t key)
+{
+    return key | (1 << 16);
 }

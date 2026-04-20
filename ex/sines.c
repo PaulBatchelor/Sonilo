@@ -20,7 +20,9 @@ int render(sonilo_ctx *ctx, uint16_t *lst, int sz, uint16_t sink)
         int k;
         for (k = 0; k < sz; k++) {
             int rc;
+            uint32_t rw;
             rc = 0;
+            rw = 1;
             /* load ugen function index */
             rc = sonilo_set(s, lst[k] + 1);
             if (rc) break;
@@ -30,6 +32,10 @@ int render(sonilo_ctx *ctx, uint16_t *lst, int sz, uint16_t sink)
             if (rc) break;
             rc = sonilo_call_direct(s);
             if (rc) break;
+
+            /* ugens should return 0 */
+            rc = sonilo_get(s, &rw);
+            if (rc || rw) break;
         }
         if (rc) break;
         fwrite(out, sizeof(float), 64, fp);
@@ -74,8 +80,10 @@ int main(int argc, char *argv[])
     nugens = 0;
 
     s = malloc(sonilo_sizeof());
-    sonilo_init(s);
-    sonilo_ctx_init(&ctx, s);
+    rc = sonilo_init(s);
+    if (rc) goto clean;
+    rc = sonilo_ctx_init(&ctx, s);
+    if (rc) goto clean;
 
     /* sine oscillator */
     rc = sonilo_constant(&ctx, 440);

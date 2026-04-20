@@ -164,7 +164,7 @@ static int a10get(uint32_t *mem, int a, int i)
     return bits_get(mem, (a << 5) + 10*i, 10);
 }
 
-void blocklist_init(uint32_t *mem, uint16_t list)
+int blocklist_init(uint32_t *mem, uint16_t list)
 {
     int i;
     int head;
@@ -176,6 +176,8 @@ void blocklist_init(uint32_t *mem, uint16_t list)
     }
 
     a10set(mem, list, 0, head);
+
+    return 0;
 }
 
 uint16_t blocklist_pop(uint32_t *mem, uint16_t list)

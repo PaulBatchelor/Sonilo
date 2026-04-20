@@ -1,5 +1,5 @@
 /* blocklist and blocks */
-void blocklist_init(uint32_t *mem, uint16_t list);
+int blocklist_init(uint32_t *mem, uint16_t list);
 uint16_t blocklist_pop(uint32_t *mem, uint16_t list);
 int blocklist_push(uint32_t *mem, uint16_t list, uint16_t block);
 uint16_t block_to_word(uint16_t blist, uint16_t blk);
