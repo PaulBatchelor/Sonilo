@@ -36,7 +36,7 @@ static uint32_t render(uint32_t *mem, uint16_t p)
         o = -0.5;
 
         /* TODO: update state */
-        state->phs = -1;
+        state->phs = 1;
         sonilo_port_write(&out, n, o);
     }
 
@@ -109,11 +109,12 @@ int main(int argc, char *argv[])
     t = 0;
     for (i = 0; i < 2; i++) {
         int k;
+        for (k = 0; k < 64; k++) out[k] = 1.0;
         sonilo_ugen_compute(&ugen);
         /* write contents of output to disk */
         fwrite(out, sizeof(float), 64, fp);
         for (k = 0; k < 64; k++) {
-            printf("%d, %g\n", t, out[k]);
+            printf("%ld %g\n", t, out[k]);
             t++;
         }
     }

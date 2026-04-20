@@ -108,7 +108,6 @@ int sonilo_alloc(sonilo_ctx *ctx, int sz, uint16_t *p)
 
     if (offset < 0) return 5;
 
-    /* TODO: add offset and base address, store result in p */
     rc = array_pop(mem, stk, &base);
     if (rc) return 6;
 
@@ -186,12 +185,13 @@ int sonilo_iport(sonilo_ugen *u, int port)
 static sonilo_port new_block_port(sonilo_ctx *ctx)
 {
     sonilo_port p;
-    uint32_t b;
+    uint16_t b;
 
-    /* TODO: allocate block to main */
-    b = 0; /* not actual address */
+    /* allocate block to main */
+    context_mkblock(ctx->s->mem, ctx->context, &b);
+    /* TODO: error checking */
 
-    /* TODO: sonilo_port_block */
+    /* sonilo_port_block */
     p = sonilo_port_block(ctx->s->mem, b);
     return p;
 }

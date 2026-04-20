@@ -1268,7 +1268,10 @@ int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz)
             budcnt = 0;
         }
         /* set up top struct */
+        /* compute local word offset */
         budtop = budcnt * BUDSLOT_SIZE + BUDBLK_HEADER_SIZE;
+        /* add global offset (start of allocator) */
+        budtop += a;
         mem_init(mem,
                 budtop, budblk,
                 /* AVAIL */
@@ -1279,7 +1282,7 @@ int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz)
         /* store top and memory block address as pair
          * in next slot position */
         slot = nslots;
-        SLOT(mem, a, slot) = ((memblk << 16) & 0xFFFF) | (budtop & 0xFFFF);
+        SLOT(mem, a, slot) = (((memblk & 0xFFFF) << 16)) | (budtop & 0xFFFF);
         NSLOTS(mem, a)++;
     }
 
