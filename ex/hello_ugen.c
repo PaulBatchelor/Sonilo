@@ -1,5 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#ifndef M_PI
+#define M_PI 3.1415926535
+#endif
+
 #include "sonilo.h"
 
 typedef struct {
@@ -13,6 +18,7 @@ static uint32_t render(uint32_t *mem, uint16_t p)
     sine_data *state;
     int n;
     uint32_t sr;
+    float phs;
 
     /* convert memory address to C struct wrapper */
     sonilo_ugen_get(mem, &ugen, p);
@@ -27,18 +33,20 @@ static uint32_t render(uint32_t *mem, uint16_t p)
 
     /* global samplerate */
     sr = sonilo_srate(mem);
+    phs = state->phs;
 
     for (n = 0; n < 64; n++) {
         float f, a, o;
         f = sonilo_port_read(&freq, n);
         a = sonilo_port_read(&amp, n);
-        /* TODO: compute sample of audio */
-        o = -0.5;
+        o = a * sin(2.0 * M_PI * phs);
+        phs += f * (1.0 / sr);
+        if (phs > 1) phs -= 1.0;
 
-        /* TODO: update state */
-        state->phs = 1;
         sonilo_port_write(&out, n, o);
     }
+
+    state->phs = phs;
 
     return 0;
 }
@@ -107,16 +115,10 @@ int main(int argc, char *argv[])
 
     fp = fopen("out.raw", "wb");
     t = 0;
-    for (i = 0; i < 2; i++) {
-        int k;
-        for (k = 0; k < 64; k++) out[k] = 1.0;
+    for (i = 0; i < 3445; i++) {
         sonilo_ugen_compute(&ugen);
         /* write contents of output to disk */
         fwrite(out, sizeof(float), 64, fp);
-        for (k = 0; k < 64; k++) {
-            printf("%ld %g\n", t, out[k]);
-            t++;
-        }
     }
 
     /* cleanup */
