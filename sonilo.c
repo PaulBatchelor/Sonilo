@@ -14,6 +14,7 @@ struct sonilo {
     uint32_t rw;
 
     /* a/b cursors */
+    uint16_t *cur;
     uint16_t a, b;
 
     /* pointer to blocklist */
@@ -36,12 +37,15 @@ void sonilo_init(sonilo *s)
     s->rw = 0;
 
     s->a = s->b = 0;
+    s->cur = &s->a;
 
     s->blocklist = 0;
 
     /* setup blocklist */
 
     blocklist_init(s->mem, s->blocklist);
+
+    /* TODO: load ugens */
 }
 
 void sonilo_ctx_init(sonilo_ctx *ctx, sonilo *s)
@@ -278,13 +282,19 @@ uint16_t sonilo_command(sonilo *s, uint16_t key, instr_func func)
 }
 
 /* block: gets block at port. errors if port is not a block */
-int sonilo_ugen_block(sonilo_ugen *u, int portnum, float **block)
+int sonilo_ugen_block(uint32_t *mem,
+        uint16_t ugen,
+        int portnum,
+        float **block)
 {
     sonilo_port p;
-    uint32_t *mem;
-    mem = u->ctx->s->mem;
-    /* TODO: retrieve port */
-    p = sonilo_port_from_word(mem, u->data.ports[portnum]);
+    uint32_t *ports;
+
+    if (mem == NULL) return 3;
+
+    /* dereference ports list (LSB at word 0) */
+    ports = &mem[mem[ugen] & 0xFFFF];
+    p = sonilo_port_from_word(mem, ports[portnum]);
     /* if not a block, return error */
     if (p.type != PORT_BLOCK) return 1;
 
@@ -309,6 +319,128 @@ int sonilo_ugen_get(uint32_t *mem, sonilo_ugen_data *u, uint16_t p)
     u->state = &mem[m_state];
     u->cmd = cmd;
     u->top = p;
+
+    return 0;
+}
+
+uint32_t *sonilo_mem(sonilo *s)
+{
+    if (s == NULL) return NULL;
+    return s->mem;
+}
+
+int sonilo_symbol(sonilo_ctx *ctx, const char *sym)
+{
+    uint16_t key;
+    uint16_t stk;
+    int rc;
+    uint32_t *mem;
+
+    key = sonilo_key(sym);
+    mem = ctx->s->mem;
+
+    stk = mem[ctx->context + 1] & 0xFFFF;
+    rc = array_append(mem, stk, key);
+
+    if (rc) return 1;
+
+    return 0;
+}
+
+int sonilo_pop(sonilo_ctx *ctx, uint32_t *w)
+{
+    int rc;
+    uint16_t stk;
+    uint32_t *mem;
+
+    mem = ctx->s->mem;
+    stk = mem[ctx->context + 1] & 0xFFFF;
+    rc = array_pop(mem, stk, w);
+    if (rc) return 1;
+
+    return 0;
+}
+
+int sonilo_peak(sonilo_ctx *ctx, uint32_t *w)
+{
+    int rc;
+    uint16_t stk;
+    uint32_t *mem;
+
+    mem = ctx->s->mem;
+    stk = mem[ctx->context + 1] & 0xFFFF;
+    rc = array_peak(mem, stk, w);
+    if (rc) return 1;
+
+    return 0;
+}
+
+int sonilo_set(sonilo *s, uint32_t w)
+{
+    if (s == NULL) return 1;
+    s->rw = w;
+    return 0;
+}
+
+int sonilo_go(sonilo *s)
+{
+    if (s == NULL) return 1;
+    *s->cur = s->rw & 0xFFFF;
+    return 0;
+}
+
+int sonilo_read(sonilo *s)
+{
+    if (s == NULL) return 1;
+    s->rw = s->mem[*s->cur];
+    return 0;
+}
+
+/* call a pre-resolved key to a subroutine directly */
+int sonilo_call_direct(sonilo *s)
+{
+    uint32_t rw;
+    instr_func f;
+    rw = s->rw;
+   
+    f = instr_map_entry(&s->instr, rw & 0xFFFF);
+
+    if (f == NULL) return 1;
+
+    s->rw = f(s->mem, rw >> 16);
+
+    return 0;
+}
+
+int sonilo_call(sonilo *s)
+{
+    int rc;
+
+    rc = instr_ex(s->mem, &s->instr, s->rw, &s->rw);
+
+    if (rc) return 1;
+
+    return 0;
+}
+
+int sonilo_ugen_create(sonilo_ctx *ctx)
+{
+    uint32_t key;
+    int rc;
+    sonilo *s;
+
+    s = ctx->s;
+    /* peak key from stack, it will be needed for ugen init */
+    rc = sonilo_pop(ctx, &key);
+    if (rc) return 1;
+
+    /* pack bits: CMD | INSTR */
+    rc = sonilo_set(s, (ctx->context << 16) | (key & 0xFFFF));
+    if (rc) return 2;
+
+    /* call init function */
+    rc = sonilo_call(s);
+    if (rc) return 3;
 
     return 0;
 }

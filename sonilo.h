@@ -48,6 +48,22 @@ typedef struct sonilo_port {
 void sonilo_init(sonilo *s);
 size_t sonilo_sizeof(void);
 
+/* mem: return word memory */
+uint32_t *sonilo_mem(sonilo *s);
+
+/* set: set r/w register */
+int sonilo_set(sonilo *s, uint32_t w);
+
+/* go: set cursor to location in rw */
+int sonilo_go(sonilo *s);
+
+/* read: read value in cursor to rw */
+int sonilo_read(sonilo *s);
+
+/* call: use index in rw to call stored subroutine */
+int sonilo_call(sonilo *s);
+int sonilo_call_direct(sonilo *s);
+
 /* sonilo context setup/teardown */
 void sonilo_ctx_init(sonilo_ctx *ctx, sonilo *s);
 void sonilo_ctx_destroy(sonilo_ctx *ctx);
@@ -72,17 +88,32 @@ void sonilo_port_write(sonilo_port *p, int n, float s);
 /* constant: push a constant value to pstack */
 int sonilo_constant(sonilo_ctx *ctx, float c);
 
+/* symbol: push a 'symbol' (3-letter identifier) to stack */
+int sonilo_symbol(sonilo_ctx *ctx, const char *sym);
+
 /* clean: perform RC sweep (call after ugen sets up ports) */
 int sonilo_flush(sonilo_ctx *ctx);
+
+/* pop: pop value from system stack */
+int sonilo_pop(sonilo_ctx *ctx, uint32_t *w);
+
+/* peak: retrieve value from system stack without popping */
+int sonilo_peak(sonilo_ctx *ctx, uint32_t *w);
 
 /* compute: compute a block of audio from a ugen */
 void sonilo_ugen_compute(sonilo_ugen *u);
 
 /* block: gets block at port. errors if port is not a block */
-int sonilo_ugen_block(sonilo_ugen *u, int port, float **block);
+int sonilo_ugen_block(uint32_t *mem,
+        uint16_t ugen,
+        int portnum,
+        float **block);
 
 /* get a ugen from a sonilo memory location */
 int sonilo_ugen_get(uint32_t *mem, sonilo_ugen_data *u, uint16_t p);
+
+/* create a instance of a predefined ugen */
+int sonilo_ugen_create(sonilo_ctx *ctx);
 
 /* create key from 3-letter alphabetic (A-Z) combo */
 uint16_t sonilo_key(const char *key);

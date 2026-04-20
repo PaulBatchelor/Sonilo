@@ -62,7 +62,6 @@ int main(int argc, char *argv[])
     int rc;
     FILE *fp;
     sine_data *state;
-    unsigned long t;
 
     fp = NULL;
 
@@ -77,7 +76,7 @@ int main(int argc, char *argv[])
     if (rc) goto clean;
 
     /* bind DSP command to sonilo */
-    ukey = sonilo_key("SIN");
+    ukey = sonilo_key("ZZZ");
     rc = sonilo_command(s, ukey, render);
     if (rc) {
         goto clean;
@@ -105,7 +104,7 @@ int main(int argc, char *argv[])
     state->phs = 0;
 
     /* get output of ugen */
-    rc = sonilo_ugen_block(&ugen, 2, &out);
+    rc = sonilo_ugen_block(sonilo_mem(ctx.s), ugen.data.top, 2, &out);
 
     if (rc) {
         /* not a block, for some reason */
@@ -114,7 +113,6 @@ int main(int argc, char *argv[])
     }
 
     fp = fopen("out.raw", "wb");
-    t = 0;
     for (i = 0; i < 3445; i++) {
         sonilo_ugen_compute(&ugen);
         /* write contents of output to disk */

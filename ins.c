@@ -99,7 +99,8 @@ int instr_ex(uint32_t *mem, instr_map *map, uint32_t i, uint32_t *rw)
     f = instr_map_get(map, cmd);
     if (f == NULL) return 1;
     w = f(mem, dat);
-    if (rw != NULL) *rw = w;
+    if (rw == NULL) return 2;
+    *rw = w;
     return 0;
 }
 

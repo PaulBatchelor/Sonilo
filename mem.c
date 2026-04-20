@@ -1047,6 +1047,11 @@ int array_pop(uint32_t *mem, uint16_t a, uint32_t *x)
     return 0;
 }
 
+int array_peak(uint32_t *mem, uint16_t a, uint32_t *x)
+{
+    /* TODO */
+    return 1;
+}
 /* see if word address A is being used in a buddy instance */
 uint16_t mem_find(uint32_t *mem, uint16_t p_top, uint16_t a)
 {
