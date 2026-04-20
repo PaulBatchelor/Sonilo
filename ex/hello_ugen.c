@@ -82,9 +82,9 @@ int main(int argc, char *argv[])
     }
 
     /* set up ports: two inputs, one output */
-    rc = sonilo_iport(&ugen, 0);
-    if (rc) goto clean;
     rc = sonilo_iport(&ugen, 1);
+    if (rc) goto clean;
+    rc = sonilo_iport(&ugen, 0);
     if (rc) goto clean;
     rc = sonilo_oport(&ugen, 2);
     if (rc) goto clean;

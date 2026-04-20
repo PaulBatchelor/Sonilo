@@ -22,7 +22,7 @@ static float qtof(uint32_t w)
 
     /* use 2^13 as divisor. the max bits should never
      * equal 1 exactly */
-    o = -s*(i + (float)(f / 0x2000));
+    o = (s ? -1 : 1)*(i + ((float)f / 0x2000));
 
     return o;
 }
@@ -124,7 +124,7 @@ sonilo_port sonilo_port_constant(float c)
 {
     sonilo_port p;
     p.type = PORT_CONSTANT;
-    p.data.constant = ftoq(c);
+    p.data.constant = c;
     return p;
 }
 
