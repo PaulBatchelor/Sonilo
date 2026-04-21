@@ -25,12 +25,6 @@ typedef struct sonilo_ugen {
     sonilo_ugen_data data;
 } sonilo_ugen;
 
-enum {
-    PORT_NONE = 0,
-    PORT_BLOCK,
-    PORT_CONSTANT
-};
-
 typedef struct ugen_block {
     uint16_t addr;
     float *block;

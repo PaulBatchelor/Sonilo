@@ -61,3 +61,4 @@ int rc_get_active(uint32_t *mem, uint16_t r);
 int allocator_init(uint32_t *mem, uint16_t ctx, uint16_t *out);
 int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz);
 uint16_t allocator_free(uint32_t *mem, uint16_t a, uint16_t m);
+int sonilo_alloc(uint32_t *mem, uint16_t ctx, int sz, uint16_t *p);

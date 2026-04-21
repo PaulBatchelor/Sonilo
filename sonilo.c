@@ -4,8 +4,6 @@
 #include "ugen.h"
 #include "context.h"
 
-#define MAX_PORTS 16
-
 int sonilo_load_ugens(sonilo *s);
 
 struct sonilo {
@@ -90,19 +88,19 @@ size_t sonilo_sizeof(void)
 
 /* an abstraction to handle the inner details of allocating
  * memory using the buddy slot allocator */
-int sonilo_alloc(sonilo_ctx *ctx, int sz, uint16_t *p)
+int sonilo_alloc(uint32_t *mem, uint16_t ctx, int sz, uint16_t *p)
 {
     int rc;
     uint32_t stk, bud, k, base;
     int offset;
-    uint32_t *mem;
+    uint16_t a;
 
     /* basic bounds checking: this is only for sub-block non-zero sizes */
     if (sz <= 0 || sz >= 64) return 1;
 
-    mem = ctx->s->mem;
+    a = CTX_ALLOC(mem, ctx);
     /* call buddy slot allocator (stack: base, buddy args) */
-    rc = allocator_alloc(mem, ctx->allocator, sz); 
+    rc = allocator_alloc(mem, a, sz); 
 
     /* error handling */
     if (rc) return 2;
@@ -114,7 +112,7 @@ int sonilo_alloc(sonilo_ctx *ctx, int sz, uint16_t *p)
      */
 
     /* get stack (slot 1 LSB) */
-    stk = mem[ctx->context + 1] & 0xFFFF;
+    stk = CTX_STACK(mem, ctx);
 
     /* pop bud and k params */
     rc = array_pop(mem, stk, &bud);
@@ -151,22 +149,22 @@ int sonilo_ugen_init(sonilo_ctx *ctx, sonilo_ugen *u, uint16_t ukey, int nports,
     /* BEGIN low-level ugen set-up */
     top = ports = state = 0;
     /* allocate top struct (2 words) */
-    rc = sonilo_alloc(ctx, 2, &top);
+    rc = sonilo_alloc(mem, ctx->context, 2, &top);
     if (rc) return 1;
     
     /* allocate and initialize port array (N words) */
     if (nports > MAX_PORTS || nports <= 0) return 2;
-    rc = sonilo_alloc(ctx, nports, &ports);
-    if (rc) return 2;
+    rc = sonilo_alloc(mem, ctx->context, nports, &ports);
+    if (rc) return 3;
 
     /* allocate user data (SZ words) */
-    rc = sonilo_alloc(ctx, sz, &state);
-    if (rc) return 3;
+    rc = sonilo_alloc(mem, ctx->context, sz, &state);
+    if (rc) return 4;
 
     /* resolve command key to function index pointer (instr_map_index) */
     cmd = instr_map_index(&ctx->s->instr, ukey);
 
-    if (cmd < 0) return 4;
+    if (cmd < 0) return 5;
 
     /* store ugen addresses in memory */
     mem[top] = (state << 16) | ports;
@@ -174,7 +172,7 @@ int sonilo_ugen_init(sonilo_ctx *ctx, sonilo_ugen *u, uint16_t ukey, int nports,
 
     /* END low-level ugen set-up */
 
-    if (u == NULL) return 5;
+    if (u == NULL) return 6;
 
     /* store information in ugen struct */
     u->ctx = ctx;

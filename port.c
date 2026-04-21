@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "sonilo.h"
+#include "ugen.h"
 
 /* 30-bit Q16.13 with sign bit */
 static float qtof(uint32_t w)

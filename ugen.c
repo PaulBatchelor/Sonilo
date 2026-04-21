@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include "mem.h"
 #include "ugen.h"
+#include "context.h"
 
 /* location of pstack inside block, RC is in beginning of block */
 #define PSTACK_OFFSET 2048
@@ -170,4 +171,108 @@ int pstack_swap(uint32_t *mem, uint16_t p)
 int pstack_sweep(uint32_t *mem, uint16_t p)
 {
     return rc_sweep(mem, p);
+}
+
+int ugen_create(uint32_t *mem,
+        uint16_t ctx,
+        uint16_t cmd,
+        int nports,
+        int sz,
+        uint16_t *ugen)
+{
+    uint16_t top, ports, state;
+    int rc;
+
+    top = ports = state = 0;
+    /* top-level ugen struct allocation (2 words) */
+    rc = sonilo_alloc(mem, ctx, 2, &top);
+    if (rc) return 1;
+
+    /* allocate and initialize port array (N words) */
+    if (nports > MAX_PORTS || nports <= 0) return 2;
+    rc = sonilo_alloc(mem, ctx, nports, &ports);
+    if (rc) return 3;
+    
+    /* allocate user data (SZ words) */
+    rc = sonilo_alloc(mem, ctx, sz, &state);
+    if (rc) return 4;
+
+    /* store ugen addresses in memory */
+    mem[top] = (state << 16) | ports;
+    mem[top + 1] = cmd;
+
+    return 0;
+}
+
+static uint32_t *get_ports(uint32_t *mem, uint16_t ugen)
+{
+    return &mem[mem[ugen] & 0xFFFF];
+}
+
+int ugen_iport(uint32_t *mem, uint16_t ctx, uint16_t ugen, int port)
+{
+    uint32_t w;
+    int rc;
+    uint16_t pstk;
+    uint32_t *ports;
+
+    pstk = CTX_PARAM_STACK(mem, ctx);
+    /* pop param from stack */
+    w = 0;
+    rc = pstack_pop(mem, pstk, &w);
+    if (rc) return 1;
+
+    /* set param to port number */
+    ports = get_ports(mem, ugen);
+    ports[port] = w;
+    return 0;
+}
+
+static int new_block_port(uint32_t *mem, uint16_t ctx, uint32_t *w)
+{
+    int rc;
+    uint16_t b;
+
+    if (w == NULL) return 2;
+
+    /* allocate block to main */
+    rc = context_mkblock(mem, ctx, &b);
+    if (rc) return 1;
+
+    /* create parameter word from block */
+    *w = (b << 2) | PORT_BLOCK;
+
+    return 0;
+}
+
+int ugen_oport(uint32_t *mem, uint16_t ctx, uint16_t ugen, int port)
+{
+    uint32_t w;
+    int rc;
+    uint32_t *ports;
+    uint16_t pstk;
+
+    /* allocate a block inside of a port */
+    rc = new_block_port(mem, ctx, &w);
+    if (rc) return 1;
+
+    pstk = CTX_PARAM_STACK(mem, ctx);
+
+    /* push param word onto stack */
+    rc = pstack_push(mem, pstk, w);
+    if (rc) return 2;
+
+    /* save param word to port */
+    ports = get_ports(mem, ugen);
+    ports[port] = w;
+    return 0;
+}
+
+void * ugen_state(uint32_t *mem, uint16_t ugen)
+{
+    uint16_t p;
+    p = mem[ugen] >> 16;
+    if (p == 0) return NULL;
+
+    return &mem[p];
 }
