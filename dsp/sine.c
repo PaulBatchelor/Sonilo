@@ -32,7 +32,7 @@ static uint32_t init(uint32_t *mem, uint16_t ctx)
     rc = ugen_oport(mem, ctx, ugen, 1);
     if (rc) return 4;
 
-    /* param stack shouldn't be exposed here */
+    /* TODO: param stack shouldn't be exposed here */
     pstk = CTX_PARAM_STACK(mem, ctx);
     pstack_sweep(mem, pstk);
 

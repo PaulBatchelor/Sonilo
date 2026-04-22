@@ -192,10 +192,13 @@ int ugen_create(uint32_t *mem,
     if (nports > MAX_PORTS || nports <= 0) return 2;
     rc = sonilo_alloc(mem, ctx, nports, &ports);
     if (rc) return 3;
-    
+   
+    state = 0;
     /* allocate user data (SZ words) */
-    rc = sonilo_alloc(mem, ctx, sz, &state);
-    if (rc) return 4;
+    if (sz > 0) {
+        rc = sonilo_alloc(mem, ctx, sz, &state);
+        if (rc) return 4;
+    }
 
     /* store ugen addresses in memory */
     mem[top] = (state << 16) | ports;
