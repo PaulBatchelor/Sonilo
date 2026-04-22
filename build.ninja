@@ -24,6 +24,7 @@ build context.o: c89 context.c
 build dsp/load.o: c89 dsp/load.c
 build dsp/sink.o: c89 dsp/sink.c
 build dsp/sine.o: c89 dsp/sine.c
+build dsp/arith.o: c89 dsp/arith.c
 build libsonilo.a: ar $
     mem.o $
     ins.o $
@@ -33,6 +34,7 @@ build libsonilo.a: ar $
     dsp/load.o $
     dsp/sink.o $
     dsp/sine.o $
+    dsp/arith.o $
     sonilo.o
 
 build ex/hello_ugen.o: c89 ex/hello_ugen.c

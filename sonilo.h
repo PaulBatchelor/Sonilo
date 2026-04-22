@@ -124,4 +124,11 @@ uint16_t sonilo_alt(uint16_t key);
 /* get sonilo samplerate (possibly from memory) */
 uint32_t sonilo_srate(uint32_t *mem);
 
+/* register ugen to system */
+
+int sonilo_ugen_register(sonilo *s,
+        const char *sym,
+        instr_func init,
+        instr_func render);
+
 #endif

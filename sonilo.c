@@ -500,3 +500,21 @@ uint16_t sonilo_alt(uint16_t key)
 {
     return key | 1;
 }
+
+int sonilo_ugen_register(sonilo *s,
+        const char *sym,
+        instr_func init,
+        instr_func render)
+{
+    uint16_t key;
+    int rc;
+
+    key = sonilo_key(sym);
+
+    rc = sonilo_command(s, key, init);
+    if (rc) return 1;
+    rc = sonilo_command(s, sonilo_alt(key), render);
+    if (rc) return 2;
+
+    return 0;
+}

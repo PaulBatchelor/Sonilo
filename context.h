@@ -9,3 +9,4 @@ int context_allocator_setup(uint32_t *mem, uint16_t ctx);
 uint16_t context_allocator(uint32_t *mem, uint16_t ctx);
 int context_pstack_setup(uint32_t *mem, uint16_t ctx);
 uint16_t context_pstack(uint32_t *mem, uint16_t ctx);
+int context_pstack_sweep(uint32_t *mem, uint16_t ctx);

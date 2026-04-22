@@ -172,3 +172,11 @@ void context_destroy(uint32_t *mem, uint16_t ctx)
     /* TODO: iterate over 32 words */
     /* TODO: free blocks in each word */
 }
+
+int context_pstack_sweep(uint32_t *mem, uint16_t ctx)
+{
+    uint16_t pstk;
+    pstk = CTX_PARAM_STACK(mem, ctx);
+    pstack_sweep(mem, pstk);
+    return 0;
+}
