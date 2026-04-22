@@ -498,5 +498,5 @@ int sonilo_ugen_create(sonilo_ctx *ctx)
 
 uint16_t sonilo_alt(uint16_t key)
 {
-    return key | (1 << 16);
+    return key | 1;
 }

@@ -204,12 +204,21 @@ int ugen_create(uint32_t *mem,
     mem[top] = (state << 16) | ports;
     mem[top + 1] = cmd;
 
+    if (ugen == NULL) return 5;
+
+    *ugen = top;
+
     return 0;
 }
 
 static uint32_t *get_ports(uint32_t *mem, uint16_t ugen)
 {
     return &mem[mem[ugen] & 0xFFFF];
+}
+
+uint32_t* ugen_ports(uint32_t *mem, uint16_t ugen)
+{
+    return get_ports(mem, ugen);
 }
 
 int ugen_iport(uint32_t *mem, uint16_t ctx, uint16_t ugen, int port)

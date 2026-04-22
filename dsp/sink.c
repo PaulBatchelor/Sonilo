@@ -35,10 +35,24 @@ static uint32_t init(uint32_t *mem, uint16_t ctx)
     return 0;
 }
 
-static uint32_t render(uint32_t *mem, uint16_t p)
+static uint32_t render(uint32_t *mem, uint16_t ugen)
 {
-    /* TODO */
-    return 1;
+    uint32_t *ports;
+    sonilo_port in, out;
+    int n;
+
+    /* get ports */
+    ports = ugen_ports(mem, ugen);
+    in = sonilo_port_from_word(mem, ports[0]);
+    out = sonilo_port_from_word(mem, ports[1]);
+
+    for (n = 0; n < UGEN_BLKSZ; n++) {
+        float x;
+        x = sonilo_port_read(&in, n);
+        sonilo_port_write(&out, n, x);
+    }
+
+    return 0;
 }
 
 int ugen_sink(sonilo *s)

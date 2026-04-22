@@ -9,11 +9,13 @@ int render(sonilo_ctx *ctx, uint16_t *lst, int sz, uint16_t sink)
     float *out;
     int i;
     FILE *fp;
+    uint32_t *mem;
 
     fp = fopen("sines.raw", "wb");
 
     s = ctx->s;
-    rc = sonilo_ugen_block(sonilo_mem(s), sink, 0, &out);
+    mem = sonilo_mem(s);
+    rc = sonilo_ugen_block(mem, sink, 0, &out);
     if (rc) return 1;
 
     for (i = 0; i < 3445; i++) {
@@ -23,12 +25,9 @@ int render(sonilo_ctx *ctx, uint16_t *lst, int sz, uint16_t sink)
             uint32_t rw;
             rc = 0;
             rw = 1;
-            /* load ugen function index */
-            rc = sonilo_set(s, lst[k] + 1);
-            if (rc) break;
-            rc = sonilo_go(s);
-            if (rc) break;
-            rc = sonilo_read(s);
+            /* set up function args: ugen address | callback */
+            rw = (lst[k] << 16) | (mem[lst[k] + 1] & 0xFFFF);
+            rc = sonilo_set(s, rw);
             if (rc) break;
             rc = sonilo_call_direct(s);
             if (rc) break;

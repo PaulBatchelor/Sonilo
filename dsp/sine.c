@@ -1,7 +1,12 @@
+#include <math.h>
 #include "sonilo.h"
 #include "mem.h"
 #include "context.h"
 #include "ugen.h"
+
+#ifndef M_PI
+#define M_PI 3.1415926535
+#endif
 
 struct state {
     float phs;
@@ -50,10 +55,39 @@ static uint32_t init(uint32_t *mem, uint16_t ctx)
     return 0;
 }
 
-static uint32_t render(uint32_t *mem, uint16_t p)
+static uint32_t render(uint32_t *mem, uint16_t ugen)
 {
-    /* TODO */
-    return 1;
+    uint32_t *ports;
+    struct state *st;
+    sonilo_port freq, out;
+    int n;
+    uint32_t sr;
+    float phs;
+
+    /* internal state */
+    st = (struct state *)ugen_state(mem, ugen);
+
+    /* get ports */
+    ports = ugen_ports(mem, ugen);
+    freq = sonilo_port_from_word(mem, ports[0]);
+    out = sonilo_port_from_word(mem, ports[1]);
+
+    /* global samplerate */
+    sr = sonilo_srate(mem);
+
+    phs = st->phs;
+    for (n = 0; n < UGEN_BLKSZ; n++) {
+        float f, o;
+        f = sonilo_port_read(&freq, n);
+        o = sin(2.0 * M_PI * phs);
+        phs += f * (1.0 / sr);
+        /* TEMP: gain staging */
+        o *= 0.8;
+        sonilo_port_write(&out, n, o);
+    }
+    st->phs = phs;
+
+    return 0;
 }
 
 int ugen_sine(sonilo *s)

@@ -1,4 +1,5 @@
 #define MAX_PORTS 16
+#define UGEN_BLKSZ 64
 
 enum {
     PARAM_BLOCK
@@ -32,3 +33,5 @@ int ugen_iport(uint32_t *mem, uint16_t ctx, uint16_t ugen, int port);
 int ugen_oport(uint32_t *mem, uint16_t ctx, uint16_t ugen, int port);
 
 void * ugen_state(uint32_t *mem, uint16_t ugen);
+
+uint32_t* ugen_ports(uint32_t *mem, uint16_t ugen);
