@@ -73,6 +73,10 @@ int sonilo_iport(sonilo_ugen *u, int port);
 /* oport: output port. pushs block (signal) to pstack, stores in port */
 int sonilo_oport(sonilo_ugen *u, int port);
 
+/* hold/unhold: used to indefinitely keep a signal a live */
+int sonilo_hold(sonilo_ctx *ctx, uint32_t *w);
+int sonilo_unhold(sonilo_ctx *ctx, uint32_t w);
+
 /* ports */
 sonilo_port sonilo_port_constant(float c);
 sonilo_port sonilo_port_block(uint32_t *mem, uint32_t p);
@@ -95,6 +99,9 @@ int sonilo_pop(sonilo_ctx *ctx, uint32_t *w);
 
 /* push: push to system stack */
 int sonilo_push(sonilo_ctx *ctx, uint32_t w);
+
+/* ppush: push to parameter stack */
+int sonilo_ppush(sonilo_ctx *ctx, uint32_t w);
 
 /* peak: retrieve value from system stack without popping */
 int sonilo_peak(sonilo_ctx *ctx, uint32_t *w);

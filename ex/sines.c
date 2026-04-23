@@ -68,16 +68,23 @@ int ugen(sonilo_ctx *ctx, const char *sym, uint16_t *lst)
     return 0;
 }
 
+int biscale(sonilo_ctx *ctx, uint16_t *lst, float a, float b)
+{
+    /* TODO */
+    return 1;
+}
+
 int main(int argc, char *argv[])
 {
     sonilo *s;
     sonilo_ctx ctx;
     int rc;
-    uint16_t ugen_list[16];
+    uint16_t ugen_list[64];
     int i;
     uint16_t sink;
+    uint32_t lfo;
 
-    for (i = 0; i < 16; i++) ugen_list[i] = 0;
+    for (i = 0; i < 64; i++) ugen_list[i] = 0;
 
     s = malloc(sonilo_sizeof());
     rc = sonilo_init(s);
@@ -85,9 +92,32 @@ int main(int argc, char *argv[])
     rc = sonilo_ctx_init(&ctx, s);
     if (rc) goto clean;
 
+    /* create LFO oscillator */
+    rc = sonilo_constant(&ctx, 0.3);
+    if (rc) goto clean;
+    rc = ugen(&ctx, "SIN", ugen_list);
+    if (rc) goto clean;
+
+    /* hold */
+    rc = sonilo_hold(&ctx, &lfo);
+    if (rc) goto clean;
+
     /* 440hz sine oscillator */
     rc = sonilo_constant(&ctx, 440);
     if (rc) goto clean;
+
+    /* add LFO bias */
+    rc = sonilo_ppush(&ctx, lfo);
+    if (rc) goto clean;
+    rc = biscale(&ctx, ugen_list, 20, 200);
+    if (rc) goto clean;
+    rc = ugen(&ctx, "ADD", ugen_list);
+    if (rc) goto clean;
+
+    /* unhold LFO signal */
+    rc = sonilo_unhold(&ctx, lfo);
+    if (rc) goto clean;
+
     rc = ugen(&ctx, "SIN", ugen_list);
     if (rc) goto clean;
 

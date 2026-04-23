@@ -518,3 +518,56 @@ int sonilo_ugen_register(sonilo *s,
 
     return 0;
 }
+
+int sonilo_hold(sonilo_ctx *ctx, uint32_t *w)
+{
+    uint16_t pstk;
+    uint32_t *mem;
+    int rc;
+
+    if (w == NULL) return 2;
+
+    mem = ctx->s->mem;
+    pstk = context_pstack(mem, ctx->context);
+    rc = pstack_hold(mem, pstk);
+
+    if (rc) return 1;
+
+    rc = pstack_pop(mem, pstk, w);
+    if (rc) return 3;
+
+    return 0;
+}
+
+int sonilo_unhold(sonilo_ctx *ctx, uint32_t w)
+{
+    uint16_t pstk;
+    uint32_t *mem;
+    int rc;
+
+    mem = ctx->s->mem;
+    pstk = context_pstack(mem, ctx->context);
+
+    rc = pstack_push(mem, pstk, w);
+    if (rc) return 1;
+
+    rc = pstack_hold(mem, pstk);
+    if (rc) return 2;
+
+    return 0;
+}
+
+int sonilo_ppush(sonilo_ctx *ctx, uint32_t w)
+{
+    uint16_t pstk;
+    uint32_t *mem;
+    int rc;
+
+    mem = ctx->s->mem;
+    pstk = context_pstack(mem, ctx->context);
+
+    rc = pstack_push(mem, pstk, w);
+    if (rc) return 1;
+
+    return 0;
+}
