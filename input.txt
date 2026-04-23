@@ -566,7 +566,7 @@ word addresses to the stack that are managed by the RC.
 @m #40.1 rx sppw #41.1 rx sppw #42.1 rx sppw
 @c push {\tt 0x40} 2 times, {\tt 0x41} 1 time, and {\tt 0x42} 0 times,
 and print the counts. 3 2 1 should be the output.
-@m #40.0 pu #41.0 pu #40.0 pu
+@m #40.1 pu #41.1 pu #40.1 pu
 #40.1rx sppw #41.1rx sppw #42.1rx sppw
 @p
 @l test_pstack_pop:
@@ -577,7 +577,7 @@ push was tested.
 @c set up blocks.
 @m #40 ra #41 ra #42 ra
 @c push some blocks onto the stack. print the counts: (2 2 2).
-@m #40.0 pu #41.0 pu #42.0 pu #40.1 rxsppw #41.1 rxsppw #42.1 rxsppw
+@m #40.1 pu #41.1 pu #42.1 pu #40.1 rxsppw #41.1 rxsppw #42.1 rxsppw
 @c pop once. print the counts: (2 2 1).
 @m po #40.1 rxsppw #41.1 rxsppw #42.1 rxsppw
 @c pop twice. print the counts: (1 1 1).
@@ -593,13 +593,13 @@ last item pushed onto the stack.
 @c hold on an empty stack. error code should be 1.
 @m #0 ph sppece
 @c push three blocks onto the stack and print their hold flags: 0 0 0
-@m #40.0 pu #41.0 pu #42.0 pu #40.2 rxsppw #41.2 rxsppw #42.2 rxsppw
+@m #40.1 pu #41.1 pu #42.1 pu #40.2 rxsppw #41.2 rxsppw #42.2 rxsppw
 @c hold pop: 0 0 1
 @m #0 ph po #40.2 rxsppw #41.2 rxsppw #42.2 rxsppw
 @c hold pop hold pop: 1 1 1
 @m #0 phpo #0 phpo #40.2 rxsppw #41.2 rxsppw #42.2 rxsppw
 @c push unhold push unhold: 0 1 0
-@m #40.0 pu #1 ph #42.0 pu #1 ph #40.2 rxsppw #41.2 rxsppw #42.2 rxsppw
+@m #40.1 pu #1 ph #42.1 pu #1 ph #40.2 rxsppw #41.2 rxsppw #42.2 rxsppw
 @p
 @l test_pstack_rot:
 @c parameter stack rotate. A standard forth stack rotation operation.

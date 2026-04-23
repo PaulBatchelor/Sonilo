@@ -184,6 +184,7 @@ int sonilo_ugen_init(sonilo_ctx *ctx, sonilo_ugen *u, uint16_t ukey, int nports,
     return 0;
 }
 
+/* TODO: OUTDATED. re-work to use ugen_iport */
 int sonilo_iport(sonilo_ugen *u, int port)
 {
     uint32_t w;
@@ -213,6 +214,7 @@ static sonilo_port new_block_port(sonilo_ctx *ctx)
     return p;
 }
 
+/* TODO: OUTDATED. rework to use ugen_oport under the hood */
 int sonilo_oport(sonilo_ugen *u, int port)
 {
     uint32_t w;

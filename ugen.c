@@ -46,7 +46,7 @@ int pstack_push(uint32_t *mem, uint16_t p, uint32_t w)
     stk[0] = sp;
 
     /* update RC if param is a block */
-    if ((w & 3) == PARAM_BLOCK) {
+    if ((w & 3) == PORT_BLOCK) {
         int rc;
         rc = rc_incr(mem, p, w >> 2);
         /* address not found */
@@ -74,7 +74,7 @@ int pstack_pop(uint32_t *mem, uint16_t p, uint32_t *wp)
 
     if (wp != NULL) *wp = w;
 
-    if ((w & 3) == PARAM_BLOCK) {
+    if ((w & 3) == PORT_BLOCK) {
         return rc_decr(mem, p, w >> 2);
     }
 
@@ -92,7 +92,7 @@ int pstack_hold(uint32_t *mem, uint16_t p)
     if (sp == 0) return 1;
 
     /* hold only works on blocks */
-    if ((stk[sp] & 3) != PARAM_BLOCK) return 2;
+    if ((stk[sp] & 3) != PORT_BLOCK) return 2;
 
     return rc_hold(mem, p, stk[sp] >> 2);
 }
@@ -108,7 +108,7 @@ int pstack_unhold(uint32_t *mem, uint16_t p)
     if (sp == 0) return 1;
 
     /* hold only works on blocks */
-    if ((stk[sp] & 3) != PARAM_BLOCK) return 2;
+    if ((stk[sp] & 3) != PORT_BLOCK) return 2;
 
     return rc_unhold(mem, p, stk[sp] >> 2);
 }
@@ -244,12 +244,24 @@ static int new_block_port(uint32_t *mem, uint16_t ctx, uint32_t *w)
 {
     int rc;
     uint16_t b;
+    uint16_t refcnt;
 
     if (w == NULL) return 2;
 
     /* allocate block to main */
     rc = context_mkblock(mem, ctx, &b);
     if (rc) return 1;
+
+    /* ref counter: sorted at beginning of pstack */
+    refcnt = CTX_PARAM_STACK(mem, ctx);
+    /* add new block to RC list */
+    rc = rc_add(mem, refcnt, b);
+    if (rc) return 3;
+
+    /* decrease count to zero. it will be set to 0 when
+     * pushed to stack */
+    rc = rc_decr(mem, refcnt, b);
+    if (rc) return 4;
 
     /* create parameter word from block */
     *w = (b << 2) | PORT_BLOCK;

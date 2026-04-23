@@ -2,10 +2,6 @@
 #define UGEN_BLKSZ 64
 
 enum {
-    PARAM_BLOCK
-};
-
-enum {
     PORT_NONE = 0,
     PORT_BLOCK,
     PORT_CONSTANT
