@@ -553,8 +553,13 @@ int sonilo_unhold(sonilo_ctx *ctx, uint32_t w)
     rc = pstack_push(mem, pstk, w);
     if (rc) return 1;
 
-    rc = pstack_hold(mem, pstk);
+    rc = pstack_unhold(mem, pstk);
     if (rc) return 2;
+
+#if 0
+    /* run a sweep */
+    pstack_sweep(mem, pstk);
+#endif
 
     return 0;
 }

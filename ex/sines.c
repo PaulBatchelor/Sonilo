@@ -68,10 +68,30 @@ int ugen(sonilo_ctx *ctx, const char *sym, uint16_t *lst)
     return 0;
 }
 
+/* map [-1, 1] -> [a, b] */
 int biscale(sonilo_ctx *ctx, uint16_t *lst, float a, float b)
 {
-    /* TODO */
-    return 1;
+    int rc;
+
+    /* scale LFO from [-1, 1] to [0, 1] */
+    rc = sonilo_constant(ctx, 1);
+    if (rc) return 1;
+    rc = ugen(ctx, "ADD", lst);
+    if (rc) return 2;
+
+    /* add multiplier (b - a) */
+    rc = sonilo_constant(ctx, b - a);
+    if (rc) return 3;
+    rc = ugen(ctx, "MUL", lst);
+    if (rc) return 4;
+
+    /* add bias to start at a */
+    rc = sonilo_constant(ctx, a);
+    if (rc) return 5;
+    rc = ugen(ctx, "ADD", lst);
+    if (rc) return 6;
+
+    return 0;
 }
 
 int main(int argc, char *argv[])
@@ -93,7 +113,7 @@ int main(int argc, char *argv[])
     if (rc) goto clean;
 
     /* create LFO oscillator */
-    rc = sonilo_constant(&ctx, 0.3);
+    rc = sonilo_constant(&ctx, 0.2);
     if (rc) goto clean;
     rc = ugen(&ctx, "SIN", ugen_list);
     if (rc) goto clean;
@@ -114,13 +134,19 @@ int main(int argc, char *argv[])
     rc = ugen(&ctx, "ADD", ugen_list);
     if (rc) goto clean;
 
+    /* TODO: investigate step noise in modulation */
+
+#if 0
+    /* TODO: this causes iport in the following sine ugen to return an error */
     /* unhold LFO signal */
     rc = sonilo_unhold(&ctx, lfo);
     if (rc) goto clean;
+#endif
 
     rc = ugen(&ctx, "SIN", ugen_list);
     if (rc) goto clean;
 
+#if 0
     /* 330hz sine oscillator */
     rc = sonilo_constant(&ctx, 350);
     if (rc) goto clean;
@@ -130,6 +156,7 @@ int main(int argc, char *argv[])
     /* ADD */
     rc = ugen(&ctx, "ADD", ugen_list);
     if (rc) goto clean;
+#endif
 
     /* Gain reduction (MUL) */
     rc = sonilo_constant(&ctx, 0.3);
