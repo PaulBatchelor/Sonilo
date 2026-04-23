@@ -26,6 +26,12 @@
 \pdfvorigin=0pt
 \hoffset=10mm
 \voffset=10mm
+\input eplain
+
+\def\tocent#1#2{
+\noindent #1 \leaders\hbox to 10pt {\hss.\hss}  \hfill \xref{#2}
+\smallskip
+}
 
 \input out
 \bye

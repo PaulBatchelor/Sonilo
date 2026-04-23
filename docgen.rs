@@ -1,5 +1,6 @@
 use std::io;
 use std::fs;
+use std::collections::BTreeMap;
 
 #[derive(PartialEq)]
 enum ParserMode {
@@ -22,6 +23,7 @@ fn main() -> io::Result<()> {
     let mut mode;
     let mut buf: Vec<_> = vec![];
     let mut obj: Vec<Object> = vec![];
+    let mut labels: BTreeMap<String, usize> = BTreeMap::default();
 
     mode = ParserMode::PRINT;
 
@@ -49,6 +51,7 @@ fn main() -> io::Result<()> {
             match mode {
                 ParserMode::LABEL => {
                     let str = str.trim().to_string().replace("_", "\\_").replace("#", "\\#");
+                    labels.insert(str.clone(), labels.len());
                     obj.push(Object::Label(str));
                 },
                 ParserMode::COMMENT => {
@@ -80,9 +83,16 @@ fn main() -> io::Result<()> {
         };
     }
 
+    for (k, v) in labels.iter() {
+        println!("\\tocent{{{}}}{{{}}}" , k, v);
+    }
+
     for o in obj {
         match o {
             Object::Label(s) => {
+                if let Some(&r) = labels.get(&s) {
+                    println!("\\xrdef{{{}}}" , r);
+                }
                 println!("\\label{{{}}}" , s);
             },
             Object::Code(s) => {
