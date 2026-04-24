@@ -101,6 +101,7 @@ int pstack_unhold(uint32_t *mem, uint16_t p)
 {
     uint32_t *stk;
     int sp;
+    uint32_t a;
 
     stk = get_stack(mem, p);
     sp = stk[0];
@@ -110,7 +111,15 @@ int pstack_unhold(uint32_t *mem, uint16_t p)
     /* hold only works on blocks */
     if ((stk[sp] & 3) != PORT_BLOCK) return 2;
 
-    return rc_unhold(mem, p, stk[sp] >> 2);
+    /* it's very important that this address be popped
+     * off the stack after it is unheld. Otherwise,
+     * popping may return an error saying the refcount
+     * is already zero (which could very well be possible
+     * for indefinitely held addresses) */
+    a = stk[sp] >> 2;
+    stk[0] = sp - 1;
+
+    return rc_unhold(mem, p, a);
 }
 
 int pstack_rot(uint32_t *mem, uint16_t p)

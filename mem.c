@@ -901,13 +901,17 @@ int rc_incr(uint32_t *mem, uint16_t r, uint16_t m)
     int i;
     uint32_t e;
     int c;
+    int h;
     i = rc_find(mem, r, m);
 
     if (i == 0xFF) return 1;
 
     e = rc_entry_get(mem, r, i);
     c = rc_count_get(e);
-    e = rc_count_set(e, c + 1);
+    h = rc_hold_get(e);
+
+    /* only increment if cable is not being held */
+    if (!h) e = rc_count_set(e, c + 1);
     rc_entry_set(mem, r, i, e);
 
     return 0;
@@ -918,12 +922,18 @@ int rc_decr(uint32_t *mem, uint16_t r, uint16_t m)
     int i;
     uint32_t e;
     int c;
+    int h;
+
     i = rc_find(mem, r, m);
 
     if (i == 0xFF) return 1;
 
     e = rc_entry_get(mem, r, i);
     c = rc_count_get(e);
+    h = rc_hold_get(e);
+
+    /* do not decrement: cable is held indefinitely */
+    if (h) return 0;
 
     /* nothing to decrement */
     if (c <= 0) return 2;
