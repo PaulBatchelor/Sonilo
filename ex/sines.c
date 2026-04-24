@@ -20,7 +20,7 @@ int render(sonilo_ctx *ctx, uint16_t *lst, uint16_t sink)
     rc = sonilo_ugen_block(mem, sink, 0, &out);
     if (rc) return 1;
 
-    for (i = 0; i < 3445; i++) {
+    for (i = 0; i < 3445*2; i++) {
         int k;
         for (k = 1; k <= sz; k++) {
             int rc;
@@ -133,8 +133,30 @@ int main(int argc, char *argv[])
     if (rc) goto clean;
     rc = ugen(&ctx, "ADD", ugen_list);
     if (rc) goto clean;
+    rc = ugen(&ctx, "SIN", ugen_list);
+    if (rc) goto clean;
 
-    /* TODO: investigate step noise in modulation */
+    /* 330hz sine oscillator */
+    rc = sonilo_constant(&ctx, 350);
+    if (rc) goto clean;
+
+    /* modulate with vibrato, whose rate is modulated with LFO */
+    rc = sonilo_ppush(&ctx, lfo);
+    if (rc) goto clean;
+    rc = biscale(&ctx, ugen_list, 6, 10);
+    if (rc) goto clean;
+
+
+    if (rc) goto clean;
+    rc = ugen(&ctx, "SIN", ugen_list);
+    if (rc) goto clean;
+
+    /* modulate the vibrato frequen */
+    rc = sonilo_constant(&ctx, 50);
+    rc = ugen(&ctx, "MUL", ugen_list);
+    if (rc) goto clean;
+    rc = ugen(&ctx, "ADD", ugen_list);
+    if (rc) goto clean;
 
     /* unhold LFO signal */
     rc = sonilo_unhold(&ctx, lfo);
@@ -143,17 +165,9 @@ int main(int argc, char *argv[])
     rc = ugen(&ctx, "SIN", ugen_list);
     if (rc) goto clean;
 
-#if 0
-    /* 330hz sine oscillator */
-    rc = sonilo_constant(&ctx, 350);
-    if (rc) goto clean;
-    rc = ugen(&ctx, "SIN", ugen_list);
-    if (rc) goto clean;
-
     /* ADD */
     rc = ugen(&ctx, "ADD", ugen_list);
     if (rc) goto clean;
-#endif
 
     /* Gain reduction (MUL) */
     rc = sonilo_constant(&ctx, 0.3);
