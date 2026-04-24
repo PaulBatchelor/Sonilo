@@ -136,7 +136,6 @@ int main(int argc, char *argv[])
 
     /* TODO: investigate step noise in modulation */
 
-    /* TODO: this causes iport in the following sine ugen to return an error */
     /* unhold LFO signal */
     rc = sonilo_unhold(&ctx, lfo);
     if (rc) goto clean;

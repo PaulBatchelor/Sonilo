@@ -81,6 +81,7 @@ static uint32_t render(uint32_t *mem, uint16_t ugen)
         f = sonilo_port_read(&freq, n);
         o = sin(2.0 * M_PI * phs);
         phs += f * (1.0 / sr);
+        if (phs > 1) phs -= 1.0;
         sonilo_port_write(&out, n, o);
     }
     st->phs = phs;
