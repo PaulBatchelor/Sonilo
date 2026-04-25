@@ -58,3 +58,7 @@ ph:param stack hold/unhold.
 pd:param stack dup.
 pR:param stack rotate.
 ps:param stack swap.
+ac:TODO. array create.
+ar:TODO. array read.
+aw:TODO. array write.
+ci:TODO. context init.

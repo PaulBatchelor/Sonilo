@@ -21,6 +21,7 @@ build ins.o: c89 ins.c
 build ugen.o: c89 ugen.c
 build port.o: c89 port.c
 build context.o: c89 context.c
+build array.o: c89 array.c
 build dsp/load.o: c89 dsp/load.c
 build dsp/sink.o: c89 dsp/sink.c
 build dsp/sine.o: c89 dsp/sine.c
@@ -31,6 +32,7 @@ build libsonilo.a: ar $
     ugen.o $
     port.o $
     context.o $
+    array.o $
     dsp/load.o $
     dsp/sink.o $
     dsp/sine.o $
