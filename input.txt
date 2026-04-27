@@ -688,3 +688,23 @@ block (unavailable).
 @c the memory aux utility {\tt mx} in mode 3 is used to run the {\tt kavail} operation.
 @m #3aa #3aa #40aa mx pwsp
 @m #6aa #3aa #40aa mx pwnl
+@l test_wordslice:
+@c A word slice describes a subregion of a word.
+@c A word slice consists of an address (16 bits), and range
+(2 5-bit numbers, totalling 10 bits).
+@c The 'ws' command is used to extract a value from a wordslice.
+@c To test this functionality, consider the word {\tt #12345678}.
+This will be stored in region {\tt 0x40}.
+@m #40 go #12345678 wr
+@c To extract the value '8', the word slice would be $[0, 3]$.
+@m #40.00.03 ws sppw
+@c to extract '2', the word slice would be $[24, 27]$.
+@m #40.18.1B ws sppw
+@c range order shouldn't matter
+@m #40.1B.18 ws sppw #40.03.00 ws sppw
+@c '1234' is the slice $[16, 31]$.
+@m #40.10.1F ws sppw
+@c $[0, 0]$ extracts bit 0, which is 0. $[3, 3]$ should be the bit turned
+on for '8', which is a 1.
+@m #40.00.00 ws sppw #40.03.03 ws sppw
+@p

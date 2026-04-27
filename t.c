@@ -5,6 +5,7 @@
 #include "mem.h"
 #include "ins.h"
 #include "ugen.h"
+#include "array.h"
 
 #define BLOCKLIST_OFFSET 0x400
 
@@ -922,6 +923,28 @@ void parse_memwrite(memwrite *mw, char c)
         mw->rw = mem_aux(mw->mem, mw->cursor);
 
         return;
+    }
+
+    /* ws: wordslice to value */
+    if (iscmd(mw, c, "ws")) {
+        uint32_t ws;
+        uint16_t addr, start, end;
+        mw->prev = 0;
+        ws = 0;
+
+        /* extract arguments from RW register */
+        end = mw->rw & 0xFF;
+        mw->rw >>= 8;
+        start = mw->rw & 0xFF;
+        mw->rw >>= 8;
+        addr = mw->rw & 0xFFFF;
+
+        /* build up word slice */
+        ws = addr |
+            ((start & 0x1f) << 16) |
+            ((end & 0x1f) << 21);
+
+        mw->rw = array_value(mw->mem, ws);
     }
 
     mw->prev = c;
