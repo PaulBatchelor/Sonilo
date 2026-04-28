@@ -369,9 +369,6 @@ void parse_memwrite(memwrite *mw, char c)
         mw->prev = 0;
         /* 6-bit address 0 - 63 */
         offset = mw->rw & 0x3f;
-        /* TODO: pad this operation into two nibbles and pop off word?
-         * I assumed that was the behavior already
-         */
         mw->rw = mw->mem[mw->cursor + offset];
         return;
     }
