@@ -73,3 +73,4 @@ test_cursor_select:
 a b
 a b
 b a
+test_swap: a b 1 1 0

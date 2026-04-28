@@ -369,6 +369,9 @@ void parse_memwrite(memwrite *mw, char c)
         mw->prev = 0;
         /* 6-bit address 0 - 63 */
         offset = mw->rw & 0x3f;
+        /* TODO: pad this operation into two nibbles and pop off word?
+         * I assumed that was the behavior already
+         */
         mw->rw = mw->mem[mw->cursor + offset];
         return;
     }
@@ -613,6 +616,8 @@ void parse_memwrite(memwrite *mw, char c)
         return;
     }
 
+    /* xr: */
+
     if (iscmd(mw, c, "xr")) {
         uint32_t rw;
         uint16_t off;
@@ -674,14 +679,6 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* sc: swap cursor */
     if (iscmd(mw, c, "sc")) {
-#if 0
-        uint16_t tmp;
-        mw->prev = 0;
-        tmp = mw->cursor;
-        mw->cursor = mw->alt;
-        mw->alt = tmp;
-        mw->swap ^= 1;
-#endif
         mw->prev = 0;
         swap_cursors(mw);
         return;

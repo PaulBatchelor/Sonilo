@@ -755,3 +755,10 @@ selected.
 set things up such that if cursor selection isn't implemented,
 it will print only A.
 @m sc #1cu rcpwsp #0cu rc pwnl
+@l test_swap:
+@c Test the swap operation on the system stack.
+@c initialize an array, push some values, swap and pop
+@m #0 go ai #A aa #B aa sw ap sppw ap sppw
+@c If there aren't enough args on the stack,
+swap should return an error.
+@m ce sw sppe #A aa sw sppe #Baa sw sppe ce nl
