@@ -1394,6 +1394,13 @@ int array_swap(uint32_t *mem, uint16_t a)
 
 int array_drop(uint32_t *mem, uint16_t a)
 {
-    /* TODO */
-    return 1;
+    uint32_t *stk;
+
+    stk = &mem[a];
+
+    if (stk[0] == 0) return 1;
+
+    stk[0]--;
+
+    return 0;
 }

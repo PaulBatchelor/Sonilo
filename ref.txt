@@ -74,3 +74,4 @@ a b
 a b
 b a
 test_swap: a b 1 1 0
+test_drop: b a 1

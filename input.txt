@@ -762,3 +762,8 @@ it will print only A.
 @c If there aren't enough args on the stack,
 swap should return an error.
 @m ce sw sppe #A aa sw sppe #Baa sw sppe ce nl
+@l test_drop:
+@c A small test for the stack drop operation {\tt dr}.
+@c Create an array, add some values, drop a value. Also
+try to drop an empty stack and make sure there is an error.
+@m ce #0 go ai #Aaa #Baa #Caa dr sp ap pw sp ap pw dr sp pe nl

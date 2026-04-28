@@ -1017,7 +1017,7 @@ void parse_memwrite(memwrite *mw, char c)
     }
 
     /* dr: stack drop */
-    if (iscmd(mw, c, "aw")) {
+    if (iscmd(mw, c, "dr")) {
         mw->prev = 0;
         mw->err = array_drop(mw->mem, mw->cursor);
         return;
