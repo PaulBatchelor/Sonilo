@@ -740,3 +740,18 @@ back onto the stack, and the process can repeat again.
 @c Now, use {\tt ar} to read the values back and print them.
 @m 0cu 08jf rd sc ap sc 08jb
 nl 1cu #0 sw ar pw #1 sw ar sppw #2 sw ar sppw #3 sw ar sppw nl
+@l test_cursor_select:
+@c Testing out logic for direct cursor selection.
+@c There are two cursors, which can be selected through swapping.
+Directly selecting assigns each cursor to a value, which allows
+cursor to be addressed without knowing which cursor is currently
+selected.
+@c To test this, begin by setting up cursors at positions {\tt 0xA} and
+{\tt 0xB}, and confirm the cursors are where they say they are.
+@m #0cu #Ago sc #B go sc rc nl pw sc rc sp pw nl
+@c Select cursor 0 (A) and print. Select cursor 1 (B) and print.
+@m #0cu rc pwsp #1cu rc pwnl
+@c Now do it in reverse, and swap the cursor beforehand. I've
+set things up such that if cursor selection isn't implemented,
+it will print only A.
+@m sc #1cu rcpwsp #0cu rc pwnl

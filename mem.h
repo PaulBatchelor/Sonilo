@@ -22,6 +22,8 @@ uint32_t array_length(uint32_t *mem, uint16_t a);
 int array_append(uint32_t *mem, uint16_t a, uint32_t x);
 int array_pop(uint32_t *mem, uint16_t a, uint32_t *x);
 int array_peak(uint32_t *mem, uint16_t a, uint32_t *x);
+int array_swap(uint32_t *mem, uint16_t a);
+int array_drop(uint32_t *mem, uint16_t a);
 
 /* buddy memory allocator */
 void mem_init(uint32_t *mem,

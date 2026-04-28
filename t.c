@@ -49,6 +49,8 @@ typedef struct memwrite {
     uint16_t cursor;
     /* alt cursor */
     uint16_t alt;
+    /* swap bit */
+    uint8_t swap;
 
     /* memory */
     uint32_t mem[0x10000];
@@ -162,6 +164,15 @@ static uint32_t reverse(uint32_t *mem, uint16_t dat)
     return 0;
 }
 
+static void swap_cursors(memwrite *mw)
+{
+    uint16_t tmp;
+    tmp = mw->cursor;
+    mw->cursor = mw->alt;
+    mw->alt = tmp;
+    mw->swap ^= 1;
+}
+
 void memwrite_init(memwrite *mw)
 {
     uint32_t i;
@@ -180,6 +191,7 @@ void memwrite_init(memwrite *mw)
     instr_map_set(&mw->instr, instr_key("PRA"), invert);
     instr_map_set(&mw->instr, instr_key("PRB"), reverse);
     mw->encode = 0;
+    mw->swap = 0;
 }
 
 static uint32_t reverse_nibbles(uint32_t w)
@@ -662,11 +674,16 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* sc: swap cursor */
     if (iscmd(mw, c, "sc")) {
+#if 0
         uint16_t tmp;
         mw->prev = 0;
         tmp = mw->cursor;
         mw->cursor = mw->alt;
         mw->alt = tmp;
+        mw->swap ^= 1;
+#endif
+        mw->prev = 0;
+        swap_cursors(mw);
         return;
     }
 
@@ -957,7 +974,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* sw: swap */
     if (iscmd(mw, c, "sw")) {
         mw->prev = 0;
-        /* TODO */
+        mw->err = array_swap(mw->mem, mw->cursor);
         return;
     }
 
@@ -984,15 +1001,28 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* cu: select cursor */
     if (iscmd(mw, c, "cu")) {
+        int cur;
         mw->prev = 0;
-        /* TODO */
+        cur = mw->rw & 1;
+        mw->rw >>= 1;
+
+        if (cur) {
+            /* want: cursor 1 */
+            /* swap if unswapped to make cursor 1 active */
+            if (!mw->swap) swap_cursors(mw);
+        } else {
+            /* want: cursor 0 */
+            /* if swapped, swap to get cursor 0 active */
+            if (mw->swap) swap_cursors(mw);
+        }
+
         return;
     }
 
     /* dr: stack drop */
     if (iscmd(mw, c, "aw")) {
         mw->prev = 0;
-        /* TODO */
+        mw->err = array_drop(mw->mem, mw->cursor);
         return;
     }
 

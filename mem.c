@@ -1373,3 +1373,15 @@ uint16_t allocator_free(uint32_t *mem, uint16_t a, uint16_t m)
 
     return 0;
 }
+
+int array_swap(uint32_t *mem, uint16_t a)
+{
+    /* TODO */
+    return 1;
+}
+
+int array_drop(uint32_t *mem, uint16_t a)
+{
+    /* TODO */
+    return 1;
+}

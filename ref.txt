@@ -69,3 +69,7 @@ test_kavail:
 test_wordslice: 8 2 2 8 1234 0 1
 test_arrays:
 3 6 ff c
+test_cursor_select:
+a b
+a b
+b a
