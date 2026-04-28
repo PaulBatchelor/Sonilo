@@ -1039,11 +1039,15 @@ int array_append(uint32_t *mem, uint16_t a, uint32_t x)
 
 int array_pop(uint32_t *mem, uint16_t a, uint32_t *x)
 {
-    int pos;
+    uint32_t pos;
     pos = mem[a];
     if (pos == 0) {
         return 1;
     }
+    pos += a;
+
+    if (pos > 0xFFFF) return 2;
+
     if (x != NULL) *x = mem[a + pos];
     mem[a] = pos - 1;
     return 0;

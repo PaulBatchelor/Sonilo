@@ -947,6 +947,55 @@ void parse_memwrite(memwrite *mw, char c)
         mw->rw = array_value(mw->mem, ws);
     }
 
+    /* ci: context init */
+    if (iscmd(mw, c, "ci")) {
+        mw->prev = 0;
+        /* TODO */
+        return;
+    }
+
+    /* sw: swap */
+    if (iscmd(mw, c, "sw")) {
+        mw->prev = 0;
+        /* TODO */
+        return;
+    }
+
+    /* ac: array create */
+    if (iscmd(mw, c, "sc")) {
+        mw->prev = 0;
+        /* TODO */
+        return;
+    }
+
+    /* ar: array read */
+    if (iscmd(mw, c, "ar")) {
+        mw->prev = 0;
+        /* TODO */
+        return;
+    }
+
+    /* aw: array write */
+    if (iscmd(mw, c, "aw")) {
+        mw->prev = 0;
+        /* TODO */
+        return;
+    }
+
+    /* cu: select cursor */
+    if (iscmd(mw, c, "cu")) {
+        mw->prev = 0;
+        /* TODO */
+        return;
+    }
+
+    /* dr: stack drop */
+    if (iscmd(mw, c, "aw")) {
+        mw->prev = 0;
+        /* TODO */
+        return;
+    }
+
     mw->prev = c;
 }
 

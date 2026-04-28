@@ -67,3 +67,5 @@ test_kavail:
 0 1 1 0
 1 0
 test_wordslice: 8 2 2 8 1234 0 1
+test_arrays:
+3 6 ff c

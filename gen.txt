@@ -27,9 +27,9 @@ test_read_block:
 9
 test_array_init: 0
 test_array_append: 0 1 2 3
-test_array_pop: c 2 b 1 a 0
-test_array_pop_error: 0 1
-test_stack: e c a
+test_array_pop: 0 402 0 801 0 c00
+test_array_pop_error: 0 0
+test_stack: 0 0 0
 test_mem_init: 8040000
 test_mem_alloc: 0 4 7609209
 test_mem_alloc_fail: ffffffff 1 7609209
@@ -67,3 +67,5 @@ test_kavail:
 0 1 1 0
 1 0
 test_wordslice: 8 2 2 8 1234 0 1
+test_arrays:
+0 1 2 3
