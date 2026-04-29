@@ -6,6 +6,7 @@
 #include "ins.h"
 #include "ugen.h"
 #include "array.h"
+#include "context.h"
 
 #define BLOCKLIST_OFFSET 0x400
 
@@ -960,8 +961,30 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* ci: context init */
     if (iscmd(mw, c, "ci")) {
+        uint16_t ctx;
+        int rc;
         mw->prev = 0;
-        /* TODO */
+        ctx = context_init(mw->mem, mw->cursor);
+    
+        /* extra context goodies */
+
+        rc = context_allocator_setup(mw->mem, ctx);
+        if (rc) {
+            mw->err = 1;
+            return;
+        }
+
+        rc = context_pstack_setup(mw->mem, ctx);
+
+        if (rc) {
+            mw->err = 2;
+            return;
+        }
+
+        mw->err = 0;
+
+        mw->rw = ctx;
+
         return;
     }
 
@@ -973,9 +996,53 @@ void parse_memwrite(memwrite *mw, char c)
     }
 
     /* ac: array create */
-    if (iscmd(mw, c, "sc")) {
+    if (iscmd(mw, c, "ac")) {
+        uint16_t len;
+        uint8_t k;
+        uint16_t ctx;
+        uint16_t stk;
+        int rc;
+        uint32_t *mem;
+        uint32_t args;
+        uint16_t a;
         mw->prev = 0;
-        /* TODO */
+
+        mem = mw->mem;
+        stk = mw->cursor;
+        ctx = 0;
+
+        rc = array_pop(mem, stk, &args);
+
+        if (rc) {
+            mw->err = 1;
+            return;
+        }
+
+        ctx = args & 0xFFFF;
+
+        args = 0;
+        rc = array_pop(mem, stk, &args);
+
+        if (rc) {
+            mw->err = 2;
+            return;
+        }
+
+        k = args & 0x7;
+        args >>= 4;
+        len = args & 0xFFFF;
+
+        a = 0;
+        rc = array_create(mem, ctx, k, len, &a);
+
+        if (rc) {
+            mw->err = 3;
+            return;
+        }
+
+        mw->err = 0;
+        mw->rw = a;
+
         return;
     }
 
@@ -998,7 +1065,7 @@ void parse_memwrite(memwrite *mw, char c)
         int cur;
         mw->prev = 0;
         cur = mw->rw & 1;
-        mw->rw >>= 1;
+        mw->rw >>= 4;
 
         if (cur) {
             /* want: cursor 1 */

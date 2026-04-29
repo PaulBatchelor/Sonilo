@@ -1,10 +1,52 @@
 #include <stdint.h>
+#include <stddef.h>
 #include "array.h"
+#include "mem.h"
 
-int array_create(uint32_t *mem, uint16_t ctx, int wrdsz, uint16_t len)
+int array_create(uint32_t *mem, uint16_t ctx, int wrdsz, uint16_t len, uint16_t *pa)
 {
-    /* TODO */
-    return 1;
+    uint16_t nbits;
+    uint16_t nwords;
+    int rc;
+    uint16_t a;
+    uint16_t i;
+
+    if (len == 0) return 1;
+
+    if (wrdsz > 6) return 2;
+
+    /* compute the number of words needed hold the bits */
+    nbits = wrdsz * len;
+
+    nwords = 0;
+    while ((nwords << 3) < nbits) nwords++;
+
+    /* add extra word for header */
+    nwords++;
+
+    if (nwords > 64) return 3;
+
+    /* attempt to allocate words from context */
+    a = 0;
+    rc = sonilo_alloc(mem, ctx, nwords, &a);
+    if (rc) return 4;
+
+    /* initialize array */
+
+    /* header: word size (2^k) | length */
+    mem[a] = (wrdsz << 16) | len;
+
+    /* zero out words */
+
+    if (pa == NULL) return 5;
+
+    for (i = 1; i < nwords; i++) {
+        mem[a + i] = 0;
+    }
+
+    *pa = a;
+
+    return 0;
 }
 
 /* set value of an array a[p] = x */

@@ -715,7 +715,7 @@ allocated arrays. This will test for the latter.
 1, 2, 4, 8, 16, or 32-bit sized variables.
 @c Arrays are allocated using a context, so set up the block stack
 and a context. 
-@m #0 go bi ci 0cu go
+@m 0cu #0 go bi ci go
 @c Retrieve the stack from the context, and set it to be the alt
 cursor.
 @m 1 rb 1cu go
@@ -723,7 +723,7 @@ cursor.
 Args: size.type context address
 @c note that the type specifies the data type in terms of $k$ for
 some size $2^k$.
-@m #4.3 aa 0cu rc sc aa ac
+@m #4.3 aa 0cu rc sc aa ac sp pe
 @c Store the array in slot 8 in the zero page.
 @m 0cu 08jf sc ap sc wr 08jb
 @c Set the values in the array to be {\tt 0x03, 0x06, 0xff, 0x0c}.
