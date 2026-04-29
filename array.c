@@ -21,7 +21,7 @@ int array_create(uint32_t *mem, uint16_t stk)
     val = 0;
     rc = array_pop(mem, stk, &val);
     if (rc) return 6;
-    ctx = val & 0xFF;
+    ctx = val & 0xFFFF;
 
     rc = array_pop(mem, stk, &val);
     if (rc) return 7;
@@ -37,7 +37,7 @@ int array_create(uint32_t *mem, uint16_t stk)
     nbits = wrdsz * len;
 
     nwords = 0;
-    while ((nwords << 3) < nbits) nwords++;
+    while ((nwords << 5) < nbits) nwords++;
 
     /* add extra word for header */
     nwords++;
@@ -78,6 +78,7 @@ int array_write(uint32_t *mem, uint16_t stk)
     uint32_t v;
     uint16_t len, wsz;
     uint16_t ow, ob;
+    uint32_t m;
 
     if (mem[stk] < 3) return 1;
 
@@ -98,7 +99,7 @@ int array_write(uint32_t *mem, uint16_t stk)
     /* extract length and word size from header */
 
     len = mem[a] & 0xFFFF;
-    wsz = (mem[a] >> 16) & 7;
+    wsz = (mem[a] >> 16) & 0x7;
 
     /* bounds checking */
 
@@ -107,23 +108,80 @@ int array_write(uint32_t *mem, uint16_t stk)
     if (wsz > 5) return 5;
 
     /* calculate word and bit offsets */
+
+    /* O_w = p * 2^{5 - k} */
     ow = p >> (5 - wsz);
-    ob = p * (1 << wz) - (ow << 5);
+    /* O_b = p * 2^k - 32*O_w */
+    ob = p * (1 << wsz) - (ow << 5);
 
-    /* TODO: write bits to word */
+    /* write bits to word */
 
-    return -1;
+    /* turn word offset into memory offset */
+    ow += a + 1;
+
+    /* calculate mask: (2^(2^k) - 1) * 2^{O_b} */
+    m = ((1 << (1 << wsz)) - 1) << ob;
+
+    /* clear bits */
+    mem[ow] &= ~m;
+
+    /* write bits */
+    mem[ow] |= (x << ob) & m;
+
+    /* push address onto stack again */
+
+    rc = array_append(mem, stk, a);
+    if (rc) return 6;
+
+    return 0;
+}
+
+static uint32_t wordslice(uint16_t addr, uint16_t start, uint16_t end)
+{
+    return addr | start << 16 | end << 21;
 }
 
 /* read value of an array x = a[p] */
 int array_read(uint32_t *mem, uint16_t stk)
 {
-    /* TODO: pop args: a, p */
-    /* TODO: extract length and word size from header */
-    /* TODO: bounds checking */
-    /* TODO: calculate word and bit offsets */
-    /* TODO: generate word slice */
-    return -1;
+    int rc;
+    uint32_t v;
+    uint16_t a, p;
+    uint16_t len, k;
+    uint16_t ob, ow;
+
+    v = 0;
+    /* pop args: a, p */
+    rc = array_pop(mem, stk, &v);
+    if (rc) return 1;
+    a = v & 0xFFFF;
+
+    rc = array_pop(mem, stk, &v);
+    if (rc) return 2;
+    p = v & 0xFFFF;
+
+    /* extract length and word size from header */
+    len = mem[a] & 0xFFFF;
+    k = (mem[a] >> 16) & 0x7;
+
+    /* bounds checking */
+    if (p >= len) return 3;
+
+    /* calculate word and bit offsets */
+    ow = p >> (5 - k);
+    ob = p * (1 << k) - (ow << 5);
+
+    /* push array value back onto stack */
+    rc = array_append(mem, stk, a);
+    if (rc) return 5;
+
+    /* generate word slice, push to stack */
+
+    ow += a + 1;
+    rc = array_append(mem, stk, wordslice(ow, ob, ob + (1 << k) - 1));
+    if (rc) return 4;
+
+    return 0;
 }
 
 uint32_t array_value(uint32_t *mem, uint32_t ws)

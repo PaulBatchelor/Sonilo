@@ -1004,16 +1004,22 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* ar: array read */
     if (iscmd(mw, c, "ar")) {
-        int rc;
         mw->prev = 0;
         mw->err = array_read(mw->mem, mw->cursor);
+        return;
+    }
+
+    /* av: array value */
+    if (iscmd(mw, c, "av")) {
+        mw->prev = 0;
+        mw->rw = array_value(mw->mem, mw->rw);
         return;
     }
 
     /* aw: array write */
     if (iscmd(mw, c, "aw")) {
         mw->prev = 0;
-        /* TODO */
+        mw->err = array_write(mw->mem, mw->cursor);
         return;
     }
 

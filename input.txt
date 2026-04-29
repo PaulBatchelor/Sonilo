@@ -727,21 +727,27 @@ some size $2^k$.
 @c Store the array in slot 8 in the zero page.
 @m 0cu 08jf sc ap sc wr 08jb
 @c Set the values in the array to be {\tt 0x03, 0x06, 0xff, 0x0c}.
-@m 1cu #03ap #06ap #FFap #0Cap
-sc 08jf rd sc ap sc 08jb
+@m 1cu #03aa #06aa #FFaa #0Caa
+sc 08jf rd sc aa sc 08jb
 @c Stack tricks: values and array address are on the stack.
 to set the value at an index, push the index and swap. This
 makes the last three values on the stack to be a value, index,
 and array pointer.
-@m 1cu #3 sw aw
+@m 1cu #3aa sw aw
 @c the array write command {\tt aw} will push the array address
 back onto the stack, and the process can repeat again.
-#2 sw aw #1 sw aw #0 sw aw dr
+@m #2aasw aw #1aasw aw #0aasw aw dr
 @c Now, use {\tt ar} to read the values back and print them.
 @c Array-read returns a value as a wordslice. To extract the value,
-the {\tt ws} (wordslice) command is use.
-@m 0cu 08jf rd sc ap sc 08jb
-nl 1cu #0 sw arws pw #1 sw arws sppw #2 sw arws sppw #3 sw arws sppw nl
+the {\tt av} (array-value) command is used.
+@m 0cu 08jf rd sc aa sc 08jb
+nl
+1cu
+#0aa sw arapav pw
+#1aa sw arapav sppw
+#2aa sw arapav sppw
+#3aa sw arapav sppw
+drnl
 @l test_cursor_select:
 @c Testing out logic for direct cursor selection.
 @c There are two cursors, which can be selected through swapping.

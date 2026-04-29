@@ -65,3 +65,4 @@ ci:TODO. context init.
 cu:TODO. select cursor. 0 or 1 LSB in rw.
 sw:TODO. stack swap.
 dr:TODO. stack drop.
+av:TODO. array value. extracts value returned by ar.
