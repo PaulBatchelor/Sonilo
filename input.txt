@@ -738,8 +738,10 @@ and array pointer.
 back onto the stack, and the process can repeat again.
 #2 sw aw #1 sw aw #0 sw aw dr
 @c Now, use {\tt ar} to read the values back and print them.
+@c Array-read returns a value as a wordslice. To extract the value,
+the {\tt ws} (wordslice) command is use.
 @m 0cu 08jf rd sc ap sc 08jb
-nl 1cu #0 sw ar pw #1 sw ar sppw #2 sw ar sppw #3 sw ar sppw nl
+nl 1cu #0 sw arws pw #1 sw arws sppw #2 sw arws sppw #3 sw arws sppw nl
 @l test_cursor_select:
 @c Testing out logic for direct cursor selection.
 @c There are two cursors, which can be selected through swapping.

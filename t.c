@@ -997,59 +997,16 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* ac: array create */
     if (iscmd(mw, c, "ac")) {
-        uint16_t len;
-        uint8_t k;
-        uint16_t ctx;
-        uint16_t stk;
-        int rc;
-        uint32_t *mem;
-        uint32_t args;
-        uint16_t a;
         mw->prev = 0;
-
-        mem = mw->mem;
-        stk = mw->cursor;
-        ctx = 0;
-
-        rc = array_pop(mem, stk, &args);
-
-        if (rc) {
-            mw->err = 1;
-            return;
-        }
-
-        ctx = args & 0xFFFF;
-
-        args = 0;
-        rc = array_pop(mem, stk, &args);
-
-        if (rc) {
-            mw->err = 2;
-            return;
-        }
-
-        k = args & 0x7;
-        args >>= 4;
-        len = args & 0xFFFF;
-
-        a = 0;
-        rc = array_create(mem, ctx, k, len, &a);
-
-        if (rc) {
-            mw->err = 3;
-            return;
-        }
-
-        mw->err = 0;
-        mw->rw = a;
-
+        mw->err = array_create(mw->mem, mw->cursor);
         return;
     }
 
     /* ar: array read */
     if (iscmd(mw, c, "ar")) {
+        int rc;
         mw->prev = 0;
-        /* TODO */
+        mw->err = array_read(mw->mem, mw->cursor);
         return;
     }
 
