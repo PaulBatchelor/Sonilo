@@ -77,6 +77,7 @@ int array_write(uint32_t *mem, uint16_t stk)
     int rc;
     uint32_t v;
     uint16_t len, wsz;
+    uint16_t ow, ob;
 
     if (mem[stk] < 3) return 1;
 
@@ -103,7 +104,12 @@ int array_write(uint32_t *mem, uint16_t stk)
 
     if (p >= len) return 4;
 
-    /* TODO: calculate word and bit offsets */
+    if (wsz > 5) return 5;
+
+    /* calculate word and bit offsets */
+    ow = p >> (5 - wsz);
+    ob = p * (1 << wz) - (ow << 5);
+
     /* TODO: write bits to word */
 
     return -1;
