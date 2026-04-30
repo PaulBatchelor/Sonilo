@@ -120,7 +120,9 @@ int array_write(uint32_t *mem, uint16_t stk)
     ow += a + 1;
 
     /* calculate mask: (2^(2^k) - 1) * 2^{O_b} */
-    m = ((1 << (1 << wsz)) - 1) << ob;
+
+    m = 0xFFFFFFFF;
+    if (wsz < 5) m = ((1 << (1 << wsz)) - 1) << ob;
 
     /* clear bits */
     mem[ow] &= ~m;
@@ -207,7 +209,10 @@ uint32_t array_value(uint32_t *mem, uint32_t ws)
         end = tmp;
     }
 
-    mask = ((1 << (end - start + 1)) - 1) << start;
+    mask = 0xFFFFFFFF;
+    if ((end - start) < 31) {
+        mask = ((1 << (end - start + 1)) - 1) << start;
+    }
 
     return (mem[addr] & mask) >> start;
 }

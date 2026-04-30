@@ -69,6 +69,10 @@ test_kavail:
 test_wordslice: 8 2 2 8 1234 0 1
 test_arrays: 0
 3 6 ff c
+3
+0 1234 5678 abcd
+0 deadbeef feedabba
+0 0 1 0 1
 test_cursor_select:
 a b
 a b

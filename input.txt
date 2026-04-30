@@ -747,7 +747,36 @@ nl
 #1aa sw arapav sppw
 #2aa sw arapav sppw
 #3aa sw arapav sppw
-drnl
+@c Do an out of bounds check before dropping the address
+@m nl ce #4aa sw ar pe nl
+@c now some arrays for 16-bit values
+@m 1cu #3.4aa 0cu rc sc aaac pe
+0cu 09jf scapsc wr 09jb
+1cu #1234aa #5678aa #ABCDaa
+0cu 09jf rd scaasc 09jb
+1cu #2aa sw aw #1aa sw aw #0aa sw aw dr
+0cu 09jf rd scaasc 09jb
+sp 1cu #0aa sw arapav pw
+sp 1cu #1aa sw arapav pw
+sp 1cu #2aa sw arapav pw
+nl
+@c now a 32-bit array
+@m 1cu #2.5aa 0cu rcsc aaac pe
+0cu 0Ajf scapsc wr 0Ajb
+1cu #DEADBEEFaa #FEEDABBAaa
+0cu 0Ajf rd scaasc 0Ajb
+1cu #1aa sw aw #0aa sw aw
+#0aa sw arapavsppw #1aa sw arapavsppw dr nl
+@c 1 bit arrays. note that the values are sometimes
+more than 1-bit. the expected behavior is that they'll
+get truncated before being appended.
+@m 1cu #8.0 aa 0cu rc scaaac pe
+0cu 0Bjf scapsc wr 0Bjb
+1cu #0aa #1aa #2aa #3aa
+0cu 0Bjf rd scaasc 0Bjb
+1cu #3aa swaw #2aa swaw #1aa swaw #0aa swaw
+#0aa sw arapavsppw #1aa sw arapavsppw #2aa sw arapavsppw #3aa sw arapavsppw
+dr nl
 @l test_cursor_select:
 @c Testing out logic for direct cursor selection.
 @c There are two cursors, which can be selected through swapping.
