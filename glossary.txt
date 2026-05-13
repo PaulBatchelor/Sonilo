@@ -58,11 +58,11 @@ ph:param stack hold/unhold.
 pd:param stack dup.
 pR:param stack rotate.
 ps:param stack swap.
-ac:TODO. array create.
-ar:TODO. array read.
-aw:TODO. array write.
-ci:TODO. context init.
+ac:array create.
+ar:array read.
+aw:array write.
+ci:context init.
 cu:TODO. select cursor. 0 or 1 LSB in rw.
-sw:TODO. stack swap.
-dr:TODO. stack drop.
-av:TODO. array value. extracts value returned by ar.
+sw:stack swap.
+dr:stack drop.
+av:array value. extracts value returned by ar.
