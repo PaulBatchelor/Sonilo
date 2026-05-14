@@ -162,6 +162,8 @@ int array_read(uint32_t *mem, uint16_t stk)
     if (rc) return 2;
     p = v & 0xFFFF;
 
+    /* TODO: refactor to use array_read_direct */
+
     /* extract length and word size from header */
     len = mem[a] & 0xFFFF;
     k = (mem[a] >> 16) & 0x7;
@@ -215,4 +217,38 @@ uint32_t array_value(uint32_t *mem, uint32_t ws)
     }
 
     return (mem[addr] & mask) >> start;
+}
+
+/* TODO: consolidate with array_read */
+int array_read_direct(uint32_t *mem, uint16_t a, uint16_t idx, uint32_t *slice)
+{
+    int rc;
+    uint32_t v;
+    uint16_t len, k;
+    uint16_t ob, ow;
+
+    v = 0;
+
+    /* extract length and word size from header */
+    len = mem[a] & 0xFFFF;
+    k = (mem[a] >> 16) & 0x7;
+
+    /* bounds checking */
+    if (idx >= len) return 3;
+
+    /* calculate word and bit offsets */
+    ow = idx >> (5 - k);
+    ob = idx * (1 << k) - (ow << 5);
+
+
+    /* generate word slice, push to stack */
+
+    ow += a + 1;
+
+    if (slice == NULL) return 6;
+
+    *slice = wordslice(ow, ob, ob + (1 << k) - 1);
+    if (rc) return 4;
+
+    return 0;
 }

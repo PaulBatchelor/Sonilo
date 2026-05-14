@@ -7,6 +7,7 @@
 #include "ugen.h"
 #include "array.h"
 #include "context.h"
+#include "iter.h"
 
 #define BLOCKLIST_OFFSET 0x400
 
@@ -1047,6 +1048,123 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "dr")) {
         mw->prev = 0;
         mw->err = array_drop(mw->mem, mw->cursor);
+        return;
+    }
+
+    /* ia: create array iterator */
+    if (iscmd(mw, c, "ia")) {
+        int rc;
+        uint16_t stk;
+        uint32_t x;
+        uint16_t ctx, arr;
+        uint16_t iter;
+        uint32_t *mem;
+
+        mw->prev = 0;
+
+        mem = mw->mem;
+
+        /* get stack */
+        stk = mw->cursor;
+
+        /* stack args: context, array */
+
+        x = 0;
+        rc = array_pop(mem, stk, &x);
+        if (rc) {
+            mw->err = 1;
+            return;        
+        }
+        arr = x;
+
+        rc = array_pop(mem, stk, &x);
+        if (rc) {
+            mw->err = 2;
+            return;
+        }
+        ctx = x;
+
+        /* iter_alloc */
+
+        iter = 0;
+        rc = iter_alloc(mem, ctx, &iter);
+        if (rc) {
+            mw->err = 6;
+            return;
+        }
+
+
+        /* iter_init */
+
+        rc = iter_init(mem, iter);
+        if (rc) {
+            mw->err = 3;
+            return;
+        }
+
+        /* iter_array */
+        rc = iter_array(mem, iter, arr);
+
+        if (rc) {
+            mw->err = 4;
+            return;
+        }
+
+        /* push iter to stack */
+        rc = array_append(mem, stk, iter);
+        if (rc) {
+            mw->err = 5;
+            return;
+        }
+
+        mw->err = 0;
+        return;
+    }
+
+    /* in: call array next */
+    if (iscmd(mw, c, "in")) {
+        uint16_t stk;
+        uint32_t val;
+        uint16_t iter;
+        uint32_t slice;
+        int rc;
+        uint32_t *mem;
+
+        mw->prev = 0;
+
+        mw->err = 0;
+
+        mem = mw->mem;
+
+        /* get stack */
+        stk = mw->cursor;
+
+        /* stack args: iterator */
+        rc = array_pop(mem, stk, &val);
+        if (rc) {
+            mw->err = 1;
+            return;
+        }
+
+        iter = val;
+
+        /* iter_next */
+        slice = iter_next(mem, iter);
+
+        rc = array_append(mem, stk, iter);
+        if (rc) {
+            mw->err = 2;
+            return;
+        }
+
+        /* push slice */
+        rc = array_append(mem, stk, slice);
+        if (rc) {
+            mw->err = 4;
+            return;
+        }
+
+        mw->err = 0;
         return;
     }
 

@@ -1,19 +1,45 @@
 #include <stdint.h>
+#include <stddef.h>
 #include "iter.h"
+#include "mem.h"
+#include "array.h"
+
+int iter_alloc(uint32_t *mem, uint16_t ctx, uint16_t *i)
+{
+    uint16_t p;
+    int rc;
+
+    /* allocate two words */
+    p = 0;
+    rc = sonilo_alloc(mem, ctx, 2, &p);
+    if (rc) return 1;
+
+    /* store result in i */
+    if (i == NULL) return 2;
+
+    *i = p;
+    return 0;
+}
 
 /* init: create an empty iterator. it does nothing */
 int iter_init(uint32_t *mem, uint16_t p)
 {
-    /* TODO: zero out bits */
-    return 1;
+    mem[p] = ITER_NONE;
+    mem[p + 1] = 0;
+    return 0;
 }
 
 /* array: set up an initialized iterator to point to an array */
 int iter_array(uint32_t *mem, uint16_t i, uint16_t a)
 {
-    /* TODO: set iterator type/subtype to ARRAY/LOOP */
-    /* TODO: set pointer to array */
-    /* TODO: set index to be zero */
+    /* set iterator type/subtype to ARRAY/LOOP */
+    mem[i] = ITER_ARRAY | (ITER_ARRAY_LOOP << 8);
+
+    /* set pointer to array */
+    mem[i + 1] = a;
+
+    /* set index to be zero (zero out upper bits) */
+    mem[i] &= 0xFFFF;
     return 1;
 }
 
@@ -21,11 +47,40 @@ int iter_array(uint32_t *mem, uint16_t i, uint16_t a)
  * dereference it with array_value() */
 uint32_t iter_next(uint32_t *mem, uint16_t i)
 {
-    /* TODO: if empty (data short is 0), return 0 */
+    uint16_t type;
 
-    /* TODO: handle ARRAY/LOOP */
-    /* TODO: get slice of current index */
-    /* TODO: update index, wraparound if needed */
-    /* TODO: return slice */
+    type = mem[i] & 0xFFFF;
+
+    /* if empty (data short is 0), return 0 */
+
+    if ((type & 0xFF) == ITER_NONE) return 0;
+
+    /* handle ARRAY/LOOP */
+    if ((type & 0xFF) == ITER_ARRAY) {
+        if (((type >> 8) & 0xFF) == ITER_ARRAY_LOOP) {
+            uint16_t idx;
+            uint32_t slice;
+            int rc;
+
+            /* get slice of current index */
+            idx = mem[i] >> 16;
+
+            slice = 0;
+            rc = array_read_direct(mem,
+                    mem[i + 1] & 0xFFFF,
+                    idx,
+                    &slice);
+
+            if (rc) return 0;
+
+            /* update index, wraparound if needed */
+            idx++;
+            mem[i] &= 0xFFFF;
+            mem[i] = (idx << 16);
+
+            return slice;
+        }
+    }
+
     return 0;
 }

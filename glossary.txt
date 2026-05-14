@@ -66,3 +66,5 @@ cu:TODO. select cursor. 0 or 1 LSB in rw.
 sw:stack swap.
 dr:stack drop.
 av:array value. extracts value returned by ar.
+ia:TODO. Create an array iterator. Stack args: array address, context.
+in:TODO. Call next on iterator, and push value onto stack.

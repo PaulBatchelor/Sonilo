@@ -79,3 +79,4 @@ a b
 b a
 test_swap: a b 1 1 0
 test_drop: b a 1
+test_iter: 0 0 aa 0 bb 0 cc 0 dd 0 aa 0 bb
