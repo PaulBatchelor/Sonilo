@@ -821,7 +821,7 @@ sc 08jf rd sc aa sc 08jb
 @c Create a new array iterator.
 @m 0cu 08jf rdscaasc 08jb
 0cu rdscaasc
-1cu ia
+1cu ce ia sp pe
 0cu 09jf sc ap sc wr 09jb
 @c Iterate through the array 6 times, allowing it to loop back.
 @m 0cu 09jf rd sc aa sc 09jb 1cu

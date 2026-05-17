@@ -222,12 +222,8 @@ uint32_t array_value(uint32_t *mem, uint32_t ws)
 /* TODO: consolidate with array_read */
 int array_read_direct(uint32_t *mem, uint16_t a, uint16_t idx, uint32_t *slice)
 {
-    int rc;
-    uint32_t v;
     uint16_t len, k;
     uint16_t ob, ow;
-
-    v = 0;
 
     /* extract length and word size from header */
     len = mem[a] & 0xFFFF;
@@ -248,7 +244,6 @@ int array_read_direct(uint32_t *mem, uint16_t a, uint16_t idx, uint32_t *slice)
     if (slice == NULL) return 6;
 
     *slice = wordslice(ow, ob, ob + (1 << k) - 1);
-    if (rc) return 4;
 
     return 0;
 }

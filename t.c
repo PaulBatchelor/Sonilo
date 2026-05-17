@@ -1069,20 +1069,20 @@ void parse_memwrite(memwrite *mw, char c)
 
         /* stack args: context, array */
 
-        x = 0;
-        rc = array_pop(mem, stk, &x);
-        if (rc) {
-            mw->err = 1;
-            return;        
-        }
-        arr = x;
-
         rc = array_pop(mem, stk, &x);
         if (rc) {
             mw->err = 2;
             return;
         }
         ctx = x;
+
+        x = 0;
+        rc = array_pop(mem, stk, &x);
+        if (rc) {
+            mw->err = 1;
+            return;
+        }
+        arr = x;
 
         /* iter_alloc */
 

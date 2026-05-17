@@ -40,7 +40,7 @@ int iter_array(uint32_t *mem, uint16_t i, uint16_t a)
 
     /* set index to be zero (zero out upper bits) */
     mem[i] &= 0xFFFF;
-    return 1;
+    return 0;
 }
 
 /* next: get the next value, returned as a slice
