@@ -115,9 +115,9 @@ int sonilo_alloc(uint32_t *mem, uint16_t ctx, int sz, uint16_t *p)
     stk = CTX_STACK(mem, ctx);
 
     /* pop bud and k params */
-    rc = array_pop(mem, stk, &bud);
+    rc = barray_pop(mem, stk, &bud);
     if (rc) return 3;
-    rc = array_pop(mem, stk, &k);
+    rc = barray_pop(mem, stk, &k);
     if (rc) return 4;
 
     /* call buddy allocator */
@@ -125,7 +125,7 @@ int sonilo_alloc(uint32_t *mem, uint16_t ctx, int sz, uint16_t *p)
 
     if (offset < 0) return 5;
 
-    rc = array_pop(mem, stk, &base);
+    rc = barray_pop(mem, stk, &base);
     if (rc) return 6;
 
     if (p == NULL) return 7;
@@ -353,7 +353,7 @@ int sonilo_symbol(sonilo_ctx *ctx, const char *sym)
     mem = ctx->s->mem;
 
     stk = mem[ctx->context + 1] & 0xFFFF;
-    rc = array_append(mem, stk, key);
+    rc = barray_append(mem, stk, key);
 
     if (rc) return 1;
 
@@ -369,7 +369,7 @@ int sonilo_pop(sonilo_ctx *ctx, uint32_t *w)
     mem = ctx->s->mem;
     /* TODO: use CTX_STACK */
     stk = mem[ctx->context + 1] & 0xFFFF;
-    rc = array_pop(mem, stk, w);
+    rc = barray_pop(mem, stk, w);
     if (rc) return 1;
 
     return 0;
@@ -384,7 +384,7 @@ int sonilo_push(sonilo_ctx *ctx, uint32_t w)
     mem = ctx->s->mem;
     /* TODO: use CTX_STACK */
     stk = mem[ctx->context + 1] & 0xFFFF;
-    rc = array_append(mem, stk, w);
+    rc = barray_append(mem, stk, w);
     if (rc) return 1;
     return 0;
 }
@@ -397,7 +397,7 @@ int sonilo_peak(sonilo_ctx *ctx, uint32_t *w)
 
     mem = ctx->s->mem;
     stk = mem[ctx->context + 1] & 0xFFFF;
-    rc = array_peak(mem, stk, w);
+    rc = barray_peak(mem, stk, w);
     if (rc) return 1;
 
     return 0;

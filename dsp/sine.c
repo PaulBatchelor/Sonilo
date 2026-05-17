@@ -23,7 +23,7 @@ static uint32_t init(uint32_t *mem, uint16_t ctx)
 
     stk = CTX_STACK(mem, ctx);
     cmd = 0;
-    rc = array_pop(mem, stk, &cmd);
+    rc = barray_pop(mem, stk, &cmd);
     if (rc) return 1;
 
     /* set up initial ugen */
@@ -49,7 +49,7 @@ static uint32_t init(uint32_t *mem, uint16_t ctx)
 
     /* push ugen address to stack */
     
-    rc = array_append(mem, stk, ugen);
+    rc = barray_append(mem, stk, ugen);
     if (rc) return 6;
 
     return 0;

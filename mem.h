@@ -17,13 +17,13 @@ int bitset_len(uint32_t *mem, uint16_t bm);
 void bitset_free(uint32_t *mem, uint16_t bm, uint16_t blist);
 
 /* array */
-void array_init(uint32_t *mem, uint16_t a);
-uint32_t array_length(uint32_t *mem, uint16_t a);
-int array_append(uint32_t *mem, uint16_t a, uint32_t x);
-int array_pop(uint32_t *mem, uint16_t a, uint32_t *x);
-int array_peak(uint32_t *mem, uint16_t a, uint32_t *x);
-int array_swap(uint32_t *mem, uint16_t a);
-int array_drop(uint32_t *mem, uint16_t a);
+void barray_init(uint32_t *mem, uint16_t a);
+uint32_t barray_length(uint32_t *mem, uint16_t a);
+int barray_append(uint32_t *mem, uint16_t a, uint32_t x);
+int barray_pop(uint32_t *mem, uint16_t a, uint32_t *x);
+int barray_peak(uint32_t *mem, uint16_t a, uint32_t *x);
+int barray_swap(uint32_t *mem, uint16_t a);
+int barray_drop(uint32_t *mem, uint16_t a);
 
 /* buddy memory allocator */
 void mem_init(uint32_t *mem,

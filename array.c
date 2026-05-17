@@ -19,11 +19,11 @@ int array_create(uint32_t *mem, uint16_t stk)
     /* pop args: len.wrdsz context */
 
     val = 0;
-    rc = array_pop(mem, stk, &val);
+    rc = barray_pop(mem, stk, &val);
     if (rc) return 6;
     ctx = val & 0xFFFF;
 
-    rc = array_pop(mem, stk, &val);
+    rc = barray_pop(mem, stk, &val);
     if (rc) return 7;
     wrdsz = val & 0x7;
     val >>= 4;
@@ -62,7 +62,7 @@ int array_create(uint32_t *mem, uint16_t stk)
 
     /* push array address onto stack */
 
-    rc = array_append(mem, stk, a);
+    rc = barray_append(mem, stk, a);
 
     if (rc) return 8;
 
@@ -84,15 +84,15 @@ int array_write(uint32_t *mem, uint16_t stk)
 
     /* args: x p a */
     v = 0;
-    rc = array_pop(mem, stk, &v);
+    rc = barray_pop(mem, stk, &v);
     if (rc) return 1;
     a = v & 0xFFFF;
 
-    rc = array_pop(mem, stk, &v);
+    rc = barray_pop(mem, stk, &v);
     if (rc) return 2;
     p = v & 0xFFFF;
 
-    rc = array_pop(mem, stk, &v);
+    rc = barray_pop(mem, stk, &v);
     if (rc) return 3;
     x = v;
 
@@ -132,7 +132,7 @@ int array_write(uint32_t *mem, uint16_t stk)
 
     /* push address onto stack again */
 
-    rc = array_append(mem, stk, a);
+    rc = barray_append(mem, stk, a);
     if (rc) return 6;
 
     return 0;
@@ -154,11 +154,11 @@ int array_read(uint32_t *mem, uint16_t stk)
 
     v = 0;
     /* pop args: a, p */
-    rc = array_pop(mem, stk, &v);
+    rc = barray_pop(mem, stk, &v);
     if (rc) return 1;
     a = v & 0xFFFF;
 
-    rc = array_pop(mem, stk, &v);
+    rc = barray_pop(mem, stk, &v);
     if (rc) return 2;
     p = v & 0xFFFF;
 
@@ -176,13 +176,13 @@ int array_read(uint32_t *mem, uint16_t stk)
     ob = p * (1 << k) - (ow << 5);
 
     /* push array value back onto stack */
-    rc = array_append(mem, stk, a);
+    rc = barray_append(mem, stk, a);
     if (rc) return 5;
 
     /* generate word slice, push to stack */
 
     ow += a + 1;
-    rc = array_append(mem, stk, wordslice(ow, ob, ob + (1 << k) - 1));
+    rc = barray_append(mem, stk, wordslice(ow, ob, ob + (1 << k) - 1));
     if (rc) return 4;
 
     return 0;
@@ -246,4 +246,9 @@ int array_read_direct(uint32_t *mem, uint16_t a, uint16_t idx, uint32_t *slice)
     *slice = wordslice(ow, ob, ob + (1 << k) - 1);
 
     return 0;
+}
+
+uint16_t array_length(uint32_t *mem, uint16_t a)
+{
+    return mem[a] & 0xFFFF;
 }

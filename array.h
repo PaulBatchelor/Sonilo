@@ -12,3 +12,6 @@ int array_read_direct(uint32_t *mem, uint16_t a, uint16_t idx, uint32_t *slice);
 
 /* extracts value from a word slice */
 uint32_t array_value(uint32_t *mem, uint32_t ws);
+
+/* get length of array */
+uint16_t array_length(uint32_t *mem, uint16_t a);

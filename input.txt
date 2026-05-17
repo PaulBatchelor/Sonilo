@@ -814,16 +814,16 @@ So, set up a context.
 @m 1 rb 1cu go
 @c Create an array of 4 8-bit values.
 @m #4.3 aa 0cu rc sc aa ce ac sp pe
-0cu 08jf ap sc wr 08jb
+0cu 08jf sc ap sc wr 08jb
 1cu #AAaa #BBaa #CCaa #DDaa
-sc 08jf rd sc aa sc 08jb
+0cu 08jf rd sc aa sc 08jb
 1cu #3aaswaw #2aaswaw #1aaswaw #0aaswaw dr
 @c Create a new array iterator.
 @m 0cu 08jf rdscaasc 08jb
-0cu rdscaasc
+0cu rcscaasc
 1cu ce ia sp pe
 0cu 09jf sc ap sc wr 09jb
 @c Iterate through the array 6 times, allowing it to loop back.
 @m 0cu 09jf rd sc aa sc 09jb 1cu
 ceinsppespapavpw ceinsppespapavpw ceinsppespapavpw
-inspapavpw inspapavpw inspapavpwnl
+ceinsppespapavpw ceinsppespapavpw ceinsppespapavpwnl

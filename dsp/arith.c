@@ -11,7 +11,7 @@ static uint32_t add_init(uint32_t *mem, uint16_t ctx)
     uint16_t ugen;
 
     stk = CTX_STACK(mem, ctx);
-    rc = array_pop(mem, stk, &cmd);
+    rc = barray_pop(mem, stk, &cmd);
     if (rc) return 1;
 
     ugen = 0;
@@ -28,7 +28,7 @@ static uint32_t add_init(uint32_t *mem, uint16_t ctx)
 
     context_pstack_sweep(mem, ctx);
 
-    rc = array_append(mem, stk, ugen);
+    rc = barray_append(mem, stk, ugen);
     if (rc) return 6;
 
     return 0;
@@ -64,7 +64,7 @@ static uint32_t mul_init(uint32_t *mem, uint16_t ctx)
     uint16_t ugen;
 
     stk = CTX_STACK(mem, ctx);
-    rc = array_pop(mem, stk, &cmd);
+    rc = barray_pop(mem, stk, &cmd);
     if (rc) return 1;
 
     ugen = 0;
@@ -81,7 +81,7 @@ static uint32_t mul_init(uint32_t *mem, uint16_t ctx)
 
     context_pstack_sweep(mem, ctx);
 
-    rc = array_append(mem, stk, ugen);
+    rc = barray_append(mem, stk, ugen);
     if (rc) return 6;
 
     return 0;

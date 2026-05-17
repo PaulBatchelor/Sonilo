@@ -52,7 +52,7 @@ uint16_t context_init(uint32_t *mem, uint16_t blist)
     if (stk == 0) return err | 3;
     blk[bp++] = stk;
     stk = block_to_word(blist, stk);
-    array_init(mem, stk);
+    barray_init(mem, stk);
 
     /* store stack, zero page, and set addresses in temp */
     for (i = 0; i < bp; i++) {

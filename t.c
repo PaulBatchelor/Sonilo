@@ -471,14 +471,14 @@ void parse_memwrite(memwrite *mw, char c)
     /* ai: initialize array */
     if (iscmd(mw, c, "ai")) {
         mw->prev = 0;
-        array_init(mw->mem, mw->cursor);
+        barray_init(mw->mem, mw->cursor);
         return;
     }
 
     /* al: get array length */
     if (iscmd(mw, c, "al")) {
         mw->prev = 0;
-        mw->rw = array_length(mw->mem, mw->cursor);
+        mw->rw = barray_length(mw->mem, mw->cursor);
         return;
     }
 
@@ -493,13 +493,13 @@ void parse_memwrite(memwrite *mw, char c)
     /* aa: append value to array */
     if (iscmd(mw, c, "aa")) {
         mw->prev = 0;
-        mw->err = array_append(mw->mem, mw->cursor, mw->rw);
+        mw->err = barray_append(mw->mem, mw->cursor, mw->rw);
         return;
     }
 
     /* ap: pop word from array */
     if (iscmd(mw, c, "ap")) {
-        mw->err = array_pop(mw->mem, mw->cursor, &mw->rw);
+        mw->err = barray_pop(mw->mem, mw->cursor, &mw->rw);
         mw->prev = 0;
         return;
     }
@@ -992,7 +992,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* sw: swap */
     if (iscmd(mw, c, "sw")) {
         mw->prev = 0;
-        mw->err = array_swap(mw->mem, mw->cursor);
+        mw->err = barray_swap(mw->mem, mw->cursor);
         return;
     }
 
@@ -1047,7 +1047,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* dr: stack drop */
     if (iscmd(mw, c, "dr")) {
         mw->prev = 0;
-        mw->err = array_drop(mw->mem, mw->cursor);
+        mw->err = barray_drop(mw->mem, mw->cursor);
         return;
     }
 
@@ -1069,7 +1069,7 @@ void parse_memwrite(memwrite *mw, char c)
 
         /* stack args: context, array */
 
-        rc = array_pop(mem, stk, &x);
+        rc = barray_pop(mem, stk, &x);
         if (rc) {
             mw->err = 2;
             return;
@@ -1077,7 +1077,7 @@ void parse_memwrite(memwrite *mw, char c)
         ctx = x;
 
         x = 0;
-        rc = array_pop(mem, stk, &x);
+        rc = barray_pop(mem, stk, &x);
         if (rc) {
             mw->err = 1;
             return;
@@ -1111,7 +1111,7 @@ void parse_memwrite(memwrite *mw, char c)
         }
 
         /* push iter to stack */
-        rc = array_append(mem, stk, iter);
+        rc = barray_append(mem, stk, iter);
         if (rc) {
             mw->err = 5;
             return;
@@ -1140,7 +1140,7 @@ void parse_memwrite(memwrite *mw, char c)
         stk = mw->cursor;
 
         /* stack args: iterator */
-        rc = array_pop(mem, stk, &val);
+        rc = barray_pop(mem, stk, &val);
         if (rc) {
             mw->err = 1;
             return;
@@ -1151,14 +1151,14 @@ void parse_memwrite(memwrite *mw, char c)
         /* iter_next */
         slice = iter_next(mem, iter);
 
-        rc = array_append(mem, stk, iter);
+        rc = barray_append(mem, stk, iter);
         if (rc) {
             mw->err = 2;
             return;
         }
 
         /* push slice */
-        rc = array_append(mem, stk, slice);
+        rc = barray_append(mem, stk, slice);
         if (rc) {
             mw->err = 4;
             return;

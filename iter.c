@@ -61,13 +61,15 @@ uint32_t iter_next(uint32_t *mem, uint16_t i)
             uint16_t idx;
             uint32_t slice;
             int rc;
+            uint16_t a;
 
             /* get slice of current index */
             idx = mem[i] >> 16;
+            a = mem[i + 1] & 0xFFFF;
 
             slice = 0;
             rc = array_read_direct(mem,
-                    mem[i + 1] & 0xFFFF,
+                    a,
                     idx,
                     &slice);
 
@@ -75,8 +77,9 @@ uint32_t iter_next(uint32_t *mem, uint16_t i)
 
             /* update index, wraparound if needed */
             idx++;
+            idx %= array_length(mem, a);
             mem[i] &= 0xFFFF;
-            mem[i] = (idx << 16);
+            mem[i] |= (idx << 16);
 
             return slice;
         }

@@ -1010,19 +1010,19 @@ uint16_t zero_page_init(uint32_t *mem, uint16_t blist, uint16_t zp)
     return zp;
 }
 
-void array_init(uint32_t *mem, uint16_t a)
+void barray_init(uint32_t *mem, uint16_t a)
 {
     int n;
     for (n = 0; n < 64; n++) mem[a + n] = 0;
 }
 
-uint32_t array_length(uint32_t *mem, uint16_t a)
+uint32_t barray_length(uint32_t *mem, uint16_t a)
 {
     /* first word in block stores length */
     return mem[a];
 }
 
-int array_append(uint32_t *mem, uint16_t a, uint32_t x)
+int barray_append(uint32_t *mem, uint16_t a, uint32_t x)
 {
     int pos;
     pos = mem[a];
@@ -1037,7 +1037,7 @@ int array_append(uint32_t *mem, uint16_t a, uint32_t x)
     return 0;
 }
 
-int array_pop(uint32_t *mem, uint16_t a, uint32_t *x)
+int barray_pop(uint32_t *mem, uint16_t a, uint32_t *x)
 {
     uint32_t pos;
     pos = mem[a];
@@ -1053,7 +1053,7 @@ int array_pop(uint32_t *mem, uint16_t a, uint32_t *x)
     return 0;
 }
 
-int array_peak(uint32_t *mem, uint16_t a, uint32_t *x)
+int barray_peak(uint32_t *mem, uint16_t a, uint32_t *x)
 {
     /* TODO */
     return 1;
@@ -1303,13 +1303,13 @@ int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz)
 
     /* TODO: add error checking */
     /* base: base address to apply offset to */
-    array_append(mem, stk, (slt >> 16) & 0xFFFF);
+    barray_append(mem, stk, (slt >> 16) & 0xFFFF);
 
     /* k value arg */
-    array_append(mem, stk, k);
+    barray_append(mem, stk, k);
 
     /* address of buddy instance */
-    array_append(mem, stk, slt & 0xFFFF);
+    barray_append(mem, stk, slt & 0xFFFF);
 
     /* update buddy data address (it could have been changed) */
     mem[a] |= bd << 16;
@@ -1367,14 +1367,14 @@ uint16_t allocator_free(uint32_t *mem, uint16_t a, uint16_t m)
     stk = mem[ctx + 1] & 0xFFFF;
 
     /* TODO: add error checking */
-    array_append(mem, stk, p);
-    array_append(mem, stk, k);
-    array_append(mem, stk, bud);
+    barray_append(mem, stk, p);
+    barray_append(mem, stk, k);
+    barray_append(mem, stk, bud);
 
     return 0;
 }
 
-int array_swap(uint32_t *mem, uint16_t a)
+int barray_swap(uint32_t *mem, uint16_t a)
 {
     uint32_t *stk;
     uint32_t tmp;
@@ -1392,7 +1392,7 @@ int array_swap(uint32_t *mem, uint16_t a)
     return 0;
 }
 
-int array_drop(uint32_t *mem, uint16_t a)
+int barray_drop(uint32_t *mem, uint16_t a)
 {
     uint32_t *stk;
 
