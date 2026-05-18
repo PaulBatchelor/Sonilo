@@ -97,7 +97,11 @@ int main(int argc, char *argv[])
     rc = ugen(&ctx, "SAW", ugen_list);
     if (rc) goto clean;
 
-    /* TODO: filter saw with LPF */
+    rc = sonilo_constant(&ctx, 400);
+    if (rc) goto clean;
+    /* filter saw with LPF */
+    rc = ugen(&ctx, "LPF", ugen_list);
+    if (rc) goto clean;
     /* output */
     rc = ugen(&ctx, "SNK", ugen_list);
     if (rc) goto clean;
