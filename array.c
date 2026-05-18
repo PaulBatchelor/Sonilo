@@ -34,7 +34,8 @@ int array_create(uint32_t *mem, uint16_t stk)
     if (wrdsz > 6) return 2;
 
     /* compute the number of words needed hold the bits */
-    nbits = wrdsz * len;
+    /* note: word size expressed as 2^k bits */
+    nbits = (1 << wrdsz) * len;
 
     nwords = 0;
     while ((nwords << 5) < nbits) nwords++;
@@ -235,7 +236,6 @@ int array_read_direct(uint32_t *mem, uint16_t a, uint16_t idx, uint32_t *slice)
     /* calculate word and bit offsets */
     ow = idx >> (5 - k);
     ob = idx * (1 << k) - (ow << 5);
-
 
     /* generate word slice, push to stack */
 

@@ -1,7 +1,7 @@
 /* allocate array with current context */
 int array_create(uint32_t *mem, uint16_t stk);
 
-/* write value of an array a[p] = x */
+/* write value of an array a[p] = x, (x, p, a) */
 int array_write(uint32_t *mem, uint16_t stk);
 
 /* read value of an array x = a[p] */

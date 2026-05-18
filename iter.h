@@ -19,3 +19,6 @@ int iter_array(uint32_t *mem, uint16_t i, uint16_t a);
 /* next: get the next value, returned as a slice
  * dereference it with array_value() */
 uint32_t iter_next(uint32_t *mem, uint16_t i);
+
+/* iter_real: next, but resolve to a real (float) value */
+float iter_real(uint32_t *mem, uint16_t i);

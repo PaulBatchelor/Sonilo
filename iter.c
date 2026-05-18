@@ -87,3 +87,15 @@ uint32_t iter_next(uint32_t *mem, uint16_t i)
 
     return 0;
 }
+
+float iter_real(uint32_t *mem, uint16_t i)
+{
+    uint32_t slice;
+
+    /* Note: eventually, this could be extended to include
+     * differerent ways of converting to real depending on
+     * the iterator type (TBD). For now, this is just recasting
+     * the results of array_value() */
+    slice = iter_next(mem, i);
+    return (float)array_value(mem, slice);
+} 

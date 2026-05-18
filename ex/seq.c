@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "sonilo.h"
+#include "array.h"
+#include "context.h"
+#include "iter.h"
 
 int ugen(sonilo_ctx *ctx, const char *sym, uint16_t *lst)
 {
@@ -67,6 +70,74 @@ int render(sonilo_ctx *ctx, uint16_t *lst, uint16_t sink)
 
     return 0;
 }
+const int sequence[] = {
+    0, 5, 7, 10, 12, 10, 7, 5,
+    0, 5, 7, 10, 12, 10, 7, 5,
+    -2, 3, 5, 8, 10, 8, 5, 3,
+    -2, 3, 5, 8, 10, 8, 5, 3,
+};
+
+int mkseq(sonilo_ctx *ctx, uint16_t *lst)
+{
+    uint32_t args;
+    uint32_t val;
+    uint16_t arr, iter, stk;
+    int rc;
+    int i;
+    uint32_t *mem;
+
+    mem = sonilo_mem(ctx->s);
+
+    stk = CTX_STACK(mem, ctx->context);
+    /* create an array of 16 8-bit (2^3) values */
+    /* array args are packed in a word: len.wrdsz */
+    args = 3 | (32 << 4);
+    rc = sonilo_push(ctx, args);
+    if (rc) return 1;
+
+    /* push context address (needed for array) */
+    rc = sonilo_push(ctx, ctx->context);
+    if (rc) return 2;
+
+    rc = array_create(mem, stk);
+    if (rc) return 3;
+
+    /* get the address from the stack */
+    val = 0;
+    rc = sonilo_pop(ctx, &val);
+    if (rc) return 4;
+    arr = val;
+
+    /* set up sequence values */
+    for (i = 0; i < 32; i++) {
+        rc = sonilo_push(ctx, sequence[i] + 60);
+        if (rc) return 5;
+        rc = sonilo_push(ctx, i);
+        if (rc) return 6;
+        rc = sonilo_push(ctx, arr);
+        if (rc) return 7;
+        rc = array_write(mem, stk);
+        if (rc) return 8;
+    }
+
+    /* create an array iterator */
+    iter = 0;
+    rc = iter_alloc(mem, ctx->context, &iter);
+    if (rc) return 9;
+    rc = iter_init(mem, iter);
+    if (rc) return 10;
+    rc = iter_array(mem, iter, arr);
+    if (rc) return 11;
+
+    /* push iterator onto stack */
+    rc = sonilo_push(ctx, iter);
+    if (rc) return 12;
+
+    /* create sequencer ugen */
+    rc = ugen(ctx, "SEQ", lst);
+    if (rc) return 13;
+    return 0;
+}
 
 int main(int argc, char *argv[])
 {
@@ -86,33 +157,39 @@ int main(int argc, char *argv[])
     if (rc) goto clean;
 
     /* clock */
-    rc = sonilo_constant(&ctx, 60);
+    rc = sonilo_constant(&ctx, 125 * 4);
     if (rc) goto clean;
     rc = ugen(&ctx, "CLK", ugen_list);
     if (rc) goto clean;
     rc = ugen(&ctx, "MET", ugen_list);
     if (rc) goto clean;
-    /* output */
-    rc = ugen(&ctx, "SNK", ugen_list);
-    if (rc) goto clean;
-    sink = ugen_list[ugen_list[0]];
 
-    /* TODO: sequencer driven by clock */
-    /* TODO: add base pitch */
-    /* TODO: smoother on pitch signal */
-    /* TODO: midi to frequency */
-    /* TODO: saw, controlled via freq signal */
-    /* TEMP: control saw with constant freq */
-    rc = sonilo_constant(&ctx, 200);
+    rc = mkseq(&ctx, ugen_list);
     if (rc) goto clean;
+    /* TODO: sequencer driven by clock */
+    /* TODO: smoother on pitch signal */
+    /* midi to frequency */
+    rc = ugen(&ctx, "MTF", ugen_list);
+    if (rc) goto clean;
+    /* saw, controlled via freq signal */
     rc = ugen(&ctx, "SAW", ugen_list);
     if (rc) goto clean;
 
-    rc = sonilo_constant(&ctx, 400);
+    rc = sonilo_constant(&ctx, 200);
     if (rc) goto clean;
     /* filter saw with LPF */
     rc = ugen(&ctx, "LPF", ugen_list);
     if (rc) goto clean;
+
+    rc = sonilo_constant(&ctx, 0.7);
+    if (rc) goto clean;
+    rc = ugen(&ctx, "MUL", ugen_list);
+    if (rc) goto clean;
+
+    /* output */
+    rc = ugen(&ctx, "SNK", ugen_list);
+    if (rc) goto clean;
+    sink = ugen_list[ugen_list[0]];
     /* render  */
     rc = render(&ctx, ugen_list, sink);
 
