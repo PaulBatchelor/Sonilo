@@ -85,7 +85,16 @@ int main(int argc, char *argv[])
     rc = sonilo_ctx_init(&ctx, s);
     if (rc) goto clean;
 
-    /* TODO: clock */
+    /* clock */
+    rc = sonilo_constant(&ctx, 60);
+    if (rc) goto clean;
+    rc = ugen(&ctx, "CLK", ugen_list);
+    if (rc) goto clean;
+    /* output */
+    rc = ugen(&ctx, "SNK", ugen_list);
+    if (rc) goto clean;
+    sink = ugen_list[ugen_list[0]];
+
     /* TODO: sequencer driven by clock */
     /* TODO: add base pitch */
     /* TODO: smoother on pitch signal */
@@ -102,10 +111,6 @@ int main(int argc, char *argv[])
     /* filter saw with LPF */
     rc = ugen(&ctx, "LPF", ugen_list);
     if (rc) goto clean;
-    /* output */
-    rc = ugen(&ctx, "SNK", ugen_list);
-    if (rc) goto clean;
-    sink = ugen_list[ugen_list[0]];
     /* render  */
     rc = render(&ctx, ugen_list, sink);
 
