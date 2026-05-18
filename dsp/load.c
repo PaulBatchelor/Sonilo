@@ -6,6 +6,7 @@ int ugen_arith(sonilo *s);
 int ugen_blsaw(sonilo *s);
 int ugen_butterworth(sonilo *s);
 int ugen_clock(sonilo *s);
+int ugen_metro(sonilo *s);
 
 /* top-level loader for ugen subroutines */
 int sonilo_load_ugens(sonilo *s)
@@ -21,6 +22,7 @@ int sonilo_load_ugens(sonilo *s)
     rc = ugen_blsaw(s); if (rc) return err; err++;
     rc = ugen_butterworth(s); if (rc) return err; err++;
     rc = ugen_clock(s); if (rc) return err; err++;
+    rc = ugen_metro(s); if (rc) return err; err++;
 
     return 0;
 }

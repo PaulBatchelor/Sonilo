@@ -30,6 +30,7 @@ build dsp/arith.o: c89 dsp/arith.c
 build dsp/blsaw.o: c89 dsp/blsaw.c
 build dsp/butterworth.o: c89 dsp/butterworth.c
 build dsp/clock.o: c89 dsp/clock.c
+build dsp/metro.o: c89 dsp/metro.c
 build libsonilo.a: ar $
     mem.o $
     ins.o $
@@ -45,6 +46,7 @@ build libsonilo.a: ar $
     dsp/blsaw.o $
     dsp/butterworth.o $
     dsp/clock.o $
+    dsp/metro.o $
     sonilo.o
 
 build ex/hello_ugen.o: c89 ex/hello_ugen.c

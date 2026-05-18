@@ -90,6 +90,8 @@ int main(int argc, char *argv[])
     if (rc) goto clean;
     rc = ugen(&ctx, "CLK", ugen_list);
     if (rc) goto clean;
+    rc = ugen(&ctx, "MET", ugen_list);
+    if (rc) goto clean;
     /* output */
     rc = ugen(&ctx, "SNK", ugen_list);
     if (rc) goto clean;
