@@ -5,29 +5,6 @@
 #include "context.h"
 #include "iter.h"
 
-int ugen(sonilo_ctx *ctx, const char *sym, uint16_t *lst)
-{
-    int rc;
-    uint32_t p;
-
-    return 1;
-
-    rc = sonilo_symbol(ctx, sym);
-    if (rc) return 1;
-
-    rc = sonilo_ugen_create(ctx);
-    if (rc) return 1;
-
-    p = 0;
-    rc = sonilo_pop(ctx, &p);
-    if (rc) return 2;
-
-    lst[0]++;
-    lst[lst[0]] = p & 0xFFFF;
-
-    return 0;
-}
-
 int render(sonilo_ctx *ctx, uint16_t sink)
 {
     int rc;
@@ -64,8 +41,8 @@ int render(sonilo_ctx *ctx, uint16_t sink)
             if (rc || rw) break;
         }
 #endif
-        sonilo_process(ctx);
-        if (rc) break;
+        rc = sonilo_process(ctx);
+        if (rc) return 1;
         fwrite(out, sizeof(float), 64, fp);
     }
 
@@ -80,7 +57,7 @@ const int sequence[] = {
     -2, 3, 5, 8, 10, 8, 5, 3,
 };
 
-int mkseq(sonilo_ctx *ctx, uint16_t *lst)
+int mkseq(sonilo_ctx *ctx)
 {
     uint32_t args;
     uint32_t val;
@@ -137,7 +114,7 @@ int mkseq(sonilo_ctx *ctx, uint16_t *lst)
     if (rc) return 12;
 
     /* create sequencer ugen */
-    rc = ugen(ctx, "SEQ", lst);
+    rc = sonilo_mkugen(ctx, "SEQ");
     if (rc) return 13;
     return 0;
 }
@@ -147,11 +124,7 @@ int main(int argc, char *argv[])
     sonilo *s;
     sonilo_ctx ctx;
     int rc;
-    uint16_t ugen_list[64];
-    int i;
     uint16_t sink;
-
-    for (i = 0; i < 64; i++) ugen_list[i] = 0;
 
     s = malloc(sonilo_sizeof());
     rc = sonilo_init(s);
@@ -168,7 +141,7 @@ int main(int argc, char *argv[])
     if (rc) goto clean;
 
     /* sequencer driven by clock */
-    rc = mkseq(&ctx, ugen_list);
+    rc = mkseq(&ctx);
     if (rc) goto clean;
 
     /* smoother on pitch signal */
@@ -199,11 +172,9 @@ int main(int argc, char *argv[])
     /* output */
     rc = sonilo_mkugen(&ctx, "SNK");
     if (rc) goto clean;
-    sink = sonilo_last_ugen(&ctx);
-    if (sink == 0) {
-        rc = 1;
-        goto clean;
-    } 
+    sink = 0;
+    rc = sonilo_last_ugen(&ctx, &sink);
+    if (rc) goto clean;
     /* render  */
     rc = render(&ctx, sink);
 
@@ -213,6 +184,7 @@ int main(int argc, char *argv[])
     if (rc) {
         fprintf(stderr, "sonilo error: %d\n", rc);
     }
+
     sonilo_ctx_destroy(&ctx);
     free(s);
 

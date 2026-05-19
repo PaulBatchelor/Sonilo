@@ -312,18 +312,121 @@ void * ugen_state(uint32_t *mem, uint16_t ugen)
 
 int ugen_block_create(uint32_t *mem, uint16_t ctx)
 {
-    /* TODO: implement */
-    return 1;
+    uint16_t blk, stk;
+    int rc;
+    int i;
+
+    /* allocate and zero a block from main */
+    blk = 0;
+    rc = context_mkblock(mem, ctx, &blk);
+    for (i = 0; i < 64; i++) mem[blk + i] = 0;
+    if (rc) return 1;
+    /* push address to system stack */
+    stk = CTX_STACK(mem, ctx);
+    rc = barray_append(mem, stk, blk);
+    if (rc) return 2;
+
+    return 0;
 }
 
 int ugen_block_append(uint32_t *mem, uint16_t ctx)
 {
-    /* TODO: implement */
-    return 1;
+    int rc;
+    uint16_t stk, blk, ugen, sz;
+    uint32_t val;
+
+    stk = CTX_STACK(mem, ctx);
+    /* get ugen, block addr from stack */
+    val = 0;
+    rc = barray_pop(mem, stk, &val);
+    if (rc) return 1;
+    blk = val;
+
+    rc = barray_pop(mem, stk, &val);
+    if (rc) return 2;
+    ugen = val;
+
+    /* get size */
+    sz = mem[blk] & 0xFFFF;
+    /* set address to next available slot */
+    rc = ugen_block_set(mem, blk, sz, ugen);
+    if (rc) return 3;
+    /* update size */
+    sz++;
+    mem[blk] &= ~0xFFFF;
+    mem[blk] |= sz;
+
+    /* create new block if block is at capacity */
+    if (sz >= UGEN_BLOCK_MAX) {
+        uint16_t new;
+        /* link new block to next pointer of old block */
+        new = 0;
+        rc = context_mkblock(mem, ctx, &new);
+        if (rc) return 4;
+        mem[blk] &= 0xFFFF;
+        mem[blk] |= new << 16;
+        blk = new;
+    }
+
+    rc = barray_append(mem, stk, blk);
+    if (rc) return 5;
+    return 0;
 }
 
-int ugen_block_process(uint32_t *mem, uint16_t ctx)
+int ugen_block_get(uint32_t *mem,
+    uint16_t blk,
+    uint16_t idx,
+    uint16_t *out)
 {
-    /* TODO: implement */
-    return 1;
+    uint16_t wpos;
+    uint32_t w;
+
+    wpos = (idx >> 2) + 1;
+    w = mem[wpos];
+
+    /* even/odd -> LSB/MSB */
+    if (idx % 2) {
+        w >>= 16;
+    } else {
+        w &= 0xFFFF;
+    }
+
+    if (out == NULL) return 1;
+
+    *out = w;
+
+    return 0;
+}
+
+int ugen_block_next(uint32_t *mem,
+    uint16_t blk,
+    uint16_t *out)
+{
+    if (out == NULL) return 1;
+    *out = mem[blk] >> 16;
+    return 0;
+}
+
+int ugen_block_set(uint32_t *mem,
+    uint16_t blk,
+    uint16_t idx,
+    uint16_t addr)
+{
+    uint16_t wpos;
+    uint32_t w;
+
+    wpos = (idx >> 2) + 1;
+    w = mem[wpos];
+
+    /* even/odd -> LSB/MSB */
+    if (idx % 2) {
+        w &= 0xFFFF;
+        w |= addr << 16;
+    } else {
+        w &= ~0xFFFF;
+        w |= addr;
+    }
+
+    mem[wpos] = w;
+    return 0;
 }

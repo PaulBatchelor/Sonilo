@@ -72,8 +72,9 @@ int sonilo_ctx_init(sonilo_ctx *ctx, sonilo *s)
     if (rc) return 2;
     ctx->pstack = context_pstack(ctx->s->mem, ctx->context);
 
-    /* TODO: set up ugen block */
-    return 1;
+    /* set up ugen block */
+    rc = context_ublock_setup(ctx->s->mem, ctx->context);
+    if (rc) return 3;
 
     return 0;
 }
@@ -579,34 +580,123 @@ int sonilo_ppush(sonilo_ctx *ctx, uint32_t w)
 
 int sonilo_process(sonilo_ctx *ctx)
 {
-    /* TODO: implement */
-    /* TODO: initialize local block and index variables */
-    /* TODO: loop (treat 0 as NULL) */
-    /* TODO: fetch current ugen address */
-    /* TODO: set up rw function args */
-    /* TODO: call direct */
-    /* TODO: check rc flags */
-    /* TODO: update pointers */
-    return 1;
+    int rc;
+    uint16_t block, next, pos;
+    uint32_t *mem;
+
+    mem = ctx->s->mem;
+    /*  initialize local block and index variables */
+    block = 0;
+    rc = context_ublock_head_get(mem, ctx->context, &block);
+    if (rc) return 1;
+
+    next = 0;
+    rc = ugen_block_next(mem, block, &next);
+    if (rc) return 2;
+
+    /* loop (treat 0 as NULL) */
+    pos = 0;
+    while (block != 0) {
+        uint16_t ugen;
+        uint32_t rw;
+        int rc;
+        uint32_t sz;
+        /* fetch current ugen address */
+        ugen = 0;
+        rc = ugen_block_get(mem, block, pos, &ugen);
+        if (rc) return 3;
+        /* set up rw function args */
+        rw = (ugen << 16) | (mem[ugen + 1] & 0xFFFF);
+        rc = sonilo_set(ctx->s, rw);
+        if (rc) return 4;
+        /* call direct */
+        rc = sonilo_call_direct(ctx->s);
+        if (rc) return 5;
+        /* check rc flags */
+        rc = sonilo_get(ctx->s, &rw);
+        if (rc || rw) return 6;
+        /* update pointers */
+        pos++;
+        if (pos >= UGEN_BLOCK_MAX) {
+            block = next;
+            pos = 0;
+            rc = ugen_block_next(mem, block, &next);
+        }
+
+        sz = mem[block] & 0xFFFF;
+        if (pos >= sz) break;
+    }
+
+    return 0;
 }
 
 int sonilo_mkugen(sonilo_ctx *ctx, const char *ugen)
 {
-    /* TODO: implement */
-    /* TODO: push symbol */
-    /* TODO: ugen create */
-    /* TODO: pop address */
-    /* TODO: append to block tail */
-    /* TODO: update tail */
-    return 1;
+    int rc;
+    uint32_t *mem;
+    uint16_t tail, uaddr;
+    uint32_t val;
+
+    /* push symbol */
+    rc = sonilo_symbol(ctx, ugen);
+    if (rc) return 1;
+
+    /* ugen create */
+    rc = sonilo_ugen_create(ctx);
+    if (rc) return 2;
+
+    /* pop address */
+    val = 0;
+    rc = sonilo_pop(ctx, &val);
+    if (rc) return 3;
+    uaddr = val;
+
+    mem = ctx->s->mem;
+    /* append to block tail */
+    rc = context_ublock_tail_get(mem, ctx->context, &tail);
+    if (rc) return 6;
+   
+    val = uaddr;
+    rc = sonilo_push(ctx, val);
+    if (rc) return 7;
+
+    val = tail;
+    rc = sonilo_push(ctx, val);
+    if (rc) return 4;
+    rc = ugen_block_append(mem, ctx->context);
+
+    if (rc) return 5;
+    /* update tail.
+     * append pushes current tail address onto stack
+     * pop it off the stack and store it in the context
+     */
+    rc = sonilo_pop(ctx, &val);
+    if (rc) return 6;
+    tail = val;
+    rc = context_ublock_tail_set(mem, ctx->context, tail);
+    if (rc) return 7;
+
+    return 0;
 }
 
-uint16_t sonilo_last_ugen(sonilo_ctx *ctx)
+int sonilo_last_ugen(sonilo_ctx *ctx, uint16_t *last)
 {
-    /* TODO: implement */
-    /* TODO: get tail */
-    /* TODO: get number of elments */
-    /* TODO: retrieve address based on element number */
+    uint16_t tail;
+    int nelem;
+    int rc;
+    uint32_t *mem;
+    /* get tail */
+    mem = ctx->s->mem;
+    tail = 0;
+    rc = context_ublock_tail_get(mem, ctx->context, &tail);
+    if (rc) return 1;
+    /* get number of elments */
+    nelem = mem[tail] & 0xFFFF;
     /* if zero elements, return empty */
-    return 1;
+    if (nelem <= 0) return 2;
+    if (last == NULL) return 3;
+    /* retrieve address based on element number */
+    rc = ugen_block_get(mem, tail, nelem - 1, last);
+    if (rc) return 4;
+    return 0;
 }

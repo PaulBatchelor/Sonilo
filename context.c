@@ -110,8 +110,8 @@ int context_pstack_setup(uint32_t *mem, uint16_t ctx)
 
     /* store pstack address at slot 2 MSB in zero page */
     /* zero out MSB, and OR in the pstack */
-    mem[ctx + 2] &= 0xFFFF;
-    mem[ctx + 2] |= pstack << 16;
+    mem[ctx + SLOT_PSTACK] &= 0xFFFF;
+    mem[ctx + SLOT_PSTACK] |= pstack << 16;
 
     return 0;
 }
@@ -119,7 +119,7 @@ int context_pstack_setup(uint32_t *mem, uint16_t ctx)
 uint16_t context_pstack(uint32_t *mem, uint16_t ctx)
 {
     /* zero page slot 2 MSB */
-    return mem[ctx + 2] >> 16;
+    return mem[ctx + SLOT_PSTACK] >> 16;
 }
 
 /* allocate a temporary block */
@@ -178,5 +178,68 @@ int context_pstack_sweep(uint32_t *mem, uint16_t ctx)
     uint16_t pstk;
     pstk = CTX_PARAM_STACK(mem, ctx);
     pstack_sweep(mem, pstk);
+    return 0;
+}
+
+int context_ublock_setup(uint32_t *mem, uint16_t ctx)
+{
+    uint16_t stk;
+    int rc;
+    uint16_t blk;
+    uint32_t val;
+    stk = CTX_STACK(mem, ctx);
+
+    /* allocate ugen block */
+    rc = ugen_block_create(mem, ctx);
+    if (rc) return 1;
+    val = 0;
+    rc = barray_pop(mem, stk, &val);
+    blk = val;
+    if (rc) return 2;
+
+    /* store in context zero page slot */
+    /* head/tail are the same */
+    rc = context_ublock_head_set(mem, ctx, blk);
+    if (rc) return 3;
+    rc = context_ublock_tail_set(mem, ctx, blk);
+    if (rc) return 4;
+    return 0;
+}
+
+int context_ublock_tail_set(uint32_t *mem,
+    uint16_t ctx,
+    uint16_t tail)
+{
+    if (tail == 0) return 1;
+    mem[ctx + SLOT_UGEN_BLOCK] &= ~0xFFFF;
+    mem[ctx + SLOT_UGEN_BLOCK] |= tail;
+    return 0;
+}
+
+int context_ublock_tail_get(uint32_t *mem,
+    uint16_t ctx,
+    uint16_t *tail)
+{
+    if (tail == NULL) return 1;
+    *tail = mem[ctx + SLOT_UGEN_BLOCK] & 0xFFFF;
+    return 0;
+}
+
+int context_ublock_head_get(uint32_t *mem,
+    uint16_t ctx,
+    uint16_t *head)
+{
+    if (head == NULL) return 1;
+    *head = mem[ctx + SLOT_UGEN_BLOCK] >> 16;
+    return 0;
+}
+
+int context_ublock_head_set(uint32_t *mem,
+    uint16_t ctx,
+    uint16_t head)
+{
+    if (head == 0) return 1;
+    mem[ctx + SLOT_UGEN_BLOCK] &= 0xFFFF;
+    mem[ctx + SLOT_UGEN_BLOCK] |= head<<16;
     return 0;
 }

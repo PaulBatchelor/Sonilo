@@ -1,5 +1,6 @@
 #define MAX_PORTS 16
 #define UGEN_BLKSZ 64
+#define UGEN_BLOCK_MAX 126
 
 enum {
     PORT_NONE = 0,
@@ -46,5 +47,19 @@ int ugen_block_create(uint32_t *mem, uint16_t ctx);
  */
 int ugen_block_append(uint32_t *mem, uint16_t ctx);
 
-/* process: computes ugens in the block(s) */
-int ugen_block_process(uint32_t *mem, uint16_t ctx);
+/* get: retrieves an address from a block */
+int ugen_block_get(uint32_t *mem,
+    uint16_t blk,
+    uint16_t idx,
+    uint16_t *out);
+
+/* set: sets an address from a block */
+int ugen_block_set(uint32_t *mem,
+    uint16_t blk,
+    uint16_t idx,
+    uint16_t addr);
+
+/* next: get next block entry */
+int ugen_block_next(uint32_t *mem,
+    uint16_t blk,
+    uint16_t *out);
