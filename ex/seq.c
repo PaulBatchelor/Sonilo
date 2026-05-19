@@ -164,13 +164,20 @@ int main(int argc, char *argv[])
     rc = ugen(&ctx, "MET", ugen_list);
     if (rc) goto clean;
 
+    /* sequencer driven by clock */
     rc = mkseq(&ctx, ugen_list);
     if (rc) goto clean;
-    /* TODO: sequencer driven by clock */
-    /* TODO: smoother on pitch signal */
+
+    /* smoother on pitch signal */
+    rc = sonilo_constant(&ctx, 0.005);
+    if (rc) goto clean;
+    rc = ugen(&ctx, "SMO", ugen_list);
+    if (rc) goto clean;
+
     /* midi to frequency */
     rc = ugen(&ctx, "MTF", ugen_list);
     if (rc) goto clean;
+
     /* saw, controlled via freq signal */
     rc = ugen(&ctx, "SAW", ugen_list);
     if (rc) goto clean;
