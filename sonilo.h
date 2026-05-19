@@ -138,4 +138,12 @@ int sonilo_ugen_register(sonilo *s,
         instr_func init,
         instr_func render);
 
+/* process: compute ugen block contained in context */
+int sonilo_process(sonilo_ctx *ctx);
+
+/* mkugen: lookup and create ugen, and append to ugen block */
+int sonilo_mkugen(sonilo_ctx *ctx, const char *ugen);
+
+/* last ugen: retrieve last ugen in block */
+uint16_t sonilo_last_ugen(sonilo_ctx *ctx);
 #endif

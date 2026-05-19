@@ -72,6 +72,9 @@ int sonilo_ctx_init(sonilo_ctx *ctx, sonilo *s)
     if (rc) return 2;
     ctx->pstack = context_pstack(ctx->s->mem, ctx->context);
 
+    /* TODO: set up ugen block */
+    return 1;
+
     return 0;
 }
 
@@ -572,4 +575,38 @@ int sonilo_ppush(sonilo_ctx *ctx, uint32_t w)
     if (rc) return 1;
 
     return 0;
+}
+
+int sonilo_process(sonilo_ctx *ctx)
+{
+    /* TODO: implement */
+    /* TODO: initialize local block and index variables */
+    /* TODO: loop (treat 0 as NULL) */
+    /* TODO: fetch current ugen address */
+    /* TODO: set up rw function args */
+    /* TODO: call direct */
+    /* TODO: check rc flags */
+    /* TODO: update pointers */
+    return 1;
+}
+
+int sonilo_mkugen(sonilo_ctx *ctx, const char *ugen)
+{
+    /* TODO: implement */
+    /* TODO: push symbol */
+    /* TODO: ugen create */
+    /* TODO: pop address */
+    /* TODO: append to block tail */
+    /* TODO: update tail */
+    return 1;
+}
+
+uint16_t sonilo_last_ugen(sonilo_ctx *ctx)
+{
+    /* TODO: implement */
+    /* TODO: get tail */
+    /* TODO: get number of elments */
+    /* TODO: retrieve address based on element number */
+    /* if zero elements, return empty */
+    return 1;
 }

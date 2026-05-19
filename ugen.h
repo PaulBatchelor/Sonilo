@@ -31,3 +31,20 @@ int ugen_oport(uint32_t *mem, uint16_t ctx, uint16_t ugen, int port);
 void * ugen_state(uint32_t *mem, uint16_t ugen);
 
 uint32_t* ugen_ports(uint32_t *mem, uint16_t ugen);
+
+/* ugen block: use a block of memory to store a sequence
+ * of ugens */
+
+/* create: allocate and initialize a ugen block, and pushes
+ * the address onto the system stack */
+int ugen_block_create(uint32_t *mem, uint16_t ctx);
+
+/* append: appends a ugen address to the block, and possibly
+ * allocates and links a new block if there is no more room
+ * stack args: ugen block
+ * returns: address of last block
+ */
+int ugen_block_append(uint32_t *mem, uint16_t ctx);
+
+/* process: computes ugens in the block(s) */
+int ugen_block_process(uint32_t *mem, uint16_t ctx);

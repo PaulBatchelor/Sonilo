@@ -309,3 +309,21 @@ void * ugen_state(uint32_t *mem, uint16_t ugen)
 
     return &mem[p];
 }
+
+int ugen_block_create(uint32_t *mem, uint16_t ctx)
+{
+    /* TODO: implement */
+    return 1;
+}
+
+int ugen_block_append(uint32_t *mem, uint16_t ctx)
+{
+    /* TODO: implement */
+    return 1;
+}
+
+int ugen_block_process(uint32_t *mem, uint16_t ctx)
+{
+    /* TODO: implement */
+    return 1;
+}

@@ -10,6 +10,8 @@ int ugen(sonilo_ctx *ctx, const char *sym, uint16_t *lst)
     int rc;
     uint32_t p;
 
+    return 1;
+
     rc = sonilo_symbol(ctx, sym);
     if (rc) return 1;
 
@@ -26,7 +28,7 @@ int ugen(sonilo_ctx *ctx, const char *sym, uint16_t *lst)
     return 0;
 }
 
-int render(sonilo_ctx *ctx, uint16_t *lst, uint16_t sink)
+int render(sonilo_ctx *ctx, uint16_t sink)
 {
     int rc;
     sonilo *s;
@@ -34,17 +36,16 @@ int render(sonilo_ctx *ctx, uint16_t *lst, uint16_t sink)
     int i;
     FILE *fp;
     uint32_t *mem;
-    uint16_t sz;
 
     fp = fopen("seq.raw", "wb");
 
     s = ctx->s;
-    sz = lst[0];
     mem = sonilo_mem(s);
     rc = sonilo_ugen_block(mem, sink, 0, &out);
     if (rc) return 1;
 
     for (i = 0; i < 3445*2; i++) {
+#if 0
         int k;
         for (k = 1; k <= sz; k++) {
             int rc;
@@ -62,6 +63,8 @@ int render(sonilo_ctx *ctx, uint16_t *lst, uint16_t sink)
             rc = sonilo_get(s, &rw);
             if (rc || rw) break;
         }
+#endif
+        sonilo_process(ctx);
         if (rc) break;
         fwrite(out, sizeof(float), 64, fp);
     }
@@ -159,9 +162,9 @@ int main(int argc, char *argv[])
     /* clock */
     rc = sonilo_constant(&ctx, 125 * 4);
     if (rc) goto clean;
-    rc = ugen(&ctx, "CLK", ugen_list);
+    rc = sonilo_mkugen(&ctx, "CLK");
     if (rc) goto clean;
-    rc = ugen(&ctx, "MET", ugen_list);
+    rc = sonilo_mkugen(&ctx, "MET");
     if (rc) goto clean;
 
     /* sequencer driven by clock */
@@ -171,34 +174,38 @@ int main(int argc, char *argv[])
     /* smoother on pitch signal */
     rc = sonilo_constant(&ctx, 0.005);
     if (rc) goto clean;
-    rc = ugen(&ctx, "SMO", ugen_list);
+    rc = sonilo_mkugen(&ctx, "SMO");
     if (rc) goto clean;
 
     /* midi to frequency */
-    rc = ugen(&ctx, "MTF", ugen_list);
+    rc = sonilo_mkugen(&ctx, "MTF");
     if (rc) goto clean;
 
     /* saw, controlled via freq signal */
-    rc = ugen(&ctx, "SAW", ugen_list);
+    rc = sonilo_mkugen(&ctx, "SAW");
     if (rc) goto clean;
 
     rc = sonilo_constant(&ctx, 200);
     if (rc) goto clean;
     /* filter saw with LPF */
-    rc = ugen(&ctx, "LPF", ugen_list);
+    rc = sonilo_mkugen(&ctx, "LPF");
     if (rc) goto clean;
 
     rc = sonilo_constant(&ctx, 0.7);
     if (rc) goto clean;
-    rc = ugen(&ctx, "MUL", ugen_list);
+    rc = sonilo_mkugen(&ctx, "MUL");
     if (rc) goto clean;
 
     /* output */
-    rc = ugen(&ctx, "SNK", ugen_list);
+    rc = sonilo_mkugen(&ctx, "SNK");
     if (rc) goto clean;
-    sink = ugen_list[ugen_list[0]];
+    sink = sonilo_last_ugen(&ctx);
+    if (sink == 0) {
+        rc = 1;
+        goto clean;
+    } 
     /* render  */
-    rc = render(&ctx, ugen_list, sink);
+    rc = render(&ctx, sink);
 
     if (rc) goto clean;
 

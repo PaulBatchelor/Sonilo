@@ -12,7 +12,7 @@ static uint32_t init(uint32_t *mem, uint16_t ctx)
 {
     int rc;
     uint16_t stk, ugen;
-    uint32_t cmd, sr;
+    uint32_t cmd;
     dsp_metro *met;
 
     /* command */
@@ -41,7 +41,6 @@ static uint32_t init(uint32_t *mem, uint16_t ctx)
     met = (dsp_metro *)ugen_state(mem, ugen);
     if (met == NULL) return 5;
 
-    sr = sonilo_srate(mem);
     met->phs = -1;
 
     /* push ugen address */
