@@ -22,25 +22,6 @@ int render(sonilo_ctx *ctx, uint16_t sink)
     if (rc) return 1;
 
     for (i = 0; i < 3445*2; i++) {
-#if 0
-        int k;
-        for (k = 1; k <= sz; k++) {
-            int rc;
-            uint32_t rw;
-            rc = 0;
-            rw = 1;
-            /* set up function args: ugen address | callback */
-            rw = (lst[k] << 16) | (mem[lst[k] + 1] & 0xFFFF);
-            rc = sonilo_set(s, rw);
-            if (rc) break;
-            rc = sonilo_call_direct(s);
-            if (rc) break;
-
-            /* ugens should return 0 */
-            rc = sonilo_get(s, &rw);
-            if (rc || rw) break;
-        }
-#endif
         rc = sonilo_process(ctx);
         if (rc) return 1;
         fwrite(out, sizeof(float), 64, fp);

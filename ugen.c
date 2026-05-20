@@ -381,7 +381,7 @@ int ugen_block_get(uint32_t *mem,
     uint16_t wpos;
     uint32_t w;
 
-    wpos = (idx >> 2) + 1;
+    wpos = (idx >> 1) + 1;
     w = mem[wpos];
 
     /* even/odd -> LSB/MSB */
@@ -415,7 +415,7 @@ int ugen_block_set(uint32_t *mem,
     uint16_t wpos;
     uint32_t w;
 
-    wpos = (idx >> 2) + 1;
+    wpos = (idx >> 1) + 1;
     w = mem[wpos];
 
     /* even/odd -> LSB/MSB */
