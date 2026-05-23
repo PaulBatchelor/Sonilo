@@ -157,8 +157,8 @@ int universe_get(uint32_t *u, uint16_t b, uint32_t **blk);
 
 /* pull: pull data from memory to sonilo memory */
 int universe_pull(uint32_t *u,
-    uint16_t to,
     uint16_t from,
+    uint16_t to,
     uint16_t sz);
 
 /* push: push data to universe from sonilo */
