@@ -2,10 +2,15 @@
 
 typedef struct {
     uint32_t key;
+    /* TODO: split the C function array into its own thing */
     instr_func func;
 } instr_entry;
 
 typedef struct {
+    /* TODO: make this an array of 32-bit ints
+     * This will be possible once the C callback is moved
+     * elsewhere.
+     */
     instr_entry ent[MAX_INSTR];
     uint32_t nent;
 } instr_map;

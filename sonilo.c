@@ -6,6 +6,16 @@
 
 int sonilo_load_ugens(sonilo *s);
 
+/* TODO: create sonilo_host struct.
+ * This willl contain all the things that cannot be
+ * contained inside the universe.
+ * This includes things like file I/O and the C callbacks
+ */
+
+/* TODO: create sonilo VM struct
+ * This struct will mirror the memory layout as it appears
+ * inside of the universe */
+
 struct sonilo {
     /* linear memory */
     uint32_t mem[65536];
@@ -14,6 +24,7 @@ struct sonilo {
     uint32_t rw;
 
     /* a/b cursors */
+    /* TODO: it would be useful to abstract away the pointer */
     uint16_t *cur;
     uint16_t a, b;
 
