@@ -65,8 +65,8 @@ int main(int argc, char *argv[])
 
     fp = NULL;
 
-    s = malloc(sonilo_sizeof());
-    sonilo_init(s);
+    s = NULL;
+    rc = sonilo_create(&s);
     sonilo_ctx_init(&ctx, s);
 
     /* push amp/freq constants */
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
     /* cleanup */
 clean:
     sonilo_ctx_destroy(&ctx);
-    free(s);
+    sonilo_destroy(s);
     if (fp != NULL) fclose(fp);
     return 0;
 }

@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "sonilo.h"
 #include "ins.h"
 #include "mem.h"
@@ -12,9 +13,37 @@ int sonilo_load_ugens(sonilo *s);
  * This includes things like file I/O and the C callbacks
  */
 
-/* TODO: create sonilo VM struct
- * This struct will mirror the memory layout as it appears
- * inside of the universe */
+struct sonilo_host {
+    instr_func func[MAX_INSTR];
+    /* TEMP: cursor pointer */
+    uint16_t *cur;
+    /* instruction map */
+    instr_map_NEW *map;
+};
+
+struct sonilo_vm {
+    /* linear memory (256 megablocks) */
+    uint32_t mem[65536];
+
+    /* system block: 1 megablock */
+
+    /* read/write register */
+    uint32_t rw;
+
+    /* a/b cursors (1 word) */
+    uint16_t a, b;
+
+    /* switch flag indicating which cursor (short) */
+    uint16_t cur;
+
+    /* pointer to blocklist (short) */
+    uint16_t blocklist;
+
+    /* instruction keys + size (should fit into remaining
+     * megablock. 253 words, 255 entries + size) */
+    uint32_t nentries;
+    uint32_t key[MAX_INSTR];
+};
 
 struct sonilo {
     /* linear memory */
@@ -58,11 +87,24 @@ int sonilo_init(sonilo *s)
     rc = blocklist_init(s->mem, s->blocklist);
     if (rc) return 1;
 
+    instr_map_init(&s->instr);
+
     rc = sonilo_load_ugens(s);
 
     if (rc) return 2;
 
     return 0;
+}
+
+int sonilo_vm_init(sonilo_vm *vm)
+{
+    /* TODO: implement */
+    return 1;
+}
+
+size_t sonilo_vm_sizeof(void)
+{
+    return sizeof(sonilo_vm);
 }
 
 int sonilo_ctx_init(sonilo_ctx *ctx, sonilo *s)
@@ -710,4 +752,22 @@ int sonilo_last_ugen(sonilo_ctx *ctx, uint16_t *last)
     rc = ugen_block_get(mem, tail, nelem - 1, last);
     if (rc) return 4;
     return 0;
+}
+
+int sonilo_create(sonilo **ps)
+{
+    int rc;
+    sonilo *s;
+    if (ps == NULL) return -1;
+    s = malloc(sonilo_sizeof());
+    rc = sonilo_init(s);
+    if (rc) return rc;
+    *ps = s;
+    return 0;
+}
+
+void sonilo_destroy(sonilo *s)
+{
+    free(s);
+    s = NULL;
 }

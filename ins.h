@@ -1,4 +1,5 @@
-#define MAX_INSTR 512
+/* squished into remaining space of system megablock */
+#define MAX_INSTR 252
 
 typedef struct {
     uint32_t key;
@@ -15,9 +16,17 @@ typedef struct {
     uint32_t nent;
 } instr_map;
 
+typedef struct {
+    uint32_t *key;
+    instr_func *func;
+    uint32_t *nent;
+} instr_map_NEW;
+
 void instr_map_init(instr_map *map);
 void instr_map_set(instr_map *map, uint16_t key, instr_func func);
+void instr_map_NEW_set(instr_map *map, uint16_t key, instr_func func);
 instr_func instr_map_get(instr_map *map, uint16_t key);
+instr_func instr_map_NEW_get(instr_map *map, uint16_t key);
 int instr_char_sym(char c);
 int instr_sym_char(int sym);
 uint16_t instr_key(const char *str);

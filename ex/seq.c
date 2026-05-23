@@ -107,8 +107,8 @@ int main(int argc, char *argv[])
     int rc;
     uint16_t sink;
 
-    s = malloc(sonilo_sizeof());
-    rc = sonilo_init(s);
+    s = NULL;
+    rc = sonilo_create(&s);
     if (rc) goto clean;
     rc = sonilo_ctx_init(&ctx, s);
     if (rc) goto clean;
@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
     }
 
     sonilo_ctx_destroy(&ctx);
-    free(s);
+    sonilo_destroy(s);
 
     return 0;
 }
