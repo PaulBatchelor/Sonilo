@@ -23,16 +23,20 @@ struct sonilo_host {
 
 struct sonilo_vm {
     /* linear memory (256 megablocks) */
-    uint32_t mem[65536];
+    uint32_t mem[0x10000];
 
     /* system block: 1 megablock */
 
-    /* read/write register */
+    /* w_0: read/write register */
     uint32_t rw;
 
-    /* a/b cursors (1 word) */
+    /* w_1: errors */
+    uint32_t err;
+
+    /* w_2: a/b cursors (1 word) */
     uint16_t a, b;
 
+    /* w_3: switch/blocklist */
     /* switch flag indicating which cursor (short) */
     uint16_t cur;
 
@@ -40,12 +44,13 @@ struct sonilo_vm {
     uint16_t blocklist;
 
     /* instruction keys + size (should fit into remaining
-     * megablock. 253 words, 255 entries + size) */
+     * megablock. 252 words, 251 entries + size) */
     uint32_t nentries;
     uint32_t key[MAX_INSTR];
 };
 
 struct sonilo {
+    uint32_t *universe;
     /* linear memory */
     uint32_t mem[65536];
 
@@ -758,9 +763,12 @@ int sonilo_create(sonilo **ps)
 {
     int rc;
     sonilo *s;
+    uint32_t *universe;
     if (ps == NULL) return -1;
-    s = malloc(sonilo_sizeof());
+    universe = malloc(universe_size());
+    s = (sonilo *)&universe[0];
     rc = sonilo_init(s);
+    s->universe = universe;
     if (rc) return rc;
     *ps = s;
     return 0;
@@ -768,6 +776,86 @@ int sonilo_create(sonilo **ps)
 
 void sonilo_destroy(sonilo *s)
 {
-    free(s);
+    uint32_t *u;
+    u = s->universe;
+    free(u);
     s = NULL;
+}
+
+uint32_t sonilo_vm_rw_get(sonilo_vm *vm)
+{
+    /* TODO: implement */
+    return 0;
+}
+
+void sonilo_vm_rw_set(sonilo_vm *vm, uint32_t rw)
+{
+    /* TODO: implement */
+}
+
+uint32_t* sonilo_vm_rw_ptr(sonilo_vm *vm)
+{
+    /* TODO: implement */
+    return NULL;
+}
+
+uint32_t sonilo_vm_err_get(sonilo_vm *vm)
+{
+    /* TODO: implement */
+    return 0;
+}
+
+void sonilo_vm_err_set(sonilo_vm *vm, uint32_t err)
+{
+    /* TODO: implement */
+}
+
+uint32_t* sonilo_vm_mem(sonilo_vm *vm)
+{
+    /* TODO: implement */
+    return NULL;
+}
+
+uint32_t* sonilo_vm_memcur(sonilo_vm *vm)
+{
+    /* TODO: implement */
+    return NULL;
+}
+
+uint32_t sonilo_vm_cursor_get(sonilo_vm *vm)
+{
+    /* TODO: implement */
+    return 0;
+}
+
+void sonilo_vm_cursor_set(sonilo_vm *vm)
+{
+    /* TODO: implement */
+}
+
+void sonilo_vm_cursor_swap(sonilo_vm *vm)
+{
+    /* TODO: implement */
+}
+
+void sonilo_vm_cursor_select(sonilo_vm *vm, int which)
+{
+    /* TODO: implement */
+}
+
+uint32_t sonilo_vm_read(sonilo_vm *vm)
+{
+    /* TODO: implement */
+    return 0;
+}
+
+void sonilo_vm_write(sonilo_vm *vm, uint32_t w)
+{
+    /* TODO: implement */
+}
+
+int sonilo_vm_char(sonilo_vm *vm, char c)
+{
+    /* TODO: implement */
+    return 1;
 }

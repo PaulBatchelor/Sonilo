@@ -174,4 +174,33 @@ int universe_push(uint32_t *u,
 
 sonilo_vm* universe_sonilo(uint32_t *u);
 
+/* VM */
+
+/* read/write register */
+uint32_t sonilo_vm_rw_get(sonilo_vm *vm);
+void sonilo_vm_rw_set(sonilo_vm *vm, uint32_t rw);
+uint32_t* sonilo_vm_rw_ptr(sonilo_vm *vm);
+
+/* error flag */
+uint32_t sonilo_vm_err_get(sonilo_vm *vm);
+void sonilo_vm_err_set(sonilo_vm *vm, uint32_t err);
+
+/* memory */
+uint32_t* sonilo_vm_mem(sonilo_vm *vm);
+/* memcur: gets memory at cursor location */
+uint32_t* sonilo_vm_memcur(sonilo_vm *vm);
+
+/* cursor */
+uint32_t sonilo_vm_cursor_get(sonilo_vm *vm);
+void sonilo_vm_cursor_set(sonilo_vm *vm);
+void sonilo_vm_cursor_swap(sonilo_vm *vm);
+void sonilo_vm_cursor_select(sonilo_vm *vm, int which);
+
+/* read/write words to memory based on cursor location */
+uint32_t sonilo_vm_read(sonilo_vm *vm);
+void sonilo_vm_write(sonilo_vm *vm, uint32_t w);
+
+/* addchar: append a character to RW using 5-bit encoding */
+int sonilo_vm_char(sonilo_vm *vm, char c);
+
 #endif

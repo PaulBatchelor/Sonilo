@@ -1,5 +1,5 @@
 /* squished into remaining space of system megablock */
-#define MAX_INSTR 252
+#define MAX_INSTR 251
 
 typedef struct {
     uint32_t key;

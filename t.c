@@ -43,10 +43,11 @@ int update_mode(char c) {
 }
 
 typedef struct memwrite {
+    /* memory */
+    uint32_t mem[0x10000];
+
     /* word register */
     uint32_t rw; 
-    /* previous character */
-    char prev;
     /* cursor */
     uint16_t cursor;
     /* alt cursor */
@@ -54,17 +55,17 @@ typedef struct memwrite {
     /* swap bit */
     uint8_t swap;
 
-    /* memory */
-    uint32_t mem[0x10000];
-
     /* errors */
     uint32_t err;
 
     /* instruction command lookup */
     instr_map instr;
 
+    /* previous character */
+    int8_t prev;
     /* 5-bit encoding mode */
     int encode;
+    sonilo_vm *vm;
 } memwrite;
 
 static uint32_t incr(uint32_t *mem, uint16_t dat)
@@ -166,6 +167,7 @@ static uint32_t reverse(uint32_t *mem, uint16_t dat)
     return 0;
 }
 
+/* TODO: build sonilo_vm_curswap */
 static void swap_cursors(memwrite *mw)
 {
     uint16_t tmp;
@@ -178,11 +180,15 @@ static void swap_cursors(memwrite *mw)
 void memwrite_init(memwrite *mw)
 {
     uint32_t i;
+    /* TODO: move to sonilo_vm_init */
     mw->rw = 0;
     mw->prev = 0;
     for (i = 0; i < 0x10000; i++) mw->mem[i] = 0;
     mw->err = 0;
     mw->alt = 0;
+    mw->swap = 0;
+
+    /* TODO: rework to use updated instr interface */
     instr_map_init(&mw->instr);
     instr_map_set(&mw->instr, instr_key("INC"), incr);
     instr_map_set(&mw->instr, instr_key("SAY"), say);
@@ -193,7 +199,6 @@ void memwrite_init(memwrite *mw)
     instr_map_set(&mw->instr, instr_key("PRA"), invert);
     instr_map_set(&mw->instr, instr_key("PRB"), reverse);
     mw->encode = 0;
-    mw->swap = 0;
 }
 
 static uint32_t reverse_nibbles(uint32_t w)
@@ -228,6 +233,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* handle 5-bit encoding mode */
     if (mw->encode) {
         int b;
+        /* TODO: vm_append_char? */
         if (c == '\'') {
             mw->encode = 0;
             /* shift 1-bit. assuming 3-characters, will make
@@ -252,20 +258,24 @@ void parse_memwrite(memwrite *mw, char c)
     if (c >= '0' && c <= '9') {
         uint8_t x;
         uint32_t w;
+        /* TODO: GET rw */
         w = mw->rw;
         x = (uint8_t)(c - '0');
         w <<= 4;
         w |= x;
+        /* TODO: SET rw */
         mw->rw = w;
         return;
     } else if (c >= 'A' && c <= 'F') {
         uint8_t x;
         uint32_t w;
+        /* TODO: GET rw */
         w = mw->rw;
         x = (uint8_t)(c - 'A');
         x += 10;
         w <<= 4;
         w |= x;
+        /* TODO: SET rw */
         mw->rw = w;
         return;
     }
@@ -282,6 +292,7 @@ void parse_memwrite(memwrite *mw, char c)
     }
 
     if (iscmd(mw, c, "rv")) {
+        /* TODO: GET/SET rw */
         mw->rw = reverse_nibbles(mw->rw); 
         mw->prev = 0;
         return;
@@ -289,6 +300,7 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* cl or '#': clear the word register */
     if (c == '#' || (mw->prev == 'c' && c == 'l')) {
+        /* TODO: SET rw */
         mw->rw = 0;
         mw->prev = 0;
         return;
@@ -297,12 +309,14 @@ void parse_memwrite(memwrite *mw, char c)
     /* go: set cursor location */
     if (iscmd(mw, c, "go")) {
         mw->prev = 0;
+        /* TODO: GET rw, SET cursor */
         mw->cursor = mw->rw & 0xFFFF;
         return;
     }
 
     /* wr: write word to memory */
     if (iscmd(mw, c, "wr")) {
+        /* TODO: WRITE word operation */
         mw->mem[mw->cursor] = mw->rw;
         mw->prev = 0;
         return;
@@ -310,6 +324,7 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* read word from memory to word register */
     if (iscmd(mw, c, "rd")) {
+        /* TODO: READ word operation */
         mw->rw = mw->mem[mw->cursor];
         mw->prev = 0;
         return;
@@ -317,6 +332,7 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* bi: init blocklist */
     if (iscmd(mw, c, "bi")) {
+        /* TODO: GET mem, GET cursor */
         blocklist_init(mw->mem, mw->cursor);
         mw->prev = 0;
         return;
@@ -324,7 +340,9 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* ba: allocate block, write block id to word register */
     if (iscmd(mw, c, "ba")) {
+        /* TODO SET RW, GET cursor, GET mem */
         mw->rw = blocklist_pop(mw->mem, mw->cursor);
+        /* TODO SET err */
         if (mw->rw == 0) mw->err = 1;
         mw->prev = 0;
         return;
@@ -332,6 +350,7 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* bf: free block, read block id from register word */
     if (iscmd(mw, c, "bf")) {
+        /* TODO: SET err, GET mem, GET cursor, GET rw */
         mw->err = blocklist_push(mw->mem, mw->cursor, mw->rw & 0x3ff);
         mw->prev = 0;
         return;
@@ -339,6 +358,7 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* si: initialize bitset */
     if (iscmd(mw, c, "si")) {
+        /* TODO: GET mem, GET cursor */
         bitset_init(mw->mem, mw->cursor);
         mw->prev = 0;
         return;
@@ -346,6 +366,7 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* sa: add item to bitset */
     if (iscmd(mw, c, "sa")) {
+        /* TODO: GET mem, GET cursor, GET rw */
         bitset_add(mw->mem, mw->cursor, mw->rw);
         mw->prev = 0;
         return;
@@ -353,6 +374,7 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* se: check to see if item exists in set */
     if (iscmd(mw, c, "se")) {
+        /* TODO: GET mem, GET cursor, GET rw */
         mw->rw = bitset_exists(mw->mem, mw->cursor, mw->rw);
         mw->prev = 0;
         return;
@@ -360,6 +382,7 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* sr: remove item from bitset */
     if (iscmd(mw, c, "sr")) {
+        /* TODO: GET mem, GET cursor, GET rw */
         bitset_remove(mw->mem, mw->cursor, mw->rw);
         mw->prev = 0;
         return;
@@ -370,7 +393,9 @@ void parse_memwrite(memwrite *mw, char c)
         int offset;
         mw->prev = 0;
         /* 6-bit address 0 - 63 */
+        /* TODO: GET rw */
         offset = mw->rw & 0x3f;
+        /* TODO: READ word, GET cursor */
         mw->rw = mw->mem[mw->cursor + offset];
         return;
     }
@@ -382,10 +407,12 @@ void parse_memwrite(memwrite *mw, char c)
         uint8_t sp;
         mw->prev = 0;
 
+        /* TODO: GET mem, GET cursor */
         stk = &mw->mem[mw->cursor];
         sp = stk[0];
 
         if (sp < 4) {
+            /* TODO: SET err */
             mw->err = 1;
             return;
         }
@@ -409,6 +436,7 @@ void parse_memwrite(memwrite *mw, char c)
          * then add an offset to skip the block list
          * block list size: 2^16/64 = 1024. 1024 blocks = 1024 words
          */
+        /* TODO: SET cursor, GET rw */
         mw->cursor = old_block_to_word(mw->rw); 
         mw->prev = 0;
         return;
@@ -421,6 +449,7 @@ void parse_memwrite(memwrite *mw, char c)
         uint16_t p_top, k;
         mw->prev = 0;
 
+        /* TODO: GET cursor, GET mem */
         stk = &mw->mem[mw->cursor];
         sp = stk[0];
 
@@ -432,8 +461,10 @@ void parse_memwrite(memwrite *mw, char c)
         k = stk[sp]; sp--;
         stk[0] = sp;
 
+        /* TODO: SET rw, GET mem */
         mw->rw = mem_alloc(mw->mem, p_top, k);
         /* check for out of bounds results */
+        /* TODO: GET rw, SET err */
         mw->err = mw->rw > 63;
         return;
     }
@@ -445,10 +476,12 @@ void parse_memwrite(memwrite *mw, char c)
         uint16_t p_top, L, k;
         mw->prev = 0;
 
+        /* TODO: GET mem, GET cursor */
         stk = &mw->mem[mw->cursor];
         sp = stk[0];
 
         if (sp < 3) {
+            /* TODO: SET err */
             mw->err = 1;
             return;
         }
@@ -457,6 +490,7 @@ void parse_memwrite(memwrite *mw, char c)
         L = stk[sp]; sp--;
         stk[0] = sp;
 
+        /* TODO: GET mem */
         mem_free(mw->mem, p_top, L, k);
         return;
     }
@@ -471,6 +505,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* ai: initialize array */
     if (iscmd(mw, c, "ai")) {
         mw->prev = 0;
+        /* TODO: GET mem, GET cursor */
         barray_init(mw->mem, mw->cursor);
         return;
     }
@@ -478,6 +513,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* al: get array length */
     if (iscmd(mw, c, "al")) {
         mw->prev = 0;
+        /* TODO: GET mem, GET cursor */
         mw->rw = barray_length(mw->mem, mw->cursor);
         return;
     }
@@ -493,12 +529,14 @@ void parse_memwrite(memwrite *mw, char c)
     /* aa: append value to array */
     if (iscmd(mw, c, "aa")) {
         mw->prev = 0;
+        /* TODO: SET err, GET mem, GET cursor, GET rw */
         mw->err = barray_append(mw->mem, mw->cursor, mw->rw);
         return;
     }
 
     /* ap: pop word from array */
     if (iscmd(mw, c, "ap")) {
+        /* TODO: GET mem, GET cursor, GET rw, SET err */
         mw->err = barray_pop(mw->mem, mw->cursor, &mw->rw);
         mw->prev = 0;
         return;
@@ -506,6 +544,7 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* pe: print error flag */
     if (iscmd(mw, c, "pe")) {
+        /* TODO: GET err */
         printf("%x", mw->err);
         fflush(stdout);
         mw->prev = 0;
@@ -514,6 +553,7 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* ce: clear error flag */
     if (iscmd(mw, c, "ce")) {
+        /* TODO: SET err */
         mw->prev = 0;
         mw->err = 0;
         return;
@@ -525,10 +565,13 @@ void parse_memwrite(memwrite *mw, char c)
         uint16_t addr;
         mw->prev = 0;
 
+        /* TODO: GET rw */
         addr = mw->rw;
+        /* TODO: SET rw */
         mw->rw = (addr >> 8) * 64 + (addr & 63);
 
         /* see: 'gb' */
+        /* TODO: SET/GET rw */
         mw->rw += BLOCKLIST_OFFSET;
 
         return;
@@ -536,6 +579,7 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* rc: read cursor into rw */
     if (iscmd(mw, c, "rc")) {
+        /* TODO: SET rw, GET cursor */
         mw->rw = mw->cursor;
         mw->prev = 0;
         return;
@@ -543,6 +587,7 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* mc: generate 32-bit checksum of memory allocator */
     if (iscmd(mw, c, "mc")) {
+        /* TODO: GET rw, GET mem, SET rw */
         mw->rw = mem_cksum(mw->mem, mw->rw);
         mw->prev = 0;
         return;
@@ -554,6 +599,7 @@ void parse_memwrite(memwrite *mw, char c)
         /* assuming blocks are aligned, last 6 bits
          * should be the offset
          */
+        /* TODO: SET rw, GET rw */
         mw->rw &= 63; 
         return;
     }
@@ -565,6 +611,7 @@ void parse_memwrite(memwrite *mw, char c)
         uint16_t x, y;
         mw->prev = 0;
 
+        /* TODO: GET mem (at cursor) */
         stk = &mw->mem[mw->cursor];
         sp = stk[0];
 
@@ -576,6 +623,7 @@ void parse_memwrite(memwrite *mw, char c)
         y = stk[sp]; sp--;
         x = stk[sp]; sp--;
 
+        /* TODO: set rw */
         mw->rw = x + y;
 
         stk[0] = sp;
@@ -585,6 +633,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* zp: initialize zero page */
     if (iscmd(mw, c, "zp")) {
         mw->prev = 0;
+        /* TODO: GET mem, GET cursor, GET rw, SET rw */
         mw->rw = zero_page_init(mw->mem, mw->cursor, mw->rw);
         return;
     }
@@ -601,6 +650,7 @@ void parse_memwrite(memwrite *mw, char c)
         uint8_t sz;
         mw->prev = 0;
 
+        /* GET rw */
         rw = mw->rw;
         off = val = sz = 0;
 
@@ -610,6 +660,7 @@ void parse_memwrite(memwrite *mw, char c)
         rw >>= 4;
         off = rw & 0xFFF;
 
+        /* GET mem, GET cursor */
         bits_set(mw->mem, (mw->cursor << 4) + off, sz, val);
 
         return;
@@ -623,6 +674,7 @@ void parse_memwrite(memwrite *mw, char c)
         uint8_t sz;
         mw->prev = 0;
 
+        /* TODO: GET rw */
         rw = mw->rw;
         off = sz = 0;
 
@@ -630,6 +682,7 @@ void parse_memwrite(memwrite *mw, char c)
         rw >>= 4;
         off = rw & 0xFFF;
 
+        /* TODO: GET mem, GET cursor */
         mw->rw = bits_get(mw->mem, (mw->cursor << 4) + off, sz);
 
         return;
@@ -645,6 +698,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* bm: block to memory address */
     if (iscmd(mw, c, "bm")) {
         mw->prev = 0;
+        /* TODO: SET rw, GET cursor, GET rw */
         mw->rw = block_to_word(mw->cursor, mw->rw);
         return;
     }
@@ -652,6 +706,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* mb: memory address to block */
     if (iscmd(mw, c, "mb")) {
         mw->prev = 0;
+        /* TODO: GET cursor, GET rw, SET rw */
         mw->rw = word_to_block(mw->cursor, mw->rw);
         return;
     }
@@ -660,8 +715,11 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "jf")) {
         int jump;
         mw->prev = 0;
+        /* TODO: GET rw */
         jump = mw->rw & 0xFF;
+        /* TODO: SET rw */
         mw->rw >>= 8;
+        /* TODO GET cursor, SET CURSOR */
         mw->cursor += jump;
         return;
     }
@@ -670,8 +728,11 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "jb")) {
         int jump;
         mw->prev = 0;
+        /* TODO: GET cursor */
         jump = mw->rw & 0xFF;
+        /* TODO: SET rw */
         mw->rw >>= 8;
+        /* TODO: SET cursor */
         mw->cursor -= jump;
         return;
     }
@@ -688,9 +749,12 @@ void parse_memwrite(memwrite *mw, char c)
         uint16_t lsb, msb;
 
         mw->prev = 0;
+        /* TODO: GET cursor */
         lsb = mw->cursor;
+        /* TODO: GET rw */
         msb = mw->rw & 0xFFFF;
 
+        /* TODO: SET rw */
         mw->rw = (msb << 16) | lsb;
 
         return;
@@ -700,6 +764,7 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "sn")) {
         mw->prev = 0;
 
+        /* TODO: SET rw */
         mw->rw = bitset_len(mw->mem, mw->cursor);
         return;
     }
@@ -710,12 +775,16 @@ void parse_memwrite(memwrite *mw, char c)
         int blk;
 
         mw->prev = 0;
+        /* TODO: GET rw */
         lsb = mw->rw & 0xFFFF;
+        /* TODO: GET rw */
         msb = mw->rw >> 16;
 
+        /* TODO: GET mem */
         blk = blocklist_pop(mw->mem, lsb);
 
         if (blk <= 0) {
+            /* TODO: SET err */
             mw->err = 1;
             return;
         }
@@ -729,6 +798,7 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* ex: execute command */
     if (iscmd(mw, c, "ex")) {
+        /* TODO: GET rw, GET rw (pointer), GET mem, GET instr (pointer) */
         mw->err = instr_ex(mw->mem,
                 &mw->instr,
                 mw->rw,
@@ -740,6 +810,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* bx: execute block */
     if (iscmd(mw, c, "bx")) {
         mw->prev = 0;
+        /* TODO: GET mem, GET instr (pointer), GET cursor, GET rw (ptr) */
         mw->err = instr_block(mw->mem, &mw->instr, mw->cursor, &mw->rw);
         return;
     }
@@ -747,6 +818,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* ri: initialize rfcnt */
     if (iscmd(mw, c, "ri")) {
         mw->prev = 0;
+        /* TODO: GET mem, GET cursor */
         rc_init(mw->mem, mw->cursor);
         return;
     }
@@ -754,6 +826,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* ra: refcnt add */
     if (iscmd(mw, c, "ra")) {
         mw->prev = 0;
+        /* TODO: GET mem, GET cursor, GET rw */
         rc_add(mw->mem, mw->cursor, mw->rw);
         return;
     }
@@ -761,6 +834,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* rm: refcnt remove */
     if (iscmd(mw, c, "rm")) {
         mw->prev = 0;
+        /* TODO: GET mem, GET cursor, GET rw */
         rc_del(mw->mem, mw->cursor, mw->rw);
         return;
     }
@@ -771,19 +845,25 @@ void parse_memwrite(memwrite *mw, char c)
 
         mw->prev = 0;
 
+        /* TODO: GET rw */
         mode = mw->rw & 0xF;
+        /* TODO: SET rw */
         mw->rw >>= 4;
 
         if (mode == 0) {
+            /* TODO: GET rw, GET mem, GET cursor */
             mw->rw = rc_length(mw->mem, mw->cursor);
             return;
         } else if (mode == 1) {
+            /* TODO: GET mem, GET rw, GET cursor, SET rw */
             mw->rw = rc_get_count(mw->mem, mw->cursor, mw->rw);
             return;
         } else if (mode == 2) {
+            /* TODO: GET mem, GET cursor, GET rw */
             mw->rw = rc_get_hold(mw->mem, mw->cursor, mw->rw);
             return;
         } else if (mode == 3) {
+            /* TODO: GET mem, GET cursor */
             mw->rw = rc_get_active(mw->mem, mw->cursor);
             return;
         }
@@ -793,6 +873,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* rf: refcount find */
     if (iscmd(mw, c, "rf")) {
         mw->prev = 0;
+        /* TODO: GET mem, GET cursor, GET rw, SET rw */
         mw->rw = rc_find(mw->mem, mw->cursor, mw->rw);
         return;
     }
@@ -802,14 +883,18 @@ void parse_memwrite(memwrite *mw, char c)
         int mode;
 
         mw->prev = 0;
+        /* TODO: GET rw */
         mode = mw->rw & 0xF;
+        /* TODO: set RW */
         mw->rw >>= 4;
 
         if (mode) {
             /* decrement */
+            /* TODO: GET rw, GET mem, GET cursor, SET rw */
             mw->rw = rc_decr(mw->mem, mw->cursor, mw->rw);
         } else {
             /* increment */
+            /* TODO: SET rw, GET mem, GET cursor, GET rw */
             mw->rw = rc_incr(mw->mem, mw->cursor, mw->rw);
         }
         return;
@@ -820,14 +905,18 @@ void parse_memwrite(memwrite *mw, char c)
         int mode;
 
         mw->prev = 0;
+        /* TODO: GET RW */
         mode = mw->rw & 0xF;
+        /* TODO: SET RW */
         mw->rw >>= 4;
 
         if (mode) {
             /* unhold */
+            /* TODO: GET mem, GET cursor, GET rw */
             rc_unhold(mw->mem, mw->cursor, mw->rw);
         } else {
             /* hold */
+            /* TODO: GET mem, GET cursor, GET rw */
             rc_hold(mw->mem, mw->cursor, mw->rw);
         }
         return;
@@ -836,6 +925,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* rs: refcount sweep */
     if (iscmd(mw, c, "rs")) {
         mw->prev = 0;
+        /* TODO: GET mem, GET cursor */
         rc_sweep(mw->mem, mw->cursor);
         return;
     }
@@ -843,6 +933,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* rg: refcount get */
     if (iscmd(mw, c, "rg")) {
         mw->prev = 0;
+        /* TODO: GET rw, GET mem, GET cursor */
         mw->rw = rc_get(mw->mem, mw->cursor);
         return;
     }
@@ -850,6 +941,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* pi: pstack init */
     if (iscmd(mw, c, "pi")) {
         mw->prev = 0;
+        /* TODO: GET mem, GET cursor */
         pstack_init(mw->mem, mw->cursor);
         return;
     }
@@ -860,9 +952,13 @@ void parse_memwrite(memwrite *mw, char c)
         int data;
         mw->prev = 0;
 
+        /* TODO: GET rw */
         type = mw->rw & 0xF;
+        /* TODO: SET rw */
         mw->rw >>= 4;
+        /* TODO: GET rw */
         data = mw->rw;
+        /* TODO: SET err, GET mem, GET cursor */
         mw->err =
             pstack_push(mw->mem,
                 mw->cursor,
@@ -874,6 +970,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* po: pstack pop */
     if (iscmd(mw, c, "po")) {
         mw->prev = 0;
+        /* TODO: SET err, GET mem, GET cursor, GET rw (ptr) */
         mw->err = pstack_pop(mw->mem, mw->cursor, &mw->rw);
         return;
     }
@@ -881,6 +978,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* pd: pstack dup */
     if (iscmd(mw, c, "pd")) {
         mw->prev = 0;
+        /* TODO: GET err, GET mem, GET cursor */
         mw->err = pstack_dup(mw->mem, mw->cursor);
         return;
     }
@@ -888,6 +986,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* pR: pstack rot */
     if (iscmd(mw, c, "pR")) {
         mw->prev = 0;
+        /* SET err, GET mem, GET cursor */
         mw->err = pstack_rot(mw->mem, mw->cursor);
         return;
     }
@@ -896,11 +995,15 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "ph")) {
         int which;
         mw->prev = 0;
+        /* TODO: GET rw */
         which = mw->rw & 0xF;
+        /* TODO: SET rw */
         mw->rw >>= 4;
         if (which == 0) {
+            /* TODO: SET err, GET mem, GET cursor */
             mw->err = pstack_hold(mw->mem, mw->cursor);
         } else if (which == 1) {
+            /* TODO: GET mem, GET cursor, SET err */
             mw->err = pstack_unhold(mw->mem, mw->cursor);
         }
         return;
@@ -909,6 +1012,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* ps: pstack swap */
     if (iscmd(mw, c, "ps")) {
         mw->prev = 0;
+        /* TODO: SET err, GET mem, GET cursor */
         mw->err = pstack_swap(mw->mem, mw->cursor);
         return;
     }
@@ -918,11 +1022,14 @@ void parse_memwrite(memwrite *mw, char c)
         int type;
 
         mw->prev = 0;
+        /* TODO: GET rw */
         type = mw->rw & 0xF;
+        /* TODO: SET rw */
         mw->rw >>= 4;
 
         if (type == 0) {
             /* extract data component from param word */
+            /* TODO: SET rw */
             mw->rw >>= 2;
             return;
         }
@@ -933,6 +1040,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* mx: memory aux */
     if (iscmd(mw, c, "mx")) {
         mw->prev = 0;
+        /* TODO: set rw, GET mem, GET cursor */
         mw->rw = mem_aux(mw->mem, mw->cursor);
 
         return;
@@ -946,10 +1054,15 @@ void parse_memwrite(memwrite *mw, char c)
         ws = 0;
 
         /* extract arguments from RW register */
+        /* TODO: GET rw */
         end = mw->rw & 0xFF;
+        /* TODO: SET rw */
         mw->rw >>= 8;
+        /* TODO: GET rw */
         start = mw->rw & 0xFF;
+        /* TODO: SET rw */
         mw->rw >>= 8;
+        /* TODO: GET rw */
         addr = mw->rw & 0xFFFF;
 
         /* build up word slice */
@@ -957,6 +1070,7 @@ void parse_memwrite(memwrite *mw, char c)
             ((start & 0x1f) << 16) |
             ((end & 0x1f) << 21);
 
+        /* TODO: SET rw, GET mem */
         mw->rw = array_value(mw->mem, ws);
     }
 
@@ -965,25 +1079,32 @@ void parse_memwrite(memwrite *mw, char c)
         uint16_t ctx;
         int rc;
         mw->prev = 0;
+        /* TODO: GET mem, GET cursor */
         ctx = context_init(mw->mem, mw->cursor);
     
         /* extra context goodies */
 
+        /* TODO: GET mem */
         rc = context_allocator_setup(mw->mem, ctx);
         if (rc) {
+            /* TODO: SET err */
             mw->err = 1;
             return;
         }
 
+        /* TODO: GET mem */
         rc = context_pstack_setup(mw->mem, ctx);
 
         if (rc) {
+            /* TODO: SET err */
             mw->err = 2;
             return;
         }
 
+        /* TODO: SET err */
         mw->err = 0;
 
+        /* TODO: SET rw */
         mw->rw = ctx;
 
         return;
@@ -992,6 +1113,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* sw: swap */
     if (iscmd(mw, c, "sw")) {
         mw->prev = 0;
+        /* TODO: GET mem, GET cursor, SET err */
         mw->err = barray_swap(mw->mem, mw->cursor);
         return;
     }
@@ -999,6 +1121,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* ac: array create */
     if (iscmd(mw, c, "ac")) {
         mw->prev = 0;
+        /* TODO: SET err, GET mem, GET cursor */
         mw->err = array_create(mw->mem, mw->cursor);
         return;
     }
@@ -1006,6 +1129,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* ar: array read */
     if (iscmd(mw, c, "ar")) {
         mw->prev = 0;
+        /* TODO: SET err, GET mem, GET cursor */
         mw->err = array_read(mw->mem, mw->cursor);
         return;
     }
@@ -1013,6 +1137,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* av: array value */
     if (iscmd(mw, c, "av")) {
         mw->prev = 0;
+        /* TODO: SET rw, GET mem, GET rw */
         mw->rw = array_value(mw->mem, mw->rw);
         return;
     }
@@ -1020,15 +1145,19 @@ void parse_memwrite(memwrite *mw, char c)
     /* aw: array write */
     if (iscmd(mw, c, "aw")) {
         mw->prev = 0;
+        /* TODO: SET err, GET mem, GET cursor */
         mw->err = array_write(mw->mem, mw->cursor);
         return;
     }
 
     /* cu: select cursor */
+    /* TODO: select cursor? */
     if (iscmd(mw, c, "cu")) {
         int cur;
         mw->prev = 0;
+        /* TODO: GET rw */
         cur = mw->rw & 1;
+        /* TODO: SET rw */
         mw->rw >>= 4;
 
         if (cur) {
@@ -1047,6 +1176,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* dr: stack drop */
     if (iscmd(mw, c, "dr")) {
         mw->prev = 0;
+        /* TODO: GET mem, GET cursor, SET err */
         mw->err = barray_drop(mw->mem, mw->cursor);
         return;
     }
@@ -1062,15 +1192,18 @@ void parse_memwrite(memwrite *mw, char c)
 
         mw->prev = 0;
 
+        /* TODO: GET mem */
         mem = mw->mem;
 
         /* get stack */
+        /* TODO: GET cursor */
         stk = mw->cursor;
 
         /* stack args: context, array */
 
         rc = barray_pop(mem, stk, &x);
         if (rc) {
+            /* TODO: SET err */
             mw->err = 2;
             return;
         }
@@ -1079,6 +1212,7 @@ void parse_memwrite(memwrite *mw, char c)
         x = 0;
         rc = barray_pop(mem, stk, &x);
         if (rc) {
+            /* TODO: SET err */
             mw->err = 1;
             return;
         }
@@ -1089,6 +1223,7 @@ void parse_memwrite(memwrite *mw, char c)
         iter = 0;
         rc = iter_alloc(mem, ctx, &iter);
         if (rc) {
+            /* TODO: SET err */
             mw->err = 6;
             return;
         }
@@ -1098,6 +1233,7 @@ void parse_memwrite(memwrite *mw, char c)
 
         rc = iter_init(mem, iter);
         if (rc) {
+            /* TODO: SET err */
             mw->err = 3;
             return;
         }
@@ -1106,6 +1242,7 @@ void parse_memwrite(memwrite *mw, char c)
         rc = iter_array(mem, iter, arr);
 
         if (rc) {
+            /* TODO: SET err */
             mw->err = 4;
             return;
         }
@@ -1113,10 +1250,12 @@ void parse_memwrite(memwrite *mw, char c)
         /* push iter to stack */
         rc = barray_append(mem, stk, iter);
         if (rc) {
+            /* TODO: SET err */
             mw->err = 5;
             return;
         }
 
+        /* TODO: SET err */
         mw->err = 0;
         return;
     }
@@ -1137,11 +1276,13 @@ void parse_memwrite(memwrite *mw, char c)
         mem = mw->mem;
 
         /* get stack */
+        /* TODO: GET cursor */
         stk = mw->cursor;
 
         /* stack args: iterator */
         rc = barray_pop(mem, stk, &val);
         if (rc) {
+            /* TODO: SET err */
             mw->err = 1;
             return;
         }
@@ -1153,6 +1294,7 @@ void parse_memwrite(memwrite *mw, char c)
 
         rc = barray_append(mem, stk, iter);
         if (rc) {
+            /* TODO: SET err */
             mw->err = 2;
             return;
         }
@@ -1160,6 +1302,7 @@ void parse_memwrite(memwrite *mw, char c)
         /* push slice */
         rc = barray_append(mem, stk, slice);
         if (rc) {
+            /* TODO: SET err */
             mw->err = 4;
             return;
         }
@@ -1179,6 +1322,8 @@ int main (int argc, char *argv[])
     mw = malloc(sizeof(memwrite));
     mode = PRINT;
     memwrite_init(mw);
+    mw->vm = malloc(sonilo_vm_sizeof());
+    sonilo_vm_init(mw->vm);
     running = 1;
     while (!feof(stdin) && running) {
         char c;
@@ -1215,6 +1360,7 @@ int main (int argc, char *argv[])
         /* print mode */
         fputc(c, stdout);
     }
+    free(mw->vm);
     free(mw);
     return 0;
 }
