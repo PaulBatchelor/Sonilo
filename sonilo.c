@@ -104,6 +104,7 @@ int sonilo_init(sonilo *s)
 int sonilo_vm_init(sonilo_vm *vm)
 {
     /* TODO: implement */
+    vm->rw = 0;
     return 1;
 }
 
@@ -784,19 +785,18 @@ void sonilo_destroy(sonilo *s)
 
 uint32_t sonilo_vm_rw_get(sonilo_vm *vm)
 {
-    /* TODO: implement */
-    return 0;
+    return vm->rw;
 }
 
 void sonilo_vm_rw_set(sonilo_vm *vm, uint32_t rw)
 {
-    /* TODO: implement */
+    vm->rw = rw;
 }
 
 uint32_t* sonilo_vm_rw_ptr(sonilo_vm *vm)
 {
     /* TODO: implement */
-    return NULL;
+    return &vm->rw;
 }
 
 uint32_t sonilo_vm_err_get(sonilo_vm *vm)
@@ -856,6 +856,21 @@ void sonilo_vm_write(sonilo_vm *vm, uint32_t w)
 
 int sonilo_vm_char(sonilo_vm *vm, char c)
 {
-    /* TODO: implement */
+    int b;
+    uint32_t rw;
+    rw = sonilo_vm_rw_get(vm);
+    if (c == '\'') {
+        /* shift 1-bit. assuming 3-characters, will make
+         * it align to 16 bits */
+        rw <<= 1;
+        sonilo_vm_rw_set(vm, rw);
+        return 0;
+    }
+    b = instr_char_sym(c);
+    if (b < 0) return 1;
+    rw <<= 5;
+    rw |= b;
+    sonilo_vm_rw_set(vm, rw);
+    return 1;
     return 1;
 }
