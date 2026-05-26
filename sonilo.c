@@ -103,8 +103,10 @@ int sonilo_init(sonilo *s)
 
 int sonilo_vm_init(sonilo_vm *vm)
 {
+    uint32_t i;
     /* TODO: implement */
     vm->rw = 0;
+    for (i = 0; i < 0x10000; i++) vm->mem[i] = 0;
     return 1;
 }
 
@@ -812,8 +814,7 @@ void sonilo_vm_err_set(sonilo_vm *vm, uint32_t err)
 
 uint32_t* sonilo_vm_mem(sonilo_vm *vm)
 {
-    /* TODO: implement */
-    return NULL;
+    return vm->mem;
 }
 
 uint32_t* sonilo_vm_memcur(sonilo_vm *vm)
