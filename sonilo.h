@@ -199,8 +199,8 @@ void sonilo_vm_cursor_select(sonilo_vm *vm, int which);
 uint16_t* sonilo_vm_cursor_ptr(sonilo_vm *vm);
 
 /* read/write words to memory based on cursor location */
-uint32_t sonilo_vm_read(sonilo_vm *vm);
-void sonilo_vm_write(sonilo_vm *vm, uint32_t w);
+void sonilo_vm_read(sonilo_vm *vm);
+void sonilo_vm_write(sonilo_vm *vm);
 
 /* addchar: append a character to RW using 5-bit encoding */
 int sonilo_vm_char(sonilo_vm *vm, char c);

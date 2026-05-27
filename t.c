@@ -282,26 +282,14 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* wr: write word to memory */
     if (iscmd(mw, c, "wr")) {
-        /* TODO: WRITE word operation */
-        uint32_t rw;
-        uint32_t *mem;
-        uint16_t cur;
-        mem = sonilo_vm_mem(vm);
-        rw = sonilo_vm_rw_get(vm);
-        cur = sonilo_vm_cursor_get(vm);
-        mem[cur] = rw;
+        sonilo_vm_write(vm);
         mw->prev = 0;
         return;
     }
 
     /* read word from memory to word register */
     if (iscmd(mw, c, "rd")) {
-        uint32_t *mem;
-        uint16_t cur;
-        /* TODO: READ word operation */
-        cur = sonilo_vm_cursor_get(vm);
-        mem = sonilo_vm_mem(vm);
-        sonilo_vm_rw_set(vm, mem[cur]);
+        sonilo_vm_read(vm);
         mw->prev = 0;
         return;
     }

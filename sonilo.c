@@ -869,15 +869,14 @@ uint16_t* sonilo_vm_cursor_ptr(sonilo_vm *vm)
     return &vm->cursor;
 }
 
-uint32_t sonilo_vm_read(sonilo_vm *vm)
+void sonilo_vm_read(sonilo_vm *vm)
 {
-    /* TODO: implement */
-    return 0;
+    vm->rw = vm->mem[vm->cursor];
 }
 
-void sonilo_vm_write(sonilo_vm *vm, uint32_t w)
+void sonilo_vm_write(sonilo_vm *vm)
 {
-    /* TODO: implement */
+    vm->mem[vm->cursor] = vm->rw;
 }
 
 int sonilo_vm_char(sonilo_vm *vm, char c)
