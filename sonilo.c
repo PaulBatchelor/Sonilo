@@ -34,11 +34,11 @@ struct sonilo_vm {
     uint32_t err;
 
     /* w_2: a/b cursors (1 word) */
-    uint16_t a, b;
+    uint16_t cursor, alt;
 
     /* w_3: switch/blocklist */
     /* switch flag indicating which cursor (short) */
-    uint16_t cur;
+    uint16_t swap;
 
     /* pointer to blocklist (short) */
     uint16_t blocklist;
@@ -107,6 +107,9 @@ int sonilo_vm_init(sonilo_vm *vm)
     /* TODO: implement */
     vm->rw = 0;
     for (i = 0; i < 0x10000; i++) vm->mem[i] = 0;
+    vm->cursor = 0;
+    vm->alt = 0;
+    vm->swap = 0;
     return 1;
 }
 
@@ -825,23 +828,39 @@ uint32_t* sonilo_vm_memcur(sonilo_vm *vm)
 
 uint32_t sonilo_vm_cursor_get(sonilo_vm *vm)
 {
-    /* TODO: implement */
-    return 0;
+    return vm->cursor;
 }
 
-void sonilo_vm_cursor_set(sonilo_vm *vm)
+void sonilo_vm_cursor_set(sonilo_vm *vm, uint16_t cur)
 {
-    /* TODO: implement */
+    vm->cursor = cur;
 }
 
 void sonilo_vm_cursor_swap(sonilo_vm *vm)
 {
-    /* TODO: implement */
+    uint16_t tmp;
+    tmp = vm->cursor;
+    vm->cursor = vm->alt;
+    vm->alt = tmp;
+    vm->swap ^= 1;
 }
 
 void sonilo_vm_cursor_select(sonilo_vm *vm, int which)
 {
-    /* TODO: implement */
+    if (which) {
+        /* want: cursor 1 */
+        /* swap if unswapped to make cursor 1 active */
+        if (!vm->swap) sonilo_vm_cursor_swap(vm);
+    } else {
+        /* want: cursor 0 */
+        /* if swapped, swap to get cursor 0 active */
+        if (vm->swap) sonilo_vm_cursor_swap(vm);
+    }
+}
+
+uint16_t* sonilo_vm_cursor_ptr(sonilo_vm *vm)
+{
+    return &vm->cursor;
 }
 
 uint32_t sonilo_vm_read(sonilo_vm *vm)

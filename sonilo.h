@@ -192,9 +192,10 @@ uint32_t* sonilo_vm_memcur(sonilo_vm *vm);
 
 /* cursor */
 uint32_t sonilo_vm_cursor_get(sonilo_vm *vm);
-void sonilo_vm_cursor_set(sonilo_vm *vm);
+void sonilo_vm_cursor_set(sonilo_vm *vm, uint16_t cur);
 void sonilo_vm_cursor_swap(sonilo_vm *vm);
 void sonilo_vm_cursor_select(sonilo_vm *vm, int which);
+uint16_t* sonilo_vm_cursor_ptr(sonilo_vm *vm);
 
 /* read/write words to memory based on cursor location */
 uint32_t sonilo_vm_read(sonilo_vm *vm);

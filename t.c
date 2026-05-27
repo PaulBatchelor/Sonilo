@@ -43,13 +43,6 @@ int update_mode(char c) {
 }
 
 typedef struct memwrite {
-    /* cursor */
-    uint16_t cursor;
-    /* alt cursor */
-    uint16_t alt;
-    /* swap bit */
-    uint8_t swap;
-
     /* errors */
     uint32_t err;
 
@@ -162,22 +155,10 @@ static uint32_t reverse(uint32_t *mem, uint16_t dat)
     return 0;
 }
 
-/* TODO: build sonilo_vm_curswap */
-static void swap_cursors(memwrite *mw)
-{
-    uint16_t tmp;
-    tmp = mw->cursor;
-    mw->cursor = mw->alt;
-    mw->alt = tmp;
-    mw->swap ^= 1;
-}
-
 void memwrite_init(memwrite *mw)
 {
     mw->prev = 0;
     mw->err = 0;
-    mw->alt = 0;
-    mw->swap = 0;
 
     /* TODO: rework to use updated instr interface */
     instr_map_init(&mw->instr);
@@ -297,10 +278,10 @@ void parse_memwrite(memwrite *mw, char c)
         mw->prev = 0;
         rw = 0;
         /* DONE: GET rw
-         * TODO: SET cursor
+         * DONE: SET cursor
          */
         rw = sonilo_vm_rw_get(vm);
-        mw->cursor = rw & 0xFFFF;
+        sonilo_vm_cursor_set(vm, rw & 0xFFFF);
         return;
     }
 
@@ -309,9 +290,11 @@ void parse_memwrite(memwrite *mw, char c)
         /* TODO: WRITE word operation */
         uint32_t rw;
         uint32_t *mem;
+        uint16_t cur;
         mem = sonilo_vm_mem(vm);
         rw = sonilo_vm_rw_get(vm);
-        mem[mw->cursor] = rw;
+        cur = sonilo_vm_cursor_get(vm);
+        mem[cur] = rw;
         mw->prev = 0;
         return;
     }
@@ -319,9 +302,11 @@ void parse_memwrite(memwrite *mw, char c)
     /* read word from memory to word register */
     if (iscmd(mw, c, "rd")) {
         uint32_t *mem;
+        uint16_t cur;
         /* TODO: READ word operation */
+        cur = sonilo_vm_cursor_get(vm);
         mem = sonilo_vm_mem(vm);
-        sonilo_vm_rw_set(vm, mem[mw->cursor]);
+        sonilo_vm_rw_set(vm, mem[cur]);
         mw->prev = 0;
         return;
     }
@@ -329,8 +314,10 @@ void parse_memwrite(memwrite *mw, char c)
     /* bi: init blocklist */
     if (iscmd(mw, c, "bi")) {
         /* DONE: GET mem
-         * TODO: GET cursor */
-        blocklist_init(sonilo_vm_mem(vm), mw->cursor);
+         * DONE: GET cursor */
+        uint16_t cur;
+        cur = sonilo_vm_cursor_get(vm);
+        blocklist_init(sonilo_vm_mem(vm), cur);
         mw->prev = 0;
         return;
     }
@@ -338,11 +325,13 @@ void parse_memwrite(memwrite *mw, char c)
     /* ba: allocate block, write block id to word register */
     if (iscmd(mw, c, "ba")) {
         /* DONE: SET RW
-         * TODO: GET cursor
+         * DONE: GET cursor
          * DONE: GET mem
          */
         uint32_t rw;
-        rw = blocklist_pop(sonilo_vm_mem(vm), mw->cursor);
+        uint16_t cur;
+        cur = sonilo_vm_cursor_get(vm);
+        rw = blocklist_pop(sonilo_vm_mem(vm), cur);
         sonilo_vm_rw_set(vm, rw);
         /* TODO SET err */
         if (rw == 0) mw->err = 1;
@@ -354,22 +343,26 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "bf")) {
         /* TODO: SET err
          * DONE: GET mem
-         * TODO: GET cursor
+         * DONE: GET cursor
          * DONE: GET rw
          */
         uint32_t rw;
+        uint32_t cur;
+        cur = sonilo_vm_cursor_get(vm);
         rw = sonilo_vm_rw_get(vm);
-        mw->err = blocklist_push(sonilo_vm_mem(vm), mw->cursor, rw & 0x3ff);
+        mw->err = blocklist_push(sonilo_vm_mem(vm), cur, rw & 0x3ff);
         mw->prev = 0;
         return;
     }
 
     /* si: initialize bitset */
     if (iscmd(mw, c, "si")) {
+        uint16_t cur;
         /* DONE: GET mem
-         * TODO: GET cursor
+         * DONE: GET cursor
          */
-        bitset_init(sonilo_vm_mem(vm), mw->cursor);
+        cur = sonilo_vm_cursor_get(vm);
+        bitset_init(sonilo_vm_mem(vm), cur);
         mw->prev = 0;
         return;
     }
@@ -377,12 +370,14 @@ void parse_memwrite(memwrite *mw, char c)
     /* sa: add item to bitset */
     if (iscmd(mw, c, "sa")) {
         /* DONE: GET mem
-         * TODO: GET cursor
+         * DONE: GET cursor
          * DONE: GET rw
          */
         uint32_t rw;
+        uint16_t cur;
+        cur = sonilo_vm_cursor_get(vm);
         rw = sonilo_vm_rw_get(vm);
-        bitset_add(sonilo_vm_mem(vm), mw->cursor, rw);
+        bitset_add(sonilo_vm_mem(vm), cur, rw);
         mw->prev = 0;
         return;
     }
@@ -390,12 +385,14 @@ void parse_memwrite(memwrite *mw, char c)
     /* se: check to see if item exists in set */
     if (iscmd(mw, c, "se")) {
         /* DONE: GET mem
-         * TODO: GET cursor
+         * DONE: GET cursor
          * DONE: GET/GET rw
          */
         uint32_t rw;
+        uint16_t cur;
+        cur = sonilo_vm_cursor_get(vm);
         rw = sonilo_vm_rw_get(vm);
-        rw = bitset_exists(sonilo_vm_mem(vm), mw->cursor, rw);
+        rw = bitset_exists(sonilo_vm_mem(vm), cur, rw);
         sonilo_vm_rw_set(vm, rw);
         mw->prev = 0;
         return;
@@ -404,12 +401,14 @@ void parse_memwrite(memwrite *mw, char c)
     /* sr: remove item from bitset */
     if (iscmd(mw, c, "sr")) {
         /* DONE: GET mem
-         * TODO: GET cursor
+         * DONE: GET cursor
          * DONE: GET rw
          */
         uint32_t rw;
+        uint16_t cur;
+        cur = sonilo_vm_cursor_get(vm);
         rw = sonilo_vm_rw_get(vm);
-        bitset_remove(sonilo_vm_mem(vm), mw->cursor, rw);
+        bitset_remove(sonilo_vm_mem(vm), cur, rw);
         mw->prev = 0;
         return;
     }
@@ -419,6 +418,7 @@ void parse_memwrite(memwrite *mw, char c)
         int offset;
         uint32_t rw;
         uint32_t *mem;
+        uint16_t cur;
 
         mem = sonilo_vm_mem(vm);
         mw->prev = 0;
@@ -427,9 +427,10 @@ void parse_memwrite(memwrite *mw, char c)
         rw = sonilo_vm_rw_get(vm);
         offset = rw & 0x3f;
         /* DONE: SET rw
-         * TODO: GET cursor
+         * DONE: GET cursor
          */
-        rw = mem[mw->cursor + offset];
+        cur = sonilo_vm_cursor_get(vm);
+        rw = mem[cur + offset];
         sonilo_vm_rw_set(vm, rw);
         return;
     }
@@ -440,13 +441,15 @@ void parse_memwrite(memwrite *mw, char c)
         uint16_t p_top, p_block, p_avail, p_tags;
         uint8_t sp;
         uint32_t *mem;
+        uint16_t cur;
         mw->prev = 0;
 
         /* DONE: GET mem
-         * TODO: GET cursor
+         * DONE: GET cursor
          */
+        cur = sonilo_vm_cursor_get(vm);
         mem = sonilo_vm_mem(vm);
-        stk = &mem[mw->cursor];
+        stk = &mem[cur];
         sp = stk[0];
 
         if (sp < 4) {
@@ -475,11 +478,11 @@ void parse_memwrite(memwrite *mw, char c)
          * then add an offset to skip the block list
          * block list size: 2^16/64 = 1024. 1024 blocks = 1024 words
          */
-        /* TODO: SET cursor
-         * TODO: GET rw
+        /* DONE: SET cursor
+         * DONE: GET rw
          */
         rw = sonilo_vm_rw_get(vm);
-        mw->cursor = old_block_to_word(rw); 
+        sonilo_vm_cursor_set(vm, old_block_to_word(rw)); 
         mw->prev = 0;
         return;
     }
@@ -491,14 +494,16 @@ void parse_memwrite(memwrite *mw, char c)
         uint16_t p_top, k;
         uint32_t rw;
         uint32_t *mem;
+        uint16_t cur;
 
         mw->prev = 0;
 
-        /* TODO: GET cursor
+        /* DONE: GET cursor
          * DONE: GET mem
          */
+        cur = sonilo_vm_cursor_get(vm);
         mem = sonilo_vm_mem(vm);
-        stk = &mem[mw->cursor];
+        stk = &mem[cur];
         sp = stk[0];
 
         if (sp < 2) {
@@ -526,14 +531,16 @@ void parse_memwrite(memwrite *mw, char c)
         uint8_t sp;
         uint32_t *stk, *mem;
         uint16_t p_top, L, k;
+        uint16_t cur;
 
         mw->prev = 0;
 
         mem = sonilo_vm_mem(vm);
 
         /* DONE: GET mem
-         * TODO: GET cursor */
-        stk = &mem[mw->cursor];
+         * DONE: GET cursor */
+        cur = sonilo_vm_cursor_get(vm);
+        stk = &mem[cur];
         sp = stk[0];
 
         if (sp < 3) {
@@ -562,22 +569,27 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* ai: initialize array */
     if (iscmd(mw, c, "ai")) {
+        uint16_t cur;
         mw->prev = 0;
         /* DONE: GET mem
-         * TODO: GET cursor
+         * DONE: GET cursor
          */
-        barray_init(sonilo_vm_mem(vm), mw->cursor);
+        cur = sonilo_vm_cursor_get(vm);
+        barray_init(sonilo_vm_mem(vm), cur);
         return;
     }
 
     /* al: get array length */
     if (iscmd(mw, c, "al")) {
         uint32_t rw;
+        uint16_t cur;
+
         mw->prev = 0;
         /* DONE: GET mem
-         * TODO: GET cursor
+         * DONE: GET cursor
          */
-        rw = barray_length(sonilo_vm_mem(vm), mw->cursor);
+        cur = sonilo_vm_cursor_get(vm);
+        rw = barray_length(sonilo_vm_mem(vm), cur);
         sonilo_vm_rw_set(vm, rw);
         return;
     }
@@ -593,26 +605,30 @@ void parse_memwrite(memwrite *mw, char c)
     /* aa: append value to array */
     if (iscmd(mw, c, "aa")) {
         uint32_t rw;
+        uint16_t cur;
         mw->prev = 0;
         /* TODO: SET err
          * DONE: GET mem
-         * TODO: GET cursor
+         * DONE: GET cursor
          * DONE: GET rw
          */
+        cur = sonilo_vm_cursor_get(vm);
         rw = sonilo_vm_rw_get(vm);
-        mw->err = barray_append(sonilo_vm_mem(vm), mw->cursor, rw);
+        mw->err = barray_append(sonilo_vm_mem(vm), cur, rw);
         return;
     }
 
     /* ap: pop word from array */
     if (iscmd(mw, c, "ap")) {
         /* DONE: GET mem
-         * TODO: GET cursor
+         * DONE: GET cursor
          * DONE: GET rw ptr
          * TODO: SET err */
         uint32_t *rw;
+        uint16_t cur;
+        cur = sonilo_vm_cursor_get(vm);
         rw = sonilo_vm_rw_ptr(vm);
-        mw->err = barray_pop(sonilo_vm_mem(vm), mw->cursor, rw);
+        mw->err = barray_pop(sonilo_vm_mem(vm), cur, rw);
         mw->prev = 0;
         return;
     }
@@ -656,8 +672,10 @@ void parse_memwrite(memwrite *mw, char c)
     /* rc: read cursor into rw */
     if (iscmd(mw, c, "rc")) {
         /* DONE: SET rw
-         * TODO: GET cursor */
-        sonilo_vm_rw_set(vm, mw->cursor);
+         * DONE: GET cursor */
+        uint16_t cur;
+        cur = sonilo_vm_cursor_get(vm);
+        sonilo_vm_rw_set(vm, cur);
         mw->prev = 0;
         return;
     }
@@ -695,12 +713,15 @@ void parse_memwrite(memwrite *mw, char c)
         uint32_t *stk;
         uint16_t x, y;
         uint32_t *mem;
+        uint16_t cur;
+
         mw->prev = 0;
 
         /* DONE: GET mem
-         * TODO: GET cursor */
+         * DONE: GET cursor */
+        cur = sonilo_vm_cursor_get(vm);
         mem = sonilo_vm_mem(vm);
-        stk = &mem[mw->cursor];
+        stk = &mem[cur];
         sp = stk[0];
 
         if (sp < 2) {
@@ -721,13 +742,16 @@ void parse_memwrite(memwrite *mw, char c)
     /* zp: initialize zero page */
     if (iscmd(mw, c, "zp")) {
         uint32_t rw;
+        uint16_t cur;
+
         mw->prev = 0;
         /* DONE: GET mem,
-         * TODO: GET cursor
+         * DONE: GET cursor
          * DONE: GET rw
          * DONE: SET rw */
+        cur = sonilo_vm_cursor_get(vm);
         rw = sonilo_vm_rw_get(vm);
-        rw = zero_page_init(sonilo_vm_mem(vm), mw->cursor, rw);
+        rw = zero_page_init(sonilo_vm_mem(vm), cur, rw);
         sonilo_vm_rw_set(vm, rw);
         return;
     }
@@ -742,6 +766,8 @@ void parse_memwrite(memwrite *mw, char c)
         uint16_t off;
         uint16_t val;
         uint8_t sz;
+        uint16_t cur;
+
         mw->prev = 0;
 
         /* DONE: GET rw */
@@ -755,8 +781,9 @@ void parse_memwrite(memwrite *mw, char c)
         off = rw & 0xFFF;
 
         /* DONE: GET mem
-         * TODO: GET cursor */
-        bits_set(sonilo_vm_mem(vm), (mw->cursor << 4) + off, sz, val);
+         * DONE: GET cursor */
+        cur = sonilo_vm_cursor_get(vm);
+        bits_set(sonilo_vm_mem(vm), (cur << 4) + off, sz, val);
 
         return;
     }
@@ -767,6 +794,8 @@ void parse_memwrite(memwrite *mw, char c)
         uint32_t rw;
         uint16_t off;
         uint8_t sz;
+        uint16_t cur;
+
         mw->prev = 0;
 
         /* DONE: GET rw */
@@ -778,9 +807,10 @@ void parse_memwrite(memwrite *mw, char c)
         off = rw & 0xFFF;
 
         /* DONE: GET mem
-         * TODO: GET cursor
+         * DONE: GET cursor
          * DONE: SET rw */
-        rw = bits_get(sonilo_vm_mem(vm), (mw->cursor << 4) + off, sz);
+        cur = sonilo_vm_cursor_get(vm);
+        rw = bits_get(sonilo_vm_mem(vm), (cur << 4) + off, sz);
         sonilo_vm_rw_set(vm, rw);
 
         return;
@@ -796,12 +826,15 @@ void parse_memwrite(memwrite *mw, char c)
     /* bm: block to memory address */
     if (iscmd(mw, c, "bm")) {
         uint32_t rw;
+        uint16_t cur;
+
         mw->prev = 0;
         /* DONE: SET rw
-         * TODO: GET cursor
+         * DONE: GET cursor
          * DONE: GET rw */
+        cur = sonilo_vm_cursor_get(vm);
         rw = sonilo_vm_rw_get(vm);
-        rw = block_to_word(mw->cursor, rw);
+        rw = block_to_word(cur, rw);
         sonilo_vm_rw_set(vm, rw);
         return;
     }
@@ -809,12 +842,15 @@ void parse_memwrite(memwrite *mw, char c)
     /* mb: memory address to block */
     if (iscmd(mw, c, "mb")) {
         uint32_t rw;
+        uint16_t cur;
+
         mw->prev = 0;
-        /* TODO: GET cursor
+        /* DONE: GET cursor
          * DONE: GET rw
          * DONE: SET rw */
         rw = sonilo_vm_rw_get(vm);
-        rw = word_to_block(mw->cursor, rw);
+        cur = sonilo_vm_cursor_get(vm);
+        rw = word_to_block(cur, rw);
         sonilo_vm_rw_set(vm, rw);
         return;
     }
@@ -823,6 +859,8 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "jf")) {
         int jump;
         uint32_t rw;
+        uint16_t cur;
+
         mw->prev = 0;
         /* DONE: GET rw */
         rw = sonilo_vm_rw_get(vm);
@@ -830,9 +868,11 @@ void parse_memwrite(memwrite *mw, char c)
         /* DONE: SET rw */
         rw >>= 8;
         sonilo_vm_rw_set(vm, rw);
-        /* TODO: GET cursor
-         * TODO: SET cursor */
-        mw->cursor += jump;
+        /* DONE: GET cursor
+         * DONE: SET cursor */
+        cur = sonilo_vm_cursor_get(vm);
+        cur += jump;
+        sonilo_vm_cursor_set(vm, cur);
         return;
     }
 
@@ -840,16 +880,19 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "jb")) {
         int jump;
         uint32_t rw;
+        uint16_t cur;
 
         mw->prev = 0;
-        /* TODO: GET cursor */
+        /* DONE: GET cursor */
         /* DONE: GET rw */
+        cur = sonilo_vm_cursor_get(vm);
         rw = sonilo_vm_rw_get(vm);
         jump = rw & 0xFF;
         /* DONE : SET rw */
         rw >>= 8;
-        /* TODO: SET cursor */
-        mw->cursor -= jump;
+        /* DONE: SET cursor */
+        cur -= jump;
+        sonilo_vm_cursor_set(vm, cur);
         sonilo_vm_rw_set(vm, rw);
         return;
     }
@@ -857,7 +900,7 @@ void parse_memwrite(memwrite *mw, char c)
     /* sc: swap cursor */
     if (iscmd(mw, c, "sc")) {
         mw->prev = 0;
-        swap_cursors(mw);
+        sonilo_vm_cursor_swap(vm);
         return;
     }
 
@@ -869,8 +912,8 @@ void parse_memwrite(memwrite *mw, char c)
         /* DONE : GET rw */
         rw = sonilo_vm_rw_get(vm);
         mw->prev = 0;
-        /* TODO: GET cursor */
-        lsb = mw->cursor;
+        /* DONE: GET cursor */
+        lsb = sonilo_vm_cursor_get(vm);
         msb = rw & 0xFFFF;
 
         /* DONE: SET rw */
@@ -882,12 +925,14 @@ void parse_memwrite(memwrite *mw, char c)
     
     /* sn: number of elements in bitset */
     if (iscmd(mw, c, "sn")) {
+        uint16_t cur;
         mw->prev = 0;
 
         /* DONE: SET rw
-         * TODO: GET cursor
+         * DONE: GET cursor
          * DONE: GET mem */
-        sonilo_vm_rw_set(vm, bitset_len(sonilo_vm_mem(vm), mw->cursor));
+        cur = sonilo_vm_cursor_get(vm);
+        sonilo_vm_rw_set(vm, bitset_len(sonilo_vm_mem(vm), cur));
         return;
     }
 
@@ -941,49 +986,58 @@ void parse_memwrite(memwrite *mw, char c)
     /* bx: execute block */
     if (iscmd(mw, c, "bx")) {
         uint32_t *rw;
+        uint16_t cur;
         mw->prev = 0;
         rw = sonilo_vm_rw_ptr(vm);
         /* DONE: GET mem
          * TODO: GET instr (pointer)
-         * TODO: GET cursor
+         * DONE: GET cursor
          * TODO: SET err
          * DONE: GET rw (ptr) */
+        cur = sonilo_vm_cursor_get(vm);
         mw->err = instr_block(sonilo_vm_mem(vm),
-            &mw->instr, mw->cursor, rw);
+            &mw->instr, cur, rw);
         return;
     }
 
     /* ri: initialize rfcnt */
     if (iscmd(mw, c, "ri")) {
+        uint16_t cur;
         mw->prev = 0;
         /* DONE: GET mem
-         * TODO: GET cursor */
-        rc_init(sonilo_vm_mem(vm), mw->cursor);
+         * DONE: GET cursor */
+        cur = sonilo_vm_cursor_get(vm);
+        rc_init(sonilo_vm_mem(vm), cur);
         return;
     }
 
     /* ra: refcnt add */
     if (iscmd(mw, c, "ra")) {
         uint32_t rw;
+        uint16_t cur;
+
         mw->prev = 0;
         rw = sonilo_vm_rw_get(vm);
         /* DONE: GET mem
-         * TODO: GET cursor
+         * DONE: GET cursor
          * DONE: GET rw */
-        rc_add(sonilo_vm_mem(vm), mw->cursor, rw);
+        cur = sonilo_vm_cursor_get(vm);
+        rc_add(sonilo_vm_mem(vm), cur, rw);
         return;
     }
 
     /* rm: refcnt remove */
     if (iscmd(mw, c, "rm")) {
         uint32_t rw;
+        uint16_t cur;
 
         rw = sonilo_vm_rw_get(vm);
         mw->prev = 0;
         /* DONE: GET mem
-         * TODO: GET cursor
+         * DONE: GET cursor
          * DONE: GET rw */
-        rc_del(sonilo_vm_mem(vm), mw->cursor, rw);
+        cur = sonilo_vm_cursor_get(vm);
+        rc_del(sonilo_vm_mem(vm), cur, rw);
         return;
     }
 
@@ -991,6 +1045,7 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "rx")) {
         int mode;
         uint32_t rw;
+        uint16_t cur;
 
         mw->prev = 0;
 
@@ -1000,32 +1055,33 @@ void parse_memwrite(memwrite *mw, char c)
         /* DONE: SET rw */
         rw >>= 4;
 
+        cur = sonilo_vm_cursor_get(vm);
         if (mode == 0) {
             /* DONE: GET rw
              * DONE: GET mem
-             * TODO: GET cursor */
-            rw = rc_length(sonilo_vm_mem(vm), mw->cursor);
+             * DONE: GET cursor */
+            rw = rc_length(sonilo_vm_mem(vm), cur);
             sonilo_vm_rw_set(vm, rw);
             return;
         } else if (mode == 1) {
             /* DONE: GET mem
              * DONE: GET rw
-             * TODO: GET cursor
+             * DONE: GET cursor
              * DONE: SET rw */
-            rw = rc_get_count(sonilo_vm_mem(vm), mw->cursor, rw);
+            rw = rc_get_count(sonilo_vm_mem(vm), cur, rw);
             sonilo_vm_rw_set(vm, rw);
             return;
         } else if (mode == 2) {
             /* DONE: GET mem
-             * TODO: GET cursor
+             * DONE: GET cursor
              * DONE: GET rw */
-            rw = rc_get_hold(sonilo_vm_mem(vm), mw->cursor, rw);
+            rw = rc_get_hold(sonilo_vm_mem(vm), cur, rw);
             sonilo_vm_rw_set(vm, rw);
             return;
         } else if (mode == 3) {
             /* DONE: GET mem
-             * TODO: GET cursor */
-            rw = rc_get_active(sonilo_vm_mem(vm), mw->cursor);
+             * DONE: GET cursor */
+            rw = rc_get_active(sonilo_vm_mem(vm), cur);
             sonilo_vm_rw_set(vm, rw);
             return;
         }
@@ -1035,14 +1091,17 @@ void parse_memwrite(memwrite *mw, char c)
     /* rf: refcount find */
     if (iscmd(mw, c, "rf")) {
         uint32_t rw;
+        uint16_t cur;
+
         mw->prev = 0;
         rw = sonilo_vm_rw_get(vm);
         /* DONE: GET mem
-         * TODO: GET cursor
+         * DONE: GET cursor
          * DONE: GET rw
          * DONE: SET rw */
+        cur = sonilo_vm_cursor_get(vm);
         rw = sonilo_vm_rw_get(vm);
-        rw = rc_find(sonilo_vm_mem(vm), mw->cursor, rw);
+        rw = rc_find(sonilo_vm_mem(vm), cur, rw);
         sonilo_vm_rw_set(vm, rw);
         return;
     }
@@ -1051,6 +1110,7 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "ru")) {
         int mode;
         uint32_t rw;
+        uint16_t cur;
 
         mw->prev = 0;
         /* DONE: GET rw */
@@ -1059,20 +1119,21 @@ void parse_memwrite(memwrite *mw, char c)
         /* DONE: set RW */
         rw >>= 4;
 
+        cur = sonilo_vm_cursor_get(vm);
         if (mode) {
             /* decrement */
             /* DONE: GET rw
              * DONE: GET mem
-             * TODO: GET cursor
+             * DONE: GET cursor
              * DONE: SET rw */
-            rw = rc_decr(sonilo_vm_mem(vm), mw->cursor, rw);
+            rw = rc_decr(sonilo_vm_mem(vm), cur, rw);
         } else {
             /* increment */
             /* DONE: SET rw
              * DONE: GET mem
-             * TODO: GET cursor
+             * DONE: GET cursor
              * DONE: GET rw */
-            rw = rc_incr(sonilo_vm_mem(vm), mw->cursor, rw);
+            rw = rc_incr(sonilo_vm_mem(vm), cur, rw);
         }
         sonilo_vm_rw_set(vm, rw);
         return;
@@ -1082,6 +1143,7 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "rh")) {
         int mode;
         uint32_t rw;
+        uint16_t cur;
 
         rw = sonilo_vm_rw_get(vm);
         mw->prev = 0;
@@ -1090,18 +1152,19 @@ void parse_memwrite(memwrite *mw, char c)
         /* DONE: SET RW */
         rw >>= 4;
 
+        cur = sonilo_vm_cursor_get(vm);
         if (mode) {
             /* unhold */
             /* DONE: GET mem
-             * TODO: GET cursor
+             * DONE: GET cursor
              * DONE: GET rw */
-            rc_unhold(sonilo_vm_mem(vm), mw->cursor, rw);
+            rc_unhold(sonilo_vm_mem(vm), cur, rw);
         } else {
             /* hold */
             /* DONE: GET mem
-             * TODO: GET cursor
+             * DONE: GET cursor
              * DONE: GET rw */
-            rc_hold(sonilo_vm_mem(vm), mw->cursor, rw);
+            rc_hold(sonilo_vm_mem(vm), cur, rw);
         }
         sonilo_vm_rw_set(vm, rw);
         return;
@@ -1109,29 +1172,35 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* rs: refcount sweep */
     if (iscmd(mw, c, "rs")) {
+        uint16_t cur;
         mw->prev = 0;
         /* DONE: GET mem
-         * TODO: GET cursor */
-        rc_sweep(sonilo_vm_mem(vm), mw->cursor);
+         * DONE: GET cursor */
+        cur = sonilo_vm_cursor_get(vm);
+        rc_sweep(sonilo_vm_mem(vm), cur);
         return;
     }
     
     /* rg: refcount get */
     if (iscmd(mw, c, "rg")) {
+        uint16_t cur;
         mw->prev = 0;
         /* DONE: SET rw
          * DONE: GET mem
-         * TODO: GET cursor */
-        sonilo_vm_rw_set(vm, rc_get(sonilo_vm_mem(vm), mw->cursor));
+         * DONE: GET cursor */
+        cur = sonilo_vm_cursor_get(vm);
+        sonilo_vm_rw_set(vm, rc_get(sonilo_vm_mem(vm), cur));
         return;
     }
 
     /* pi: pstack init */
     if (iscmd(mw, c, "pi")) {
+        uint16_t cur;
         mw->prev = 0;
         /* DONE: GET mem
-         * TODO: GET cursor */
-        pstack_init(sonilo_vm_mem(vm), mw->cursor);
+         * DONE: GET cursor */
+        cur = sonilo_vm_cursor_get(vm);
+        pstack_init(sonilo_vm_mem(vm), cur);
         return;
     }
 
@@ -1140,6 +1209,7 @@ void parse_memwrite(memwrite *mw, char c)
         int type;
         int data;
         uint32_t rw;
+        uint16_t cur;
 
         mw->prev = 0;
 
@@ -1152,10 +1222,11 @@ void parse_memwrite(memwrite *mw, char c)
         data = rw;
         /* TODO: SET err
          * DONE: GET mem
-         * TODO: GET cursor */
+         * DONE: GET cursor */
+        cur = sonilo_vm_cursor_get(vm);
         mw->err =
             pstack_push(sonilo_vm_mem(vm),
-                mw->cursor,
+                cur,
                 pstack_param(type, data));
 
         sonilo_vm_rw_set(vm, rw);
@@ -1165,33 +1236,39 @@ void parse_memwrite(memwrite *mw, char c)
     /* po: pstack pop */
     if (iscmd(mw, c, "po")) {
         uint32_t *rw;
+        uint16_t cur;
         mw->prev = 0;
         rw = sonilo_vm_rw_ptr(vm);
         /* TODO: SET err
          * DONE: GET mem
-         * TODO: GET cursor
+         * DONE: GET cursor
          * DONE: GET rw (ptr) */
-        mw->err = pstack_pop(sonilo_vm_mem(vm), mw->cursor, rw);
+        cur = sonilo_vm_cursor_get(vm);
+        mw->err = pstack_pop(sonilo_vm_mem(vm), cur, rw);
         return;
     }
 
     /* pd: pstack dup */
     if (iscmd(mw, c, "pd")) {
+        uint16_t cur;
         mw->prev = 0;
         /* TODO: GET err
          * DONE: GET mem
-         * TODO: GET cursor */
-        mw->err = pstack_dup(sonilo_vm_mem(vm), mw->cursor);
+         * DONE: GET cursor */
+        cur = sonilo_vm_cursor_get(vm);
+        mw->err = pstack_dup(sonilo_vm_mem(vm), cur);
         return;
     }
 
     /* pR: pstack rot */
     if (iscmd(mw, c, "pR")) {
+        uint16_t cur;
         mw->prev = 0;
         /* TODO: SET err
          * DONE: GET mem
-         * TODO: GET cursor */
-        mw->err = pstack_rot(sonilo_vm_mem(vm), mw->cursor);
+         * DONE: GET cursor */
+        cur = sonilo_vm_cursor_get(vm);
+        mw->err = pstack_rot(sonilo_vm_mem(vm), cur);
         return;
     }
 
@@ -1199,6 +1276,7 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "ph")) {
         int which;
         uint32_t rw;
+        uint16_t cur;
 
         mw->prev = 0;
         rw = sonilo_vm_rw_get(vm);
@@ -1206,16 +1284,17 @@ void parse_memwrite(memwrite *mw, char c)
         which = rw & 0xF;
         /* DONE: SET rw */
         rw >>= 4;
+        cur = sonilo_vm_cursor_get(vm);
         if (which == 0) {
             /* TODO: SET err
              * DONE: GET mem
-             * TODO: GET cursor */
-            mw->err = pstack_hold(sonilo_vm_mem(vm), mw->cursor);
+             * DONE: GET cursor */
+            mw->err = pstack_hold(sonilo_vm_mem(vm), cur);
         } else if (which == 1) {
             /* DONE: GET mem
-             * TODO: GET cursor
+             * DONE: GET cursor
              * TODO: SET err */
-            mw->err = pstack_unhold(sonilo_vm_mem(vm), mw->cursor);
+            mw->err = pstack_unhold(sonilo_vm_mem(vm), cur);
         }
         sonilo_vm_rw_set(vm, rw);
         return;
@@ -1223,11 +1302,13 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* ps: pstack swap */
     if (iscmd(mw, c, "ps")) {
+        uint16_t cur;
         mw->prev = 0;
         /* TODO: SET err
          * DONE: GET mem
-         * TODO: GET cursor */
-        mw->err = pstack_swap(sonilo_vm_mem(vm), mw->cursor);
+         * DONE: GET cursor */
+        cur = sonilo_vm_cursor_get(vm);
+        mw->err = pstack_swap(sonilo_vm_mem(vm), cur);
         return;
     }
 
@@ -1256,11 +1337,13 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* mx: memory aux */
     if (iscmd(mw, c, "mx")) {
+        uint16_t cur;
         mw->prev = 0;
         /* DONE: SET rw
          * DONE: GET mem
-         * TODO: GET cursor */
-        sonilo_vm_rw_set(vm, mem_aux(sonilo_vm_mem(vm), mw->cursor));
+         * DONE: GET cursor */
+        cur = sonilo_vm_cursor_get(vm);
+        sonilo_vm_rw_set(vm, mem_aux(sonilo_vm_mem(vm), cur));
 
         return;
     }
@@ -1299,10 +1382,13 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "ci")) {
         uint16_t ctx;
         int rc;
+        uint16_t cur;
+
         mw->prev = 0;
         /* DONE: GET mem
-         * TODO: GET cursor */
-        ctx = context_init(sonilo_vm_mem(vm), mw->cursor);
+         * DONE: GET cursor */
+        cur = sonilo_vm_cursor_get(vm);
+        ctx = context_init(sonilo_vm_mem(vm), cur);
     
         /* extra context goodies */
 
@@ -1334,31 +1420,37 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* sw: swap */
     if (iscmd(mw, c, "sw")) {
+        uint16_t cur;
         mw->prev = 0;
         /* DONE: GET mem
-         * TODO: GET cursor
+         * DONE: GET cursor
          * TODO: SET err */
-        mw->err = barray_swap(sonilo_vm_mem(vm), mw->cursor);
+        cur = sonilo_vm_cursor_get(vm);
+        mw->err = barray_swap(sonilo_vm_mem(vm), cur);
         return;
     }
 
     /* ac: array create */
     if (iscmd(mw, c, "ac")) {
+        uint16_t cur;
         mw->prev = 0;
         /* TODO: SET err
          * DONE: GET mem
-         * TODO: GET cursor */
-        mw->err = array_create(sonilo_vm_mem(vm), mw->cursor);
+         * DONE: GET cursor */
+        cur = sonilo_vm_cursor_get(vm);
+        mw->err = array_create(sonilo_vm_mem(vm), cur);
         return;
     }
 
     /* ar: array read */
     if (iscmd(mw, c, "ar")) {
+        uint16_t cur;
         mw->prev = 0;
         /* TODO: SET err
          * DONE: GET mem
-         * TODO: GET cursor */
-        mw->err = array_read(sonilo_vm_mem(vm), mw->cursor);
+         * DONE: GET cursor */
+        cur = sonilo_vm_cursor_get(vm);
+        mw->err = array_read(sonilo_vm_mem(vm), cur);
         return;
     }
 
@@ -1377,11 +1469,13 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* aw: array write */
     if (iscmd(mw, c, "aw")) {
+        uint16_t cur;
         mw->prev = 0;
         /* TODO: SET err
          * DONE: GET mem
          * TODO: GET cursor */
-        mw->err = array_write(sonilo_vm_mem(vm), mw->cursor);
+        cur = sonilo_vm_cursor_get(vm);
+        mw->err = array_write(sonilo_vm_mem(vm), cur);
         return;
     }
 
@@ -1397,7 +1491,7 @@ void parse_memwrite(memwrite *mw, char c)
         cur = rw & 1;
         /* DONE: SET rw */
         rw >>= 4;
-
+#if 0
         if (cur) {
             /* want: cursor 1 */
             /* swap if unswapped to make cursor 1 active */
@@ -1407,6 +1501,8 @@ void parse_memwrite(memwrite *mw, char c)
             /* if swapped, swap to get cursor 0 active */
             if (mw->swap) swap_cursors(mw);
         }
+#endif
+        sonilo_vm_cursor_select(vm, cur);
 
         sonilo_vm_rw_set(vm, rw);
         return;
@@ -1414,11 +1510,13 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* dr: stack drop */
     if (iscmd(mw, c, "dr")) {
+        uint16_t cur;
         mw->prev = 0;
         /* DONE: GET mem
-         * TODO: GET cursor
+         * DONE: GET cursor
          * TODO: SET err */
-        mw->err = barray_drop(sonilo_vm_mem(vm), mw->cursor);
+        cur = sonilo_vm_cursor_get(vm);
+        mw->err = barray_drop(sonilo_vm_mem(vm), cur);
         return;
     }
 
@@ -1438,7 +1536,7 @@ void parse_memwrite(memwrite *mw, char c)
 
         /* get stack */
         /* TODO: GET cursor */
-        stk = mw->cursor;
+        stk = sonilo_vm_cursor_get(vm);
 
         /* stack args: context, array */
 
@@ -1517,8 +1615,8 @@ void parse_memwrite(memwrite *mw, char c)
         mem = sonilo_vm_mem(vm);
 
         /* get stack */
-        /* TODO: GET cursor */
-        stk = mw->cursor;
+        /* DONE: GET cursor */
+        stk = sonilo_vm_cursor_get(vm);
 
         /* stack args: iterator */
         rc = barray_pop(mem, stk, &val);
