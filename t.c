@@ -43,14 +43,12 @@ int update_mode(char c) {
 }
 
 typedef struct memwrite {
-    /* instruction command lookup */
-    instr_map instr;
-
     /* previous character */
     int8_t prev;
     /* 5-bit encoding mode */
     int encode;
     sonilo_vm *vm;
+    sonilo_host *host;
 } memwrite;
 
 static uint32_t incr(uint32_t *mem, uint16_t dat)
@@ -155,16 +153,14 @@ static uint32_t reverse(uint32_t *mem, uint16_t dat)
 void memwrite_init(memwrite *mw)
 {
     mw->prev = 0;
-    /* TODO: rework to use updated instr interface */
-    instr_map_init(&mw->instr);
-    instr_map_set(&mw->instr, instr_key("INC"), incr);
-    instr_map_set(&mw->instr, instr_key("SAY"), say);
-    instr_map_set(&mw->instr, instr_key("MVU"), move_up);
-    instr_map_set(&mw->instr, instr_key("MVD"), move_down);
-    instr_map_set(&mw->instr, instr_key("MVL"), move_left);
-    instr_map_set(&mw->instr, instr_key("MVR"), move_right);
-    instr_map_set(&mw->instr, instr_key("PRA"), invert);
-    instr_map_set(&mw->instr, instr_key("PRB"), reverse);
+    sonilo_host_cfunc(mw->host, instr_key("INC"), incr);
+    sonilo_host_cfunc(mw->host, instr_key("SAY"), say);
+    sonilo_host_cfunc(mw->host, instr_key("MVU"), move_up);
+    sonilo_host_cfunc(mw->host, instr_key("MVD"), move_down);
+    sonilo_host_cfunc(mw->host, instr_key("MVL"), move_left);
+    sonilo_host_cfunc(mw->host, instr_key("MVR"), move_right);
+    sonilo_host_cfunc(mw->host, instr_key("PRA"), invert);
+    sonilo_host_cfunc(mw->host, instr_key("PRB"), reverse);
     mw->encode = 0;
 }
 
@@ -961,11 +957,10 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "ex")) {
         uint32_t *rw, err;
         /* DONE: GET rw (pointer)
-         * DONE: GET mem
-         * TODO: GET instr (pointer) */
+         * DONE: GET mem */
         rw = sonilo_vm_rw_ptr(vm);
-        err = instr_ex(sonilo_vm_mem(vm),
-                &mw->instr,
+        err = sonilo_host_ex(mw->host,
+                sonilo_vm_mem(vm),
                 *rw,
                 rw);
         sonilo_vm_err_set(vm, err);
@@ -981,13 +976,11 @@ void parse_memwrite(memwrite *mw, char c)
         mw->prev = 0;
         rw = sonilo_vm_rw_ptr(vm);
         /* DONE: GET mem
-         * TODO: GET instr (pointer)
          * DONE: GET cursor
          * DONE: SET err
          * DONE: GET rw (ptr) */
         cur = sonilo_vm_cursor_get(vm);
-        err = instr_block(sonilo_vm_mem(vm),
-            &mw->instr, cur, rw);
+        err = sonilo_host_block(mw->host, sonilo_vm_mem(vm), cur, rw);
         sonilo_vm_err_set(vm, err);
         return;
     }
@@ -1672,8 +1665,10 @@ int main (int argc, char *argv[])
     mw = malloc(sizeof(memwrite));
     mode = PRINT;
     mw->vm = malloc(sonilo_vm_sizeof());
-    memwrite_init(mw);
+    mw->host = malloc(sonilo_host_sizeof());
     sonilo_vm_init(mw->vm);
+    sonilo_host_init(mw->host, mw->vm);
+    memwrite_init(mw);
     running = 1;
     while (!feof(stdin) && running) {
         char c;
@@ -1711,6 +1706,7 @@ int main (int argc, char *argv[])
         fputc(c, stdout);
     }
     free(mw->vm);
+    free(mw->host);
     free(mw);
     return 0;
 }

@@ -1,24 +1,16 @@
 #include <stdlib.h>
 #include "sonilo.h"
-#include "ins.h"
 #include "mem.h"
 #include "ugen.h"
 #include "context.h"
+#include "ins.h"
 
 int sonilo_load_ugens(sonilo *s);
 
-/* TODO: create sonilo_host struct.
- * This willl contain all the things that cannot be
- * contained inside the universe.
- * This includes things like file I/O and the C callbacks
- */
-
 struct sonilo_host {
-    instr_func func[MAX_INSTR];
-    /* TEMP: cursor pointer */
-    uint16_t *cur;
     /* instruction map */
-    instr_map_NEW *map;
+    instr_func func[MAX_INSTR];
+    instr_map_NEW map;
 };
 
 struct sonilo_vm {
@@ -110,6 +102,11 @@ int sonilo_vm_init(sonilo_vm *vm)
     vm->alt = 0;
     vm->swap = 0;
     vm->err = 0;
+
+    for (i = 0; i < MAX_INSTR; i++) {
+        vm->key[i] = 0;
+    }
+    vm->nentries = 0;
 
     /* TODO: implement */
     return 1;
@@ -897,5 +894,40 @@ int sonilo_vm_char(sonilo_vm *vm, char c)
     rw |= b;
     sonilo_vm_rw_set(vm, rw);
     return 1;
-    return 1;
+}
+
+size_t sonilo_host_sizeof(void)
+{
+    return sizeof(sonilo_host);
+}
+
+int sonilo_host_init(sonilo_host *host, sonilo_vm *vm)
+{
+    uint32_t i;
+    /* set up map interface */
+    for (i = 0; i < MAX_INSTR; i++) {
+        host->func[i] = NULL;
+    }
+    host->map.key = vm->key;
+    host->map.func = host->func;
+    host->map.nent = &vm->nentries;
+    return 0;
+}
+
+int sonilo_host_cfunc(sonilo_host *host, uint16_t key, instr_func func)
+{
+    instr_map_NEW_set(&host->map, key, func);
+    return 0;
+}
+
+int sonilo_host_ex(sonilo_host *host, uint32_t *mem, uint32_t i, uint32_t *rw)
+{
+    /* return instr_ex(mem, &host->old, i, rw); */
+    return instr_ex_NEW(mem, &host->map, i, rw);
+}
+
+int sonilo_host_block(sonilo_host *host, uint32_t *mem, uint16_t p, uint32_t *rw)
+{
+    /* return instr_block(mem, &host->old, p, rw); */
+    return instr_block_NEW(mem, &host->map, p, rw);
 }

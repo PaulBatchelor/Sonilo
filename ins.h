@@ -1,3 +1,5 @@
+#ifndef INS_H
+#define INS_H
 /* squished into remaining space of system megablock */
 #define MAX_INSTR 251
 
@@ -24,14 +26,20 @@ typedef struct {
 
 void instr_map_init(instr_map *map);
 void instr_map_set(instr_map *map, uint16_t key, instr_func func);
-void instr_map_NEW_set(instr_map *map, uint16_t key, instr_func func);
+void instr_map_NEW_set(instr_map_NEW *map, uint16_t key, instr_func func);
 instr_func instr_map_get(instr_map *map, uint16_t key);
-instr_func instr_map_NEW_get(instr_map *map, uint16_t key);
+instr_func instr_map_NEW_get(instr_map_NEW *map, uint16_t key);
 int instr_char_sym(char c);
 int instr_sym_char(int sym);
 uint16_t instr_key(const char *str);
 int instr_ex_direct(uint32_t *mem, instr_map *map, uint32_t i, uint32_t *rw);
+int instr_ex_direct_NEW(uint32_t *mem, instr_map_NEW *map, uint32_t i, uint32_t *rw);
 int instr_ex(uint32_t *mem, instr_map *map, uint32_t i, uint32_t *rw);
+int instr_ex_NEW(uint32_t *mem, instr_map_NEW *map, uint32_t i, uint32_t *rw);
 int instr_block(uint32_t *mem, instr_map *map, uint16_t p, uint32_t *rw);
+int instr_block_NEW(uint32_t *mem, instr_map_NEW *map, uint16_t p, uint32_t *rw);
 int instr_map_index(instr_map *map, uint16_t key);
+int instr_map_index_NEW(instr_map_NEW *map, uint16_t key);
 instr_func instr_map_entry(instr_map *map, int ent);
+instr_func instr_map_NEW_entry(instr_map_NEW *map, int ent);
+#endif

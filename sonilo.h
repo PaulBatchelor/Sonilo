@@ -4,8 +4,8 @@
 #include <stdint.h>
 
 typedef uint32_t (*instr_func)(uint32_t *, uint16_t);
-
 typedef struct sonilo_vm sonilo_vm;
+typedef struct sonilo_host sonilo_host;
 typedef struct sonilo sonilo;
 typedef struct sonilo_ctx {
     sonilo *s;
@@ -41,7 +41,9 @@ typedef struct sonilo_port {
 
 /* initialize sonilo VM */
 int sonilo_vm_init(sonilo_vm *vm);
+int sonilo_host_init(sonilo_host *host, sonilo_vm *vm);
 size_t sonilo_vm_sizeof(void);
+size_t sonilo_host_sizeof(void);
 int sonilo_create(sonilo **ps);
 void sonilo_destroy(sonilo *s);
 int sonilo_init(sonilo *s);
@@ -204,5 +206,9 @@ void sonilo_vm_write(sonilo_vm *vm);
 
 /* addchar: append a character to RW using 5-bit encoding */
 int sonilo_vm_char(sonilo_vm *vm, char c);
+
+int sonilo_host_cfunc(sonilo_host *host, uint16_t key, instr_func func);
+int sonilo_host_ex(sonilo_host *host, uint32_t *mem, uint32_t i, uint32_t *rw);
+int sonilo_host_block(sonilo_host *host, uint32_t *mem, uint16_t p, uint32_t *rw);
 
 #endif
