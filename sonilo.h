@@ -184,6 +184,7 @@ uint32_t* sonilo_vm_rw_ptr(sonilo_vm *vm);
 /* error flag */
 uint32_t sonilo_vm_err_get(sonilo_vm *vm);
 void sonilo_vm_err_set(sonilo_vm *vm, uint32_t err);
+uint32_t* sonilo_vm_err_ptr(sonilo_vm *vm);
 
 /* memory */
 uint32_t* sonilo_vm_mem(sonilo_vm *vm);

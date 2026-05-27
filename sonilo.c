@@ -104,12 +104,14 @@ int sonilo_init(sonilo *s)
 int sonilo_vm_init(sonilo_vm *vm)
 {
     uint32_t i;
-    /* TODO: implement */
     vm->rw = 0;
     for (i = 0; i < 0x10000; i++) vm->mem[i] = 0;
     vm->cursor = 0;
     vm->alt = 0;
     vm->swap = 0;
+    vm->err = 0;
+
+    /* TODO: implement */
     return 1;
 }
 
@@ -806,13 +808,17 @@ uint32_t* sonilo_vm_rw_ptr(sonilo_vm *vm)
 
 uint32_t sonilo_vm_err_get(sonilo_vm *vm)
 {
-    /* TODO: implement */
-    return 0;
+    return vm->err;
 }
 
 void sonilo_vm_err_set(sonilo_vm *vm, uint32_t err)
 {
-    /* TODO: implement */
+    vm->err = err;
+}
+
+uint32_t* sonilo_vm_err_ptr(sonilo_vm *vm)
+{
+    return &vm->err;
 }
 
 uint32_t* sonilo_vm_mem(sonilo_vm *vm)
