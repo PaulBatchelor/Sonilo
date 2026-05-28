@@ -51,7 +51,7 @@ struct sonilo {
     uint32_t *rw;
 
     /* instruction map lookup */
-    instr_map instr;
+    sonilo_host host;
 };
 
 int sonilo_init(sonilo *s)
@@ -62,8 +62,6 @@ int sonilo_init(sonilo *s)
     s->rw = sonilo_vm_rw_ptr(s->vm);
 
     /* setup blocklist */
-
-    instr_map_init(&s->instr);
 
     rc = sonilo_load_ugens(s);
 
@@ -190,6 +188,9 @@ int sonilo_alloc(uint32_t *mem, uint16_t ctx, int sz, uint16_t *p)
 
 int sonilo_ugen_init(sonilo_ctx *ctx, sonilo_ugen *u, uint16_t ukey, int nports, int sz)
 {
+    /* TODO: deprecate? I don't see this being all that useful */
+    return 1;
+#if 0
     int rc;
     uint16_t top, ports, state;
     int cmd;
@@ -235,6 +236,7 @@ int sonilo_ugen_init(sonilo_ctx *ctx, sonilo_ugen *u, uint16_t ukey, int nports,
     u->data.cmd = cmd;
 
     return 0;
+#endif
 }
 
 /* TODO: OUTDATED. re-work to use ugen_iport */
@@ -323,6 +325,7 @@ int sonilo_flush(sonilo_ctx *ctx)
 
 void sonilo_ugen_compute(sonilo_ugen *u)
 {
+#if 0
     instr_func f;
     /* retrieve callback from sonilo VM (instr_map_get) */
     f = instr_map_entry(&u->ctx->s->instr, u->data.cmd);
@@ -330,6 +333,7 @@ void sonilo_ugen_compute(sonilo_ugen *u)
 
     /* call, store result in rw */
     *u->ctx->s->rw = f(u->ctx->s->mem, u->data.top);
+#endif
 }
 
 uint16_t sonilo_key(const char *key)
@@ -345,7 +349,7 @@ uint32_t sonilo_srate(uint32_t *mem)
 
 uint16_t sonilo_command(sonilo *s, uint16_t key, instr_func func)
 {
-    instr_map_set(&s->instr, key, func);
+    sonilo_host_cfunc(&s->host, key, func);
     return 0;
 }
 
@@ -496,7 +500,7 @@ int sonilo_call_direct(sonilo *s)
     instr_func f;
     rw = *s->rw;
    
-    f = instr_map_entry(&s->instr, rw & 0xFFFF);
+    f = instr_map_NEW_entry(&s->host.map, rw & 0xFFFF);
 
     if (f == NULL) return 1;
 
@@ -509,7 +513,7 @@ int sonilo_call(sonilo *s)
 {
     int rc;
 
-    rc = instr_ex(s->mem, &s->instr, *s->rw, s->rw);
+    rc = sonilo_host_ex(&s->host, s->mem, *s->rw, s->rw);
 
     if (rc) return 1;
 
@@ -530,7 +534,7 @@ int sonilo_ugen_create(sonilo_ctx *ctx)
     if (rc) return 1;
 
     /* look up entry for DSP callback (alt key) */
-    render = instr_map_index(&ctx->s->instr, sonilo_alt(key));
+    render = instr_map_index_NEW(&ctx->s->host.map, sonilo_alt(key));
     if (render < 0) return 6;
 
     /* push function index of render callback to stack */
@@ -765,6 +769,7 @@ int sonilo_create(sonilo **ps)
     s->vm = (sonilo_vm *)universe;
     rc = sonilo_vm_init(s->vm);
     if (rc) return rc;
+    sonilo_host_init(&s->host, s->vm);
     rc = sonilo_init(s);
     if (rc) return rc;
     *ps = s;

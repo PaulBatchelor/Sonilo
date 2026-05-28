@@ -206,8 +206,30 @@ int instr_map_index(instr_map *map, uint16_t key)
     return -1;
 }
 
+int instr_map_index_NEW(instr_map_NEW *map, uint16_t key)
+{
+    uint16_t h, i;
+    h = hash(key);
+
+    for (i = 0; i < MAX_INSTR; i++) {
+        if (map->func[h] != NULL && map->key[h] == key) {
+            return h;
+        }
+        h += 1;
+        h %= MAX_INSTR;
+    }
+
+    return -1;
+}
+
 instr_func instr_map_entry(instr_map *map, int ent)
 {
     if (ent < 0 || ent >= MAX_INSTR) return NULL;
     return map->ent[ent].func;
+}
+
+instr_func instr_map_NEW_entry(instr_map_NEW *map, int ent)
+{
+    if (ent < 0 || ent >= MAX_INSTR) return NULL;
+    return map->func[ent];
 }
