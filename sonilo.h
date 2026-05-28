@@ -211,4 +211,6 @@ int sonilo_host_cfunc(sonilo_host *host, uint16_t key, instr_func func);
 int sonilo_host_ex(sonilo_host *host, uint32_t *mem, uint32_t i, uint32_t *rw);
 int sonilo_host_block(sonilo_host *host, uint32_t *mem, uint16_t p, uint32_t *rw);
 
+uint32_t sonilo_vm_blocklist(sonilo_vm *vm);
+
 #endif

@@ -43,19 +43,12 @@ struct sonilo_vm {
 
 struct sonilo {
     uint32_t *universe;
+    sonilo_vm *vm;
     /* linear memory */
-    uint32_t mem[65536];
+    uint32_t *mem;
 
     /* read/write register */
-    uint32_t rw;
-
-    /* a/b cursors */
-    /* TODO: it would be useful to abstract away the pointer */
-    uint16_t *cur;
-    uint16_t a, b;
-
-    /* pointer to blocklist */
-    uint16_t blocklist;
+    uint32_t *rw;
 
     /* instruction map lookup */
     instr_map instr;
@@ -63,26 +56,12 @@ struct sonilo {
 
 int sonilo_init(sonilo *s)
 {
-    uint32_t i;
     int rc;
 
-    /* zero out memory */
-
-    for (i = 0; i < 65536; i++) {
-        s->mem[i] = 0;
-    }
-
-    s->rw = 0;
-
-    s->a = s->b = 0;
-    s->cur = &s->a;
-
-    s->blocklist = 0;
+    s-> mem = sonilo_vm_mem(s->vm);
+    s->rw = sonilo_vm_rw_ptr(s->vm);
 
     /* setup blocklist */
-
-    rc = blocklist_init(s->mem, s->blocklist);
-    if (rc) return 1;
 
     instr_map_init(&s->instr);
 
@@ -96,6 +75,8 @@ int sonilo_init(sonilo *s)
 int sonilo_vm_init(sonilo_vm *vm)
 {
     uint32_t i;
+    int rc;
+
     vm->rw = 0;
     for (i = 0; i < 0x10000; i++) vm->mem[i] = 0;
     vm->cursor = 0;
@@ -108,8 +89,13 @@ int sonilo_vm_init(sonilo_vm *vm)
     }
     vm->nentries = 0;
 
-    /* TODO: implement */
-    return 1;
+    /* setup blocklist */
+
+    vm->blocklist = 0;
+    rc = blocklist_init(vm->mem, vm->blocklist);
+    if (rc) return 1;
+
+    return 0;
 }
 
 size_t sonilo_vm_sizeof(void)
@@ -121,7 +107,7 @@ int sonilo_ctx_init(sonilo_ctx *ctx, sonilo *s)
 {
     int rc;
 
-    ctx->context = context_init(s->mem, s->blocklist);
+    ctx->context = context_init(s->mem, sonilo_vm_blocklist(s->vm));
     ctx->s = s;
 
     /* set up allocator */
@@ -343,7 +329,7 @@ void sonilo_ugen_compute(sonilo_ugen *u)
     if (f == NULL) return;
 
     /* call, store result in rw */
-    u->ctx->s->rw = f(u->ctx->s->mem, u->data.top);
+    *u->ctx->s->rw = f(u->ctx->s->mem, u->data.top);
 }
 
 uint16_t sonilo_key(const char *key)
@@ -475,28 +461,31 @@ int sonilo_peak(sonilo_ctx *ctx, uint32_t *w)
 int sonilo_set(sonilo *s, uint32_t w)
 {
     if (s == NULL) return 1;
-    s->rw = w;
+    *s->rw = w;
     return 0;
 }
 
 int sonilo_get(sonilo *s, uint32_t *w)
 {
     if (s == NULL) return 1;
-    *w = s->rw;
+    *w = *s->rw;
     return 0;
 }
 
 int sonilo_go(sonilo *s)
 {
+    uint32_t rw;
     if (s == NULL) return 1;
-    *s->cur = s->rw & 0xFFFF;
+    rw = sonilo_vm_rw_get(s->vm);
+    rw &= 0xFFFF;
+    sonilo_vm_cursor_set(s->vm, rw);
     return 0;
 }
 
 int sonilo_read(sonilo *s)
 {
     if (s == NULL) return 1;
-    s->rw = s->mem[*s->cur];
+    sonilo_vm_read(s->vm);
     return 0;
 }
 
@@ -505,13 +494,13 @@ int sonilo_call_direct(sonilo *s)
 {
     uint32_t rw;
     instr_func f;
-    rw = s->rw;
+    rw = *s->rw;
    
     f = instr_map_entry(&s->instr, rw & 0xFFFF);
 
     if (f == NULL) return 1;
 
-    s->rw = f(s->mem, rw >> 16);
+    *s->rw = f(s->mem, rw >> 16);
 
     return 0;
 }
@@ -520,7 +509,7 @@ int sonilo_call(sonilo *s)
 {
     int rc;
 
-    rc = instr_ex(s->mem, &s->instr, s->rw, &s->rw);
+    rc = instr_ex(s->mem, &s->instr, *s->rw, s->rw);
 
     if (rc) return 1;
 
@@ -771,9 +760,12 @@ int sonilo_create(sonilo **ps)
     uint32_t *universe;
     if (ps == NULL) return -1;
     universe = malloc(universe_size());
-    s = (sonilo *)&universe[0];
-    rc = sonilo_init(s);
+    s = malloc(sizeof(sonilo));
     s->universe = universe;
+    s->vm = (sonilo_vm *)universe;
+    rc = sonilo_vm_init(s->vm);
+    if (rc) return rc;
+    rc = sonilo_init(s);
     if (rc) return rc;
     *ps = s;
     return 0;
@@ -784,6 +776,7 @@ void sonilo_destroy(sonilo *s)
     uint32_t *u;
     u = s->universe;
     free(u);
+    free(s);
     s = NULL;
 }
 
@@ -799,7 +792,6 @@ void sonilo_vm_rw_set(sonilo_vm *vm, uint32_t rw)
 
 uint32_t* sonilo_vm_rw_ptr(sonilo_vm *vm)
 {
-    /* TODO: implement */
     return &vm->rw;
 }
 
@@ -930,4 +922,9 @@ int sonilo_host_block(sonilo_host *host, uint32_t *mem, uint16_t p, uint32_t *rw
 {
     /* return instr_block(mem, &host->old, p, rw); */
     return instr_block_NEW(mem, &host->map, p, rw);
+}
+
+uint32_t sonilo_vm_blocklist(sonilo_vm *vm)
+{
+    return vm->blocklist;
 }
