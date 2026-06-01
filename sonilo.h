@@ -190,8 +190,6 @@ uint32_t* sonilo_vm_err_ptr(sonilo_vm *vm);
 
 /* memory */
 uint32_t* sonilo_vm_mem(sonilo_vm *vm);
-/* memcur: gets memory at cursor location */
-uint32_t* sonilo_vm_memcur(sonilo_vm *vm);
 
 /* cursor */
 uint32_t sonilo_vm_cursor_get(sonilo_vm *vm);

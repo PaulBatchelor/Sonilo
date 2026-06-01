@@ -3,39 +3,12 @@
 #include "sonilo.h"
 #include "ins.h"
 
-void instr_map_init(instr_map *map)
-{
-    int i;
-    for (i = 0; i < MAX_INSTR; i++) {
-        map->ent[i].key = 0;
-        map->ent[i].func = NULL;
-    }
-}
-
 static uint16_t hash(uint16_t key) {
     /* TODO: make this hash better */
     return key % MAX_INSTR;
 }
 
 void instr_map_set(instr_map *map, uint16_t key, instr_func func)
-{
-    uint16_t h, i;
-
-    h = hash(key);
-    for (i = 0; i < MAX_INSTR; i++) {
-        instr_entry *ent;
-        ent = &map->ent[h];
-        if (ent->func == NULL) {
-            ent->key = key;
-            ent->func = func;
-            break;
-        }
-        h += 1;
-        h %= MAX_INSTR;
-    }
-}
-
-void instr_map_NEW_set(instr_map_NEW *map, uint16_t key, instr_func func)
 {
     uint16_t h, i;
 
@@ -52,24 +25,6 @@ void instr_map_NEW_set(instr_map_NEW *map, uint16_t key, instr_func func)
 }
 
 instr_func instr_map_get(instr_map *map, uint16_t key)
-{
-    uint16_t h, i;
-    h = hash(key);
-
-    for (i = 0; i < MAX_INSTR; i++) {
-        instr_entry *ent;
-        ent = &map->ent[h];
-        if (ent->func != NULL && ent->key == key) {
-            return ent->func;
-        }
-        h += 1;
-        h %= MAX_INSTR;
-    }
-
-    return NULL;
-}
-
-instr_func instr_map_NEW_get(instr_map_NEW *map, uint16_t key)
 {
     uint16_t h, i;
     h = hash(key);
@@ -136,22 +91,6 @@ int instr_ex(uint32_t *mem, instr_map *map, uint32_t i, uint32_t *rw)
     return 0;
 }
 
-int instr_ex_NEW(uint32_t *mem, instr_map_NEW *map, uint32_t i, uint32_t *rw)
-{
-    uint16_t cmd, dat;
-    instr_func f;
-    uint32_t w;
-
-    cmd = i & 0xFFFF;
-    dat = i >> 16;
-    f = instr_map_NEW_get(map, cmd);
-    if (f == NULL) return 1;
-    w = f(mem, dat);
-    if (rw == NULL) return 2;
-    *rw = w;
-    return 0;
-}
-
 int instr_block(uint32_t *mem, instr_map *map, uint16_t p, uint32_t *rw)
 {
     uint32_t i;
@@ -170,43 +109,7 @@ int instr_block(uint32_t *mem, instr_map *map, uint16_t p, uint32_t *rw)
     return 0;
 }
 
-int instr_block_NEW(uint32_t *mem, instr_map_NEW *map, uint16_t p, uint32_t *rw)
-{
-    uint32_t i;
-    uint32_t *blk;
-    uint32_t sz;
-
-    blk = &mem[p];
-    sz = blk[0];
-
-    for (i = 1; i <= sz; i++) {
-        int rc;
-        rc = instr_ex_NEW(mem, map, blk[i], rw);
-        if (rc) return rc;
-    }
-
-    return 0;
-}
-
 int instr_map_index(instr_map *map, uint16_t key)
-{
-    uint16_t h, i;
-    h = hash(key);
-
-    for (i = 0; i < MAX_INSTR; i++) {
-        instr_entry *ent;
-        ent = &map->ent[h];
-        if (ent->func != NULL && ent->key == key) {
-            return h;
-        }
-        h += 1;
-        h %= MAX_INSTR;
-    }
-
-    return -1;
-}
-
-int instr_map_index_NEW(instr_map_NEW *map, uint16_t key)
 {
     uint16_t h, i;
     h = hash(key);
@@ -223,12 +126,6 @@ int instr_map_index_NEW(instr_map_NEW *map, uint16_t key)
 }
 
 instr_func instr_map_entry(instr_map *map, int ent)
-{
-    if (ent < 0 || ent >= MAX_INSTR) return NULL;
-    return map->ent[ent].func;
-}
-
-instr_func instr_map_NEW_entry(instr_map_NEW *map, int ent)
 {
     if (ent < 0 || ent >= MAX_INSTR) return NULL;
     return map->func[ent];

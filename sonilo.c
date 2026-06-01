@@ -10,7 +10,7 @@ int sonilo_load_ugens(sonilo *s);
 struct sonilo_host {
     /* instruction map */
     instr_func func[MAX_INSTR];
-    instr_map_NEW map;
+    instr_map map;
 };
 
 struct sonilo_vm {
@@ -500,7 +500,7 @@ int sonilo_call_direct(sonilo *s)
     instr_func f;
     rw = *s->rw;
    
-    f = instr_map_NEW_entry(&s->host.map, rw & 0xFFFF);
+    f = instr_map_entry(&s->host.map, rw & 0xFFFF);
 
     if (f == NULL) return 1;
 
@@ -534,7 +534,7 @@ int sonilo_ugen_create(sonilo_ctx *ctx)
     if (rc) return 1;
 
     /* look up entry for DSP callback (alt key) */
-    render = instr_map_index_NEW(&ctx->s->host.map, sonilo_alt(key));
+    render = instr_map_index(&ctx->s->host.map, sonilo_alt(key));
     if (render < 0) return 6;
 
     /* push function index of render callback to stack */
@@ -820,12 +820,6 @@ uint32_t* sonilo_vm_mem(sonilo_vm *vm)
     return vm->mem;
 }
 
-uint32_t* sonilo_vm_memcur(sonilo_vm *vm)
-{
-    /* TODO: implement */
-    return NULL;
-}
-
 uint32_t sonilo_vm_cursor_get(sonilo_vm *vm)
 {
     return vm->cursor;
@@ -913,20 +907,18 @@ int sonilo_host_init(sonilo_host *host, sonilo_vm *vm)
 
 int sonilo_host_cfunc(sonilo_host *host, uint16_t key, instr_func func)
 {
-    instr_map_NEW_set(&host->map, key, func);
+    instr_map_set(&host->map, key, func);
     return 0;
 }
 
 int sonilo_host_ex(sonilo_host *host, uint32_t *mem, uint32_t i, uint32_t *rw)
 {
-    /* return instr_ex(mem, &host->old, i, rw); */
-    return instr_ex_NEW(mem, &host->map, i, rw);
+    return instr_ex(mem, &host->map, i, rw);
 }
 
 int sonilo_host_block(sonilo_host *host, uint32_t *mem, uint16_t p, uint32_t *rw)
 {
-    /* return instr_block(mem, &host->old, p, rw); */
-    return instr_block_NEW(mem, &host->map, p, rw);
+    return instr_block(mem, &host->map, p, rw);
 }
 
 uint32_t sonilo_vm_blocklist(sonilo_vm *vm)
