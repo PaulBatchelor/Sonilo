@@ -35,6 +35,7 @@ build dsp/metro.o: c89 dsp/metro.c
 build dsp/seq.o: c89 dsp/seq.c
 build dsp/mtof.o: c89 dsp/mtof.c
 build dsp/smoother.o: c89 dsp/smoother.c
+build cmp/cmp.o: c89 cmp/cmp.c
 build libsonilo.a: ar $
     mem.o $
     ins.o $
@@ -44,6 +45,7 @@ build libsonilo.a: ar $
     array.o $
     iter.o $
     universe.o $
+    cmp/cmp.o $
     dsp/load.o $
     dsp/sink.o $
     dsp/sine.o $
