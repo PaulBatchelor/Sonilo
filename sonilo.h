@@ -48,6 +48,8 @@ int sonilo_create(sonilo **ps);
 void sonilo_destroy(sonilo *s);
 int sonilo_init(sonilo *s);
 size_t sonilo_sizeof(void);
+sonilo_vm* sonilo_get_vm(sonilo *s);
+sonilo_host* sonilo_get_host(sonilo *s);
 
 /* mem: return word memory */
 uint32_t *sonilo_mem(sonilo *s);
@@ -162,16 +164,16 @@ size_t universe_size(void);
 /* get: memory pointer to specific megablock */
 int universe_get(uint32_t *u, uint16_t b, uint32_t **blk);
 
-/* pull: pull data from memory to sonilo memory */
+/* pull: pull data from universe (src) to sonilo (dst) */
 int universe_pull(uint32_t *u,
-    uint16_t from,
-    uint16_t to,
+    uint16_t dst,
+    uint16_t src,
     uint16_t sz);
 
-/* push: push data to universe from sonilo */
+/* push: push data to universe (dst) from sonilo (src) */
 int universe_push(uint32_t *u,
-    uint16_t to,
-    uint16_t from,
+    uint16_t dst,
+    uint16_t src,
     uint16_t sz);
 
 sonilo_vm* universe_sonilo(uint32_t *u);

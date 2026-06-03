@@ -973,12 +973,73 @@ int sonilo_end(sonilo *s)
 
 int sonilo_upush(sonilo *s)
 {
-    /* TODO: implement */
-    return 1;
+    uint16_t src, dst, sz;
+    uint32_t w;
+    int rc;
+    uint16_t stk;
+    uint32_t *mem;
+
+    stk = sonilo_vm_cursor_get(s->vm);
+    mem = sonilo_vm_mem(s->vm);
+
+    /* stack args: dst src sz */
+    w = 0;
+
+    rc = barray_pop(mem, stk, &w);
+    if (rc) return 1;
+    sz = w & 0xFFFF;
+
+    rc = barray_pop(mem, stk, &w);
+    if (rc) return 2;
+    src = w & 0xFFFF;
+
+    rc = barray_pop(mem, stk, &w);
+    if (rc) return 3;
+    dst = w & 0xFFFF;
+
+    rc = universe_push(s->universe, dst, src, sz);
+    if (rc) return rc + 3;
+
+    return 0;
 }
 
 int sonilo_upull(sonilo *s)
 {
-    /* TODO: implement */
+    uint16_t dst, src, sz;
+    uint32_t w;
+    int rc;
+    uint16_t stk;
+    uint32_t *mem;
+
+    stk = sonilo_vm_cursor_get(s->vm);
+    mem = sonilo_vm_mem(s->vm);
+
+    /* stack args: dst src sz */
+    w = 0;
+
+    rc = barray_pop(mem, stk, &w);
+    if (rc) return 1;
+    sz = w & 0xFFFF;
+
+    rc = barray_pop(mem, stk, &w);
+    if (rc) return 2;
+    src = w & 0xFFFF;
+
+    rc = barray_pop(mem, stk, &w);
+    if (rc) return 3;
+    dst = w & 0xFFFF;
+
+    rc = universe_pull(s->universe, dst, src, sz);
+    if (rc) return rc + 3;
     return 1;
+}
+
+sonilo_vm* sonilo_get_vm(sonilo *s)
+{
+    return s->vm;
+}
+
+sonilo_host* sonilo_get_host(sonilo *s)
+{
+    return &s->host;
 }

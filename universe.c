@@ -18,39 +18,21 @@ int universe_get(uint32_t *u, uint16_t b, uint32_t **blk)
     return 0;
 }
 
-/* pull: pull data from memory to sonilo memory */
 int universe_pull(uint32_t *u,
-    uint16_t from,
-    uint16_t to,
+    uint16_t dst,
+    uint16_t src,
     uint16_t sz)
 {
-    uint32_t *src, *dst;
-
-    /* source: universe (block id) */
-    src = &u[from << 8];
-
-    /* destination: sonilo (memory address) */
-    dst = &u[to];
-
-    memmove(dst, src, sz << 2);
+    memmove(&u[dst], &u[src<<8], sz << 2);
 
     return 0;
 }
 
-/* push: push data to universe from sonilo */
 int universe_push(uint32_t *u,
-    uint16_t to,
-    uint16_t from,
+    uint16_t dst,
+    uint16_t src,
     uint16_t sz)
 {
-    uint32_t *src, *dst;
-
-    /* source: sonilo (memory address) */
-    src = &u[from];
-
-    /* destination: universe (block id) */
-    dst = &u[to << 8];
-
-    memmove(dst, src, sz << 2);
+    memmove(&u[dst<<8], &u[src], sz << 2);
     return 0;
 }

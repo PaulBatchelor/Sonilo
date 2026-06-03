@@ -47,6 +47,7 @@ typedef struct memwrite {
     int8_t prev;
     /* 5-bit encoding mode */
     int encode;
+    sonilo *s;
     sonilo_vm *vm;
     sonilo_host *host;
 } memwrite;
@@ -1380,6 +1381,33 @@ void parse_memwrite(memwrite *mw, char c)
         return;
     }
 
+    /* in: call array next */
+    if (iscmd(mw, c, "un")) {
+        uint32_t rw;
+        uint8_t nib;
+        uint32_t err;
+
+        mw->prev = 0;
+        rw = sonilo_vm_rw_get(vm);
+
+        nib = rw & 0xF;
+        rw >>= 4;
+
+        sonilo_vm_rw_set(vm, rw);
+
+        err = 0;
+
+        if (nib == 0) {
+            err = sonilo_upush(mw->s);
+        } else if (nib == 1) {
+            err = sonilo_upull(mw->s);
+        }
+
+        sonilo_vm_err_set(vm, err);
+
+        return;
+    }
+
     mw->prev = c;
 }
 
@@ -1390,12 +1418,12 @@ int main (int argc, char *argv[])
 
     mw = malloc(sizeof(memwrite));
     mode = PRINT;
-    mw->vm = malloc(sonilo_vm_sizeof());
-    mw->host = malloc(sonilo_host_sizeof());
-    sonilo_vm_init(mw->vm);
-    sonilo_host_init(mw->host, mw->vm);
+    sonilo_create(&mw->s);
+    mw->vm = sonilo_get_vm(mw->s);
+    mw->host = sonilo_get_host(mw->s);
     memwrite_init(mw);
     running = 1;
+
     while (!feof(stdin) && running) {
         char c;
         c = fgetc(stdin);
@@ -1431,8 +1459,7 @@ int main (int argc, char *argv[])
         /* print mode */
         fputc(c, stdout);
     }
-    free(mw->vm);
-    free(mw->host);
+    sonilo_destroy(mw->s);
     free(mw);
     return 0;
 }

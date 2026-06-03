@@ -827,3 +827,37 @@ So, set up a context.
 @m 0cu 09jf rd sc aa sc 09jb 1cu
 ceinsppespapavpw ceinsppespapavpw ceinsppespapavpw
 ceinsppespapavpw ceinsppespapavpw ceinsppespapavpwnl
+@l test_universe:
+@c some basic universe sanity tests for exchanging
+data between the universe blocks and sonilo.
+@c Prelude: incantation to set up context.
+Cursor 0 is the context, cursor 1 is the stack.
+@m 0cu #0gobicigo 1rb 1cu go
+@c Prelude, part 2: The context isn't actually needed,
+so set cursor 0 to be the base address to write to,
+address {0x800}. From this point, this address will
+be referenced by the cursor.
+@m 0cu #800 go
+@c To begin, write four words of some data.
+@m 0cu
+#AAAAAAAA wr01jf #BBBBBBBB wr01jf #CCCCCCCC wr01jf #DDDDDDDDwr01jf
+04jb
+@c push words to megablock (address {\tt 0x110}).
+@c The "push" command is done using the {\tt un} word with nibble 0.
+@m
+1cu #110 aa 0curc1cu aa #4 aa 0 un
+@c Zero out the words. Print the before and after to confirm the zeros.
+@m 0cu
+nl rdpwsp 01jf rdpwsp 01jf rdpwsp 01jf rdpwnl
+03jb
+0cu #0 wr01jf #0 wr01jf #0 wr01jf #0 wr01jf
+04jb
+0cu rdpwsp 01jf rdpwsp 01jf rdpwsp 01jf rdpwnl
+03jb
+@c pull data from universe to sonilo
+@c the command to pull is {\tt un} with nibble 1, or
+{\tt un.1}.
+@m 0curc1cuaa #110 aa #4 aa 1 un
+@c print words in reverse order.
+@m
+0cu 03jf rdpwsp 01jb rdpwsp 01jb rdpwsp 01jb rdpwnl
