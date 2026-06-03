@@ -4,6 +4,7 @@
 #include "ugen.h"
 #include "context.h"
 #include "ins.h"
+#include "wm.h"
 
 int sonilo_load_ugens(sonilo *s);
 
@@ -42,7 +43,10 @@ struct sonilo_vm {
 };
 
 struct sonilo {
+    /* universe: main memory */
     uint32_t *universe;
+
+    /* virtual machine components */
     sonilo_vm *vm;
     /* linear memory */
     uint32_t *mem;
@@ -50,15 +54,18 @@ struct sonilo {
     /* read/write register */
     uint32_t *rw;
 
-    /* instruction map lookup */
+    /* host components */
     sonilo_host host;
+
+    /* word machine: virtual device to interact with sonilo  */
+    word_machine *wm;
 };
 
 int sonilo_init(sonilo *s)
 {
     int rc;
 
-    s-> mem = sonilo_vm_mem(s->vm);
+    s->mem = sonilo_vm_mem(s->vm);
     s->rw = sonilo_vm_rw_ptr(s->vm);
 
     /* setup blocklist */
@@ -426,8 +433,7 @@ int sonilo_pop(sonilo_ctx *ctx, uint32_t *w)
     uint32_t *mem;
 
     mem = ctx->s->mem;
-    /* TODO: use CTX_STACK */
-    stk = mem[ctx->context + 1] & 0xFFFF;
+    stk = CTX_STACK(mem, ctx->context);
     rc = barray_pop(mem, stk, w);
     if (rc) return 1;
 
@@ -441,8 +447,7 @@ int sonilo_push(sonilo_ctx *ctx, uint32_t w)
     uint32_t *mem;
 
     mem = ctx->s->mem;
-    /* TODO: use CTX_STACK */
-    stk = mem[ctx->context + 1] & 0xFFFF;
+    stk = CTX_STACK(mem, ctx->context);
     rc = barray_append(mem, stk, w);
     if (rc) return 1;
     return 0;
@@ -762,14 +767,28 @@ int sonilo_create(sonilo **ps)
     int rc;
     sonilo *s;
     uint32_t *universe;
+    uint32_t *blk;
+
     if (ps == NULL) return -1;
     universe = malloc(universe_size());
     s = malloc(sizeof(sonilo));
+
     s->universe = universe;
-    s->vm = (sonilo_vm *)universe;
+
+    blk = NULL;
+    universe_get(universe, 0, &blk);
+    s->vm = (sonilo_vm *)blk;
     rc = sonilo_vm_init(s->vm);
     if (rc) return rc;
     sonilo_host_init(&s->host, s->vm);
+    
+    universe_get(universe,
+        WM_LOCATION,
+        &blk);
+    s->wm = (word_machine *)blk;
+    word_machine_init(s->wm, 0);
+
+
     rc = sonilo_init(s);
     if (rc) return rc;
     *ps = s;
@@ -924,4 +943,42 @@ int sonilo_host_block(sonilo_host *host, uint32_t *mem, uint16_t p, uint32_t *rw
 uint32_t sonilo_vm_blocklist(sonilo_vm *vm)
 {
     return vm->blocklist;
+}
+
+int sonilo_send(sonilo *s, char c)
+{
+    return word_machine_send(s->wm, c);
+}
+
+int sonilo_sendw(sonilo *s, uint32_t w)
+{
+    /* TODO: implement */
+    /* little endian? */
+    return 1;
+}
+
+int sonilo_begin(sonilo *s)
+{
+    return word_machine_begin(s->wm);
+}
+
+/* end: end message and evaluate */
+int sonilo_end(sonilo *s)
+{
+    /* TODO: implement */
+    /* TODO: parse */
+    /* TODO: clear buffer */
+    return 1;
+}
+
+int sonilo_upush(sonilo *s)
+{
+    /* TODO: implement */
+    return 1;
+}
+
+int sonilo_upull(sonilo *s)
+{
+    /* TODO: implement */
+    return 1;
 }

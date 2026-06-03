@@ -176,6 +176,14 @@ int universe_push(uint32_t *u,
 
 sonilo_vm* universe_sonilo(uint32_t *u);
 
+/* upush: sonilo wrapper for universe push.
+ * uses context stack. Args: to from sz */
+int sonilo_upush(sonilo *s);
+
+/* upull: sonilo wrapper for universe pull.
+ * Args: from to sz */
+int sonilo_upull(sonilo *s);
+
 /* VM */
 
 /* read/write register */
@@ -210,5 +218,18 @@ int sonilo_host_ex(sonilo_host *host, uint32_t *mem, uint32_t i, uint32_t *rw);
 int sonilo_host_block(sonilo_host *host, uint32_t *mem, uint16_t p, uint32_t *rw);
 
 uint32_t sonilo_vm_blocklist(sonilo_vm *vm);
+
+/* send: send byte to word machine */
+int sonilo_send(sonilo *s, char c);
+
+/* sendw: send word to word machine */
+int sonilo_sendw(sonilo *s, uint32_t w);
+
+/* begin: begin new message */
+int sonilo_begin(sonilo *s);
+
+/* end: end message and evaluate */
+int sonilo_end(sonilo *s);
+
 
 #endif

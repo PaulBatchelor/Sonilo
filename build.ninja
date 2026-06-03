@@ -24,6 +24,7 @@ build context.o: c89 context.c
 build array.o: c89 array.c
 build iter.o: c89 iter.c
 build universe.o: c89 universe.c
+build wm.o: c89 wm.c
 build dsp/load.o: c89 dsp/load.c
 build dsp/sink.o: c89 dsp/sink.c
 build dsp/sine.o: c89 dsp/sine.c
@@ -45,6 +46,7 @@ build libsonilo.a: ar $
     array.o $
     iter.o $
     universe.o $
+    wm.o $
     cmp/cmp.o $
     dsp/load.o $
     dsp/sink.o $
