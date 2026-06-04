@@ -62,9 +62,13 @@ ac:array create.
 ar:array read.
 aw:array write.
 ci:context init.
-cu:TODO. select cursor. 0 or 1 LSB in rw.
+cu:select cursor. 0 or 1 LSB in rw.
 sw:stack swap.
 dr:stack drop.
 av:array value. extracts value returned by ar.
-ia:TODO. Create an array iterator. Stack args: array address, context.
-in:TODO. Call next on iterator, and push value onto stack.
+ia:Create an array iterator. Stack args: array address, context.
+in:Call next on iterator, and push value onto stack.
+un:universe utility.
+wi:TODO. initialize word machine.
+ws:wordslice to value.
+ww:send word to word machine.

@@ -947,14 +947,38 @@ uint32_t sonilo_vm_blocklist(sonilo_vm *vm)
 
 int sonilo_send(sonilo *s, char c)
 {
-    return word_machine_send(s->wm, c);
+    word_machine_send(s->wm, c);
+
+    /* if word fully loaded, process word */
+    if (word_machine_wpos(s->wm) == 4) {
+        uint32_t w;
+        /* Get the word, clear the word buffer */
+        w = word_machine_word(s->wm);
+        word_machine_clear(s->wm);
+
+        /* process word */
+
+        if (word_machine_issys(w)) {
+            /* TODO: if word is a system command, process
+             * directly
+             */
+            /* TODO: extract system command components */
+            /* TODO: process system command */
+        } else {
+            /* TODO: otherwise, append to word machine */
+        }
+    }
+
+    return 0;
 }
 
 int sonilo_sendw(sonilo *s, uint32_t w)
 {
-    /* TODO: implement */
-    /* little endian? */
-    return 1;
+    int i;
+    for (i = 0; i < 4; i++) {
+        sonilo_send(s, (w >> (3 - i)*8) & 0xFF);
+    }
+    return 0;
 }
 
 int sonilo_begin(sonilo *s)

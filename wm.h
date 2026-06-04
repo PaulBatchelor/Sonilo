@@ -18,3 +18,18 @@ int word_machine_begin(word_machine *wm);
 
 /* end: parse bytes in buffer and clear message */
 int word_machine_end(word_machine *wm);
+
+/* wpos: get current position in word */
+int word_machine_wpos(word_machine *wm);
+
+/* bpos: get current position in buffer */
+int word_machine_bpos(word_machine *wm);
+
+/* clear: clear word buffer */
+void word_machine_clear(word_machine *wm);
+
+/* word: get current word machine state */
+uint32_t word_machine_word(word_machine *wm);
+
+/* check if word is system command */
+int word_machine_issys(uint32_t w);

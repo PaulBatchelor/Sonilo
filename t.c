@@ -1381,7 +1381,7 @@ void parse_memwrite(memwrite *mw, char c)
         return;
     }
 
-    /* in: call array next */
+    /* un: universe utility */
     if (iscmd(mw, c, "un")) {
         uint32_t rw;
         uint8_t nib;
@@ -1397,6 +1397,8 @@ void parse_memwrite(memwrite *mw, char c)
 
         err = 0;
 
+        /* nib 0: push, nib 1: pull */
+
         if (nib == 0) {
             err = sonilo_upush(mw->s);
         } else if (nib == 1) {
@@ -1405,6 +1407,17 @@ void parse_memwrite(memwrite *mw, char c)
 
         sonilo_vm_err_set(vm, err);
 
+        return;
+    }
+
+    /* ww: send word to word machine */
+    if (iscmd(mw, c, "ww")) {
+        int err;
+        uint32_t rw;
+        mw->prev = 0;
+        rw = sonilo_vm_rw_get(mw->vm);
+        err = sonilo_sendw(mw->s, rw);
+        sonilo_vm_err_set(mw->vm, err);
         return;
     }
 
