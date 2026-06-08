@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stddef.h>
 #include "wm.h"
 
 struct word_machine {
@@ -28,8 +29,23 @@ void word_machine_init(word_machine *wm, uint16_t vm)
 }
 
 /* send: send byte to word machine */
-int word_machine_send(word_machine *wm, char c)
+int word_machine_send(word_machine *wm, unsigned char c)
 {
+    uint32_t w;
+
+    /* bounds checking */
+    if (wm->pw >= 4) return 1;
+
+    w = wm->w;
+
+    /* clear slot and write */
+
+    w &= ~(0xFF << (8 * wm->pw));
+    w |= c << (8 * wm->pw);
+
+    wm->w = w;
+    wm->pw++;
+
     return 0;
 }
 
@@ -70,6 +86,31 @@ uint32_t word_machine_word(word_machine *wm)
 
 int word_machine_issys(uint32_t w)
 {
-    /* TODO: implement */
+    unsigned char *b;
+
+    /* interpret bytes in LE system */
+
+    /* TODO: maybe work out something more endian-agnostic */
+    b = (unsigned char *)&w;
+
+    /* System commands are 1-sized fixmaps with a fixint key */
+    if (b[0] == 0x81 && (b[1] >> 7) == 0) {
+        return 1;
+    }
+
+    return 0;
+}
+
+int word_machine_extract_sys(uint32_t w, uint8_t *k, uint8_t *v)
+{
+    unsigned char *b;
+
+    if (k == NULL || v == NULL) return 1;
+
+    b = (unsigned char *)&w;
+
+    *k = b[1];
+    *v = b[3];
+
     return 0;
 }

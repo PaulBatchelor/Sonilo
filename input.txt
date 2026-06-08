@@ -861,3 +861,29 @@ nl rdpwsp 01jf rdpwsp 01jf rdpwsp 01jf rdpwnl
 @c print words in reverse order.
 @m
 0cu 03jf rdpwsp 01jb rdpwsp 01jb rdpwsp 01jb rdpwnl
+@l test_wm_sys:
+@c word machine system commands. These are words that immediately
+get executed by the word machine, instead of being appended to the
+word buffer.
+@c Using the notation $s(k, v)$ where $s$ is a system command
+function, $k$ the key or type, and $v$ is the parameter value,
+the test system command to use will be $s(0, 0)$. This command
+will write a magic constant to the RW register.
+@c The test here is to send the system command encoded in msgpack
+(a fixmap with a fixint of 0 and a uint8 of 0) and print the RW
+value. It will be expected to have some kind of magic number.
+@c Send a word with the with the "ws" command. Using our notation,
+@c Re-initialize the word machine. Make sure it is starting out fresh.
+@c I'm explicitly doing this because one of the previous tests
+({\tt universe} I think?) corrupts some of the bits here.
+The test below works fine by itself, but would get incorrect
+values when placed in the test suite. zero-ing out the word machine
+again is fair game to me.
+@m 0wx
+$s(0,0)$.
+@c {\tt 0x81} is a fixmap of size 1. {\tt 00} is a positive fixint of 0.
+{\tt 0xCC00} declares uint8 of 0.
+@m #8100CC00 ww
+@c Print the word, and the error code.
+Hopefully it is the magic word and an error code of 0.
+@m sp pw sp pe nl

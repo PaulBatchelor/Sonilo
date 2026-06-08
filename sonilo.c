@@ -788,7 +788,6 @@ int sonilo_create(sonilo **ps)
     s->wm = (word_machine *)blk;
     word_machine_init(s->wm, 0);
 
-
     rc = sonilo_init(s);
     if (rc) return rc;
     *ps = s;
@@ -945,7 +944,18 @@ uint32_t sonilo_vm_blocklist(sonilo_vm *vm)
     return vm->blocklist;
 }
 
-int sonilo_send(sonilo *s, char c)
+static int process_sys(sonilo *s, uint8_t k, uint8_t v)
+{
+    if (k == 0 && v == 0) {
+        /* set RW to magic constant */
+        sonilo_vm_rw_set(s->vm, 0x67676767);
+        return 0;
+    }
+    /* no match found */
+    return 1;
+}
+
+int sonilo_send(sonilo *s, unsigned char c)
 {
     word_machine_send(s->wm, c);
 
@@ -959,11 +969,18 @@ int sonilo_send(sonilo *s, char c)
         /* process word */
 
         if (word_machine_issys(w)) {
-            /* TODO: if word is a system command, process
+            uint8_t k, v;
+            int rc;
+            /* if word is a system command, process
              * directly
              */
-            /* TODO: extract system command components */
-            /* TODO: process system command */
+            /* extract system command components */
+            k = v = 0;
+            rc = word_machine_extract_sys(w, &k, &v);
+            if (rc) return 1;
+            /* process system command */
+            rc = process_sys(s, k, v);
+            if (rc) return 2;
         } else {
             /* TODO: otherwise, append to word machine */
         }
@@ -976,7 +993,9 @@ int sonilo_sendw(sonilo *s, uint32_t w)
 {
     int i;
     for (i = 0; i < 4; i++) {
-        sonilo_send(s, (w >> (3 - i)*8) & 0xFF);
+        unsigned char c;
+        c = (w >> (3 - i)*8) & 0xFF;
+        sonilo_send(s, c);
     }
     return 0;
 }
@@ -1066,4 +1085,9 @@ sonilo_vm* sonilo_get_vm(sonilo *s)
 sonilo_host* sonilo_get_host(sonilo *s)
 {
     return &s->host;
+}
+
+void sonilo_wm_init(sonilo *s)
+{
+    word_machine_init(s->wm, 0);
 }

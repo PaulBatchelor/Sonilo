@@ -1421,6 +1421,24 @@ void parse_memwrite(memwrite *mw, char c)
         return;
     }
 
+    /* wx: word machine utilities */
+    if (iscmd(mw, c, "wx")) {
+        uint32_t rw;
+        uint8_t nib;
+        mw->prev = 0;
+        rw = sonilo_vm_rw_get(mw->vm);
+        nib = rw & 0xF;
+        rw >>= 4;
+        sonilo_vm_rw_set(mw->vm, rw);
+
+        if (nib == 0) {
+            /* re-initialize word machine */
+            sonilo_wm_init(mw->s);
+            return;
+        }
+        return;
+    }
+
     mw->prev = c;
 }
 

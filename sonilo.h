@@ -222,7 +222,7 @@ int sonilo_host_block(sonilo_host *host, uint32_t *mem, uint16_t p, uint32_t *rw
 uint32_t sonilo_vm_blocklist(sonilo_vm *vm);
 
 /* send: send byte to word machine */
-int sonilo_send(sonilo *s, char c);
+int sonilo_send(sonilo *s, unsigned char c);
 
 /* sendw: send word to word machine */
 int sonilo_sendw(sonilo *s, uint32_t w);
@@ -233,5 +233,7 @@ int sonilo_begin(sonilo *s);
 /* end: end message and evaluate */
 int sonilo_end(sonilo *s);
 
+/* wm_init: (re-)initialize word machine */
+void sonilo_wm_init(sonilo *s);
 
 #endif

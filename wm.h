@@ -11,7 +11,7 @@ typedef struct word_machine word_machine;
 void word_machine_init(word_machine *wm, uint16_t vm);
 
 /* send: send byte to word machine */
-int word_machine_send(word_machine *wm, char c);
+int word_machine_send(word_machine *wm, unsigned char c);
 
 /* begin: begin a new message */
 int word_machine_begin(word_machine *wm);
@@ -33,3 +33,5 @@ uint32_t word_machine_word(word_machine *wm);
 
 /* check if word is system command */
 int word_machine_issys(uint32_t w);
+
+int word_machine_extract_sys(uint32_t w, uint8_t *k, uint8_t *v);
