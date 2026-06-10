@@ -85,3 +85,7 @@ aaaaaaaa bbbbbbbb cccccccc dddddddd
 0 0 0 0
 dddddddd cccccccc bbbbbbbb aaaaaaaa
 test_wm_sys: 67676767 0
+test_wm_block:
+12344321
+88888888
+8100cc02

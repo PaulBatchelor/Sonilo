@@ -873,6 +873,7 @@ will write a magic constant to the RW register.
 (a fixmap with a fixint of 0 and a uint8 of 0) and print the RW
 value. It will be expected to have some kind of magic number.
 @c Send a word with the with the "ws" command. Using our notation,
+$s(0, 0)$.
 @c Re-initialize the word machine. Make sure it is starting out fresh.
 @c I'm explicitly doing this because one of the previous tests
 ({\tt universe} I think?) corrupts some of the bits here.
@@ -880,7 +881,6 @@ The test below works fine by itself, but would get incorrect
 values when placed in the test suite. zero-ing out the word machine
 again is fair game to me.
 @m 0wx
-$s(0,0)$.
 @c {\tt 0x81} is a fixmap of size 1. {\tt 00} is a positive fixint of 0.
 {\tt 0xCC00} declares uint8 of 0.
 @m #8100CC00 ww
