@@ -114,3 +114,15 @@ int word_machine_extract_sys(uint32_t w, uint8_t *k, uint8_t *v)
 
     return 0;
 }
+
+int word_machine_append(word_machine *wm, uint32_t w)
+{
+    /* TODO: implement */
+    return 1;
+}
+
+int word_machine_append_half(word_machine *wm, uint16_t hw, int which)
+{
+    /* TODO: implement */
+    return 1;
+}

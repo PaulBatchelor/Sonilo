@@ -35,3 +35,9 @@ uint32_t word_machine_word(word_machine *wm);
 int word_machine_issys(uint32_t w);
 
 int word_machine_extract_sys(uint32_t w, uint8_t *k, uint8_t *v);
+
+/* append: appends word to the word buffer */
+int word_machine_append(word_machine *wm, uint32_t w);
+
+/* append_half: appends half-word to the word buffer */
+int word_machine_append_half(word_machine *wm, uint16_t hw, int which);

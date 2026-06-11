@@ -6,6 +6,9 @@
 #include "ins.h"
 #include "wm.h"
 
+#define HALFWORD_MSB 0x8101
+#define HALFWORD_LSB 0x8102
+
 int sonilo_load_ugens(sonilo *s);
 
 struct sonilo_host {
@@ -946,9 +949,22 @@ uint32_t sonilo_vm_blocklist(sonilo_vm *vm)
 
 static int process_sys(sonilo *s, uint8_t k, uint8_t v)
 {
-    if (k == 0 && v == 0) {
-        /* set RW to magic constant */
-        sonilo_vm_rw_set(s->vm, 0x67676767);
+    if (k == 0) {
+        switch(v) {
+            case 0:
+                /* set RW to magic constant */
+                sonilo_vm_rw_set(s->vm, 0x67676767);
+                break;
+            case 1:
+                word_machine_begin(s->wm);
+                break;
+            case 2:
+                /* TODO: END needs to be scoped to include host */
+                word_machine_end(s->wm);
+                break;
+            default:
+                return 1;
+        }
         return 0;
     }
     /* no match found */
@@ -968,12 +984,32 @@ int sonilo_send(sonilo *s, unsigned char c)
 
         /* process word */
 
+        /* check for halfword prefixes */
+
+        switch (w >> 16) {
+            case HALFWORD_MSB:
+                /* append halfword to current word MSB */
+                return word_machine_append_half(s->wm,
+                        w & 0xFFFF,
+                        0);
+            case HALFWORD_LSB:
+                /* append halfword to current word LSB */
+                return word_machine_append_half(s->wm,
+                        w & 0xFFFF,
+                        1);
+            default:
+                break;
+        }
+
+        /* process system word or append */
+
         if (word_machine_issys(w)) {
             uint8_t k, v;
             int rc;
             /* if word is a system command, process
              * directly
              */
+           
             /* extract system command components */
             k = v = 0;
             rc = word_machine_extract_sys(w, &k, &v);
@@ -982,7 +1018,8 @@ int sonilo_send(sonilo *s, unsigned char c)
             rc = process_sys(s, k, v);
             if (rc) return 2;
         } else {
-            /* TODO: otherwise, append to word machine */
+            /* otherwise, append to word machine */
+            return word_machine_append(s->wm, w);
         }
     }
 
