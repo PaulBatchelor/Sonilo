@@ -15,6 +15,8 @@ struct sonilo_host {
     /* instruction map */
     instr_func func[MAX_INSTR];
     instr_map map;
+    /* cmp for msgpack parsing */
+    cmp_ctx_t cmp;
 };
 
 struct sonilo_vm {
@@ -949,6 +951,8 @@ uint32_t sonilo_vm_blocklist(sonilo_vm *vm)
 
 static int process_sys(sonilo *s, uint8_t k, uint8_t v)
 {
+    int rc;
+    rc = 1;
     if (k == 0) {
         switch(v) {
             case 0:
@@ -956,16 +960,17 @@ static int process_sys(sonilo *s, uint8_t k, uint8_t v)
                 sonilo_vm_rw_set(s->vm, 0x67676767);
                 break;
             case 1:
-                word_machine_begin(s->wm);
+                rc = sonilo_begin(s);
+                if (rc) rc = 2;
                 break;
             case 2:
-                /* TODO: END needs to be scoped to include host */
-                word_machine_end(s->wm);
+                rc = sonilo_end(s);
+                if (rc) rc = 3;
                 break;
             default:
-                return 1;
+                break;
         }
-        return 0;
+        return rc;
     }
     /* no match found */
     return 1;
@@ -1045,10 +1050,16 @@ int sonilo_begin(sonilo *s)
 /* end: end message and evaluate */
 int sonilo_end(sonilo *s)
 {
-    /* TODO: implement */
-    /* TODO: parse */
-    /* TODO: clear buffer */
-    return 1;
+    int rc;
+    /* parse */
+    rc = word_machine_parse(s->wm, &s->host.cmp);
+    if (rc) return 1;
+
+    /* clear buffer */
+    rc = word_machine_reset(s->wm);
+    if (rc) return 2;
+
+    return 0;
 }
 
 int sonilo_upush(sonilo *s)

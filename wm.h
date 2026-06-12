@@ -4,6 +4,7 @@
  * (2^16 words) / (256 words/megablock) = index 256
  */
 
+#include "cmp.h"
 #define WM_LOCATION 256
 
 typedef struct word_machine word_machine;
@@ -41,3 +42,9 @@ int word_machine_append(word_machine *wm, uint32_t w);
 
 /* append_half: appends half-word to the word buffer */
 int word_machine_append_half(word_machine *wm, uint16_t hw, int which);
+
+/* reset: resets word buffer */
+int word_machine_reset(word_machine *wm);
+
+/* parse: parse message buffer via cmp library */
+int word_machine_parse(word_machine *wm, cmp_ctx_t *cmp);

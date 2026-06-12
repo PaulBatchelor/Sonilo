@@ -1,6 +1,13 @@
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
 #include "wm.h"
+
+typedef struct cmpbuf {
+    uint16_t pos;
+    uint16_t len;
+    uint8_t *buf;
+} cmpbuf;
 
 struct word_machine {
     /* input word */
@@ -117,12 +124,99 @@ int word_machine_extract_sys(uint32_t w, uint8_t *k, uint8_t *v)
 
 int word_machine_append(word_machine *wm, uint32_t w)
 {
-    /* TODO: implement */
-    return 1;
+    if (wm->pb >= 64) return 1;
+    wm->buf[wm->pb] = w;
+    wm->pb++;
+    return 0;
 }
 
 int word_machine_append_half(word_machine *wm, uint16_t hw, int which)
 {
-    /* TODO: implement */
-    return 1;
+    if (wm->pb >= 64) return 1;
+    if (which) {
+        /* 1: set LSB */
+
+        uint32_t w;
+
+        w = wm->buf[wm->pb];
+        w &= ~0xFFFF;
+        w |= hw;
+
+        /* set AND advance the buffer pointer.
+         * this enforces an ordering: set the MSB,
+         * then set the LSB */
+
+        wm->buf[wm->pb] = w;
+        wm->pb++;
+    } else {
+        /* 0: set MSB */
+
+        uint32_t w;
+
+        w = wm->buf[wm->pb];
+
+        w &= ~0xFFFF;
+        w |= hw << 16;
+
+        wm->buf[wm->pb] = w;
+    }
+
+    return 0;
+}
+
+int word_machine_reset(word_machine *wm)
+{
+    wm->pw = 0;
+    wm->pb = 0;
+    wm->w = 0;
+    return 0;
+}
+
+
+static bool read_bytes(void *data, size_t sz, cmpbuf *buf) {
+    uint16_t pos;
+    uint16_t i;
+    uint8_t *a;
+
+    pos = buf->pos;
+    if ((pos + sz) > buf->len) {
+        sz = buf->len - pos;
+    }
+
+    a = (uint8_t *)data;
+    for (i = 0; i < sz; i++) a[i] = buf->buf[pos + i];
+
+    buf->pos += sz;
+    return sz > 0;
+}
+
+static bool bufreader(cmp_ctx_t *ctx, void *data, size_t limit) {
+    return read_bytes(data, limit, ctx->buf);
+}
+
+int word_machine_parse(word_machine *wm, cmp_ctx_t *cmp)
+{
+    cmpbuf buf;
+    buf.pos = 0;
+    buf.buf = (uint8_t *)wm->buf;
+    buf.len = wm->pb << 2;
+    cmp_init(cmp, &buf, bufreader, NULL, NULL);
+
+    while (1) {
+        cmp_object_t obj;
+
+        if (!cmp_read_object(cmp, &obj)) {
+            if (buf.pos >= buf.len) break;
+            else return 1;
+
+        }
+        switch(obj.type) {
+            case CMP_TYPE_FIXMAP:
+            case CMP_TYPE_MAP16:
+            case CMP_TYPE_MAP32:
+                printf("Map: %u\n", obj.as.map_size);
+                break;
+        }
+    }
+    return 0;
 }
