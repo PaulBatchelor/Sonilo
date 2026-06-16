@@ -6,8 +6,9 @@
 #include "ins.h"
 #include "wm.h"
 
-#define HALFWORD_MSB 0x8101
-#define HALFWORD_LSB 0x8102
+/* NOTE: encoded in LE, the bytes are 8101 and 8102 */
+#define HALFWORD_MSB 0x0181
+#define HALFWORD_LSB 0x0281
 
 int sonilo_load_ugens(sonilo *s);
 
@@ -983,6 +984,8 @@ int sonilo_send(sonilo *s, unsigned char c)
     /* if word fully loaded, process word */
     if (word_machine_wpos(s->wm) == 4) {
         uint32_t w;
+        uint16_t lsb, msb;
+
         /* Get the word, clear the word buffer */
         w = word_machine_word(s->wm);
         word_machine_clear(s->wm);
@@ -991,16 +994,21 @@ int sonilo_send(sonilo *s, unsigned char c)
 
         /* check for halfword prefixes */
 
-        switch (w >> 16) {
+        /* split into MSB/LSB components */
+        /* currently only works on LE system */
+        msb = w & 0xFFFF;
+        lsb = w >> 16;
+
+        switch (msb) {
             case HALFWORD_MSB:
                 /* append halfword to current word MSB */
                 return word_machine_append_half(s->wm,
-                        w & 0xFFFF,
+                        lsb,
                         0);
             case HALFWORD_LSB:
                 /* append halfword to current word LSB */
                 return word_machine_append_half(s->wm,
-                        w & 0xFFFF,
+                        lsb,
                         1);
             default:
                 break;

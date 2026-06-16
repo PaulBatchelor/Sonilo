@@ -216,6 +216,15 @@ int word_machine_parse(word_machine *wm, cmp_ctx_t *cmp)
             case CMP_TYPE_MAP32:
                 printf("Map: %u\n", obj.as.map_size);
                 break;
+            case CMP_TYPE_UINT32:
+                printf("Unsigned Integer: %u\n", obj.as.u32);
+                break;
+            case CMP_TYPE_POSITIVE_FIXNUM:
+                printf("FIXINT: %u\n", obj.as.u8);
+                break;
+            case CMP_TYPE_UINT8:
+                printf("Unsigned Integer: %u\n", obj.as.u8);
+                break;
         }
     }
     return 0;

@@ -1,11 +1,11 @@
 
-/* Word machine location is right after
- * Sonilo.
- * (2^16 words) / (256 words/megablock) = index 256
+/* Word machine location is placed in the block right after
+ * Sonilo and the VM overhead.
+ * (2^16 words) / (256 words/megablock) + system(1 megablock) = index 257
  */
 
 #include "cmp.h"
-#define WM_LOCATION 256
+#define WM_LOCATION 257
 
 typedef struct word_machine word_machine;
 

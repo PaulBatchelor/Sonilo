@@ -24,6 +24,16 @@ enum {
     QUIT
 };
 
+typedef struct memwrite {
+    /* previous character */
+    int8_t prev;
+    /* 5-bit encoding mode */
+    int encode;
+    sonilo *s;
+    sonilo_vm *vm;
+    sonilo_host *host;
+} memwrite;
+
 int update_mode(char c) {
     switch (c) {
         case 'p':
@@ -41,16 +51,6 @@ int update_mode(char c) {
 
     return PRINT;
 }
-
-typedef struct memwrite {
-    /* previous character */
-    int8_t prev;
-    /* 5-bit encoding mode */
-    int encode;
-    sonilo *s;
-    sonilo_vm *vm;
-    sonilo_host *host;
-} memwrite;
 
 static uint32_t incr(uint32_t *mem, uint16_t dat)
 {
