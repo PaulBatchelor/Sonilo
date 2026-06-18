@@ -125,6 +125,7 @@ int word_machine_extract_sys(uint32_t w, uint8_t *k, uint8_t *v)
 int word_machine_append(word_machine *wm, uint32_t w)
 {
     if (wm->pb >= 64) return 1;
+    /* TODO: ensure that word is encoded as 4 bytes in BE */
     wm->buf[wm->pb] = w;
     wm->pb++;
     return 0;
@@ -132,15 +133,20 @@ int word_machine_append(word_machine *wm, uint32_t w)
 
 int word_machine_append_half(word_machine *wm, uint16_t hw, int which)
 {
+    /* NOTE: HW is already an BE encoded word */
+
     if (wm->pb >= 64) return 1;
+
+    /* NOTE: on LE host system, MSB/LSB are flipped */
     if (which) {
-        /* 1: set LSB */
+        /* 1: set LSB of BE word */
 
         uint32_t w;
 
         w = wm->buf[wm->pb];
-        w &= ~0xFFFF;
-        w |= hw;
+
+        w &= 0xFFFF;
+        w |= hw << 16;
 
         /* set AND advance the buffer pointer.
          * this enforces an ordering: set the MSB,
@@ -149,14 +155,14 @@ int word_machine_append_half(word_machine *wm, uint16_t hw, int which)
         wm->buf[wm->pb] = w;
         wm->pb++;
     } else {
-        /* 0: set MSB */
+        /* 0: set MSB of BE word */
 
         uint32_t w;
 
         w = wm->buf[wm->pb];
-
+      
         w &= ~0xFFFF;
-        w |= hw << 16;
+        w |= hw;
 
         wm->buf[wm->pb] = w;
     }
