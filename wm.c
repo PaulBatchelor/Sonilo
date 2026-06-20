@@ -125,7 +125,6 @@ int word_machine_extract_sys(uint32_t w, uint8_t *k, uint8_t *v)
 int word_machine_append(word_machine *wm, uint32_t w)
 {
     if (wm->pb >= 64) return 1;
-    /* TODO: ensure that word is encoded as 4 bytes in BE */
     wm->buf[wm->pb] = w;
     wm->pb++;
     return 0;
