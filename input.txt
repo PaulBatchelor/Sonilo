@@ -887,3 +887,55 @@ again is fair game to me.
 @c Print the word, and the error code.
 Hopefully it is the magic word and an error code of 0.
 @m sp pw sp pe nl
+@l test_wm_block:
+@c test out executing a block of instructions sent to the word machine.
+@c this test will generate a small program that writes
+some words to the RW and prints their results
+to standard output.
+@c to begin, re-initialize the word machine.
+@m 0wx nl
+@c Begin a new block, which is the system command $s(0, 1)$.
+@m #8100CC01ww
+@c Set the RW register to a arbitrary magick constant. This
+is a 2-word instruction, consisting of a header word and a
+data word. Using $I$ to indicate the key and value pairs
+of the instruction, it can be notated as $I(\hbox{'!'}, d)$.
+The "!" character is the instruction code, and $d$ is a 32-bit
+unsigned integer used to set the RW register.
+@c In msgpack, this gets encoded as a fixmap with a 1-character fixstr
+key and a 32-bit unsigned integer value.
+@m #81A121CEww
+@c The data word takes up the entire 32-bits. Entering a 32-bit word
+into the word machine is slightly non-trivial. The data word can be
+any 32-bit word, including commands usually interpretted to be system
+commands. To prevent words from accidentally being interpretted as
+commands instead of data, the word is split into 2 half-words (shorts),
+and entered in using with two commands. It takes the cost of sending
+2 words over the wire to write 1 word of arbitrary data to memory.
+@c A half-word is entered in using the {\tt 8101} and {\tt 8102} prefixes.
+These prefixes will set the MSB and LSB portions of a halfword, respectively.
+The first part of this command starts
+off looking like a system command with a key of $2$ and $1$, but the last two
+bytes are treated as a 16-bit value encoded as big-endian. So, it's not
+valid msgpack. But, since system words are handled separately, this is
+a non-issue.
+@c the first magick word to be used will be {\tt 0x12344321}.
+@m #81011234ww #81024321ww
+@c Print the RW register to standard output, analagous to the {\tt pr}
+command.
+@c The print command is $I(\hbox{'!'}, 0)$, where $0$ is a fixint value
+rather than a 32-bit int. The msgpack parser will detect the different
+data type and react accordingly.
+@m #81A12100ww
+@c write print another magick word.
+This time, the magick word is {\tt 0x88888888}.
+@m #81A121CEww #81018888ww #81028888ww #81A12100ww
+@c Write the byte code sequence for ending the block to RW.
+This should be {\tt 0x8100cc02}. Do not write a command to print it.
+@m #81A121CEww #81018100ww #8102CC02ww
+@c End the instruction block. Ending the block should cause the WM
+to parse and evaluate the buffer.
+@m #8100CC02ww
+@c print the current value of the RW register. It should be
+the end-block command we wrote using the instructions previously.
+@m pr
