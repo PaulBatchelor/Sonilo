@@ -13,7 +13,6 @@ rule link
     command = gcc $cflags $in -o $out $ldflags $libs
     description = creating $out
 
-
 build sonilo.o: c89 sonilo.c
 build t.o: c89 t.c
 build mem.o: c89 mem.c
@@ -25,6 +24,7 @@ build array.o: c89 array.c
 build iter.o: c89 iter.c
 build universe.o: c89 universe.c
 build wm.o: c89 wm.c
+build op.o: c89 op.c
 build dsp/load.o: c89 dsp/load.c
 build dsp/sink.o: c89 dsp/sink.c
 build dsp/sine.o: c89 dsp/sine.c
@@ -47,6 +47,7 @@ build libsonilo.a: ar $
     iter.o $
     universe.o $
     wm.o $
+    op.o $
     cmp/cmp.o $
     dsp/load.o $
     dsp/sink.o $

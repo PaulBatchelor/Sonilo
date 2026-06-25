@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include "sonilo.h"
 #include "mem.h"
 #include "ugen.h"
@@ -1147,42 +1146,5 @@ sonilo_host* sonilo_get_host(sonilo *s)
 void sonilo_wm_init(sonilo *s)
 {
     word_machine_init(s->wm, 0);
-}
-
-int sonilo_op_a(sonilo_vm *vm, char type, uint8_t data)
-{
-    int rc;
-
-    rc = 0;
-    switch (type) {
-        case '!':
-            /* print rw */
-            printf("%x\n", vm->rw);
-            break;
-        default:
-            rc = 1;
-            break;
-    }
-
-    return rc;
-}
-
-int sonilo_op_b(sonilo_vm *vm, char type, uint32_t data)
-{
-    int rc;
-
-    rc = 0;
-    switch (type) {
-        case '!':
-            /* set rw */
-            vm->rw = data;
-            break;
-        default:
-            rc = 1;
-            break;
-    }
-
-    return rc;
-    return 1;
 }
 

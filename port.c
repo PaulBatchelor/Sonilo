@@ -57,6 +57,16 @@ static uint32_t ftoq(float x)
     return o;
 }
 
+float sonilo_qtof(uint32_t w)
+{
+    return qtof(w);
+}
+
+uint32_t sonilo_ftoq(float x)
+{
+    return ftoq(x);
+}
+
 sonilo_port sonilo_port_from_word(uint32_t *mem, uint32_t w)
 {
     int type;

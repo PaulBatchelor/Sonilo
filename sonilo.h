@@ -242,4 +242,7 @@ int sonilo_end(sonilo *s);
 /* wm_init: (re-)initialize word machine */
 void sonilo_wm_init(sonilo *s);
 
+float sonilo_qtof(uint32_t w);
+uint32_t sonilo_ftoq(float x);
+
 #endif
