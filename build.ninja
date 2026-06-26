@@ -65,10 +65,12 @@ build libsonilo.a: ar $
 build ex/hello_ugen.o: c89 ex/hello_ugen.c
 build ex/sines.o: c89 ex/sines.c
 build ex/seq.o: c89 ex/seq.c
+build ex/opseq.o: c89 ex/opseq.c
 
 build t: link t.o | libsonilo.a
 build ex/hello_ugen: link ex/hello_ugen.o | libsonilo.a
 build ex/sines: link ex/sines.o | libsonilo.a
 build ex/seq: link ex/seq.o | libsonilo.a
+build ex/opseq: link ex/opseq.o | libsonilo.a
 
-default t ex/hello_ugen ex/sines ex/seq
+default t ex/hello_ugen ex/sines ex/seq ex/opseq

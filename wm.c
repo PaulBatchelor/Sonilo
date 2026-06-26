@@ -3,9 +3,9 @@
 #include <stdio.h>
 
 /* sonilo stubs for the parser */
-typedef struct sonilo_vm sonilo_vm;
-int sonilo_op_a(sonilo_vm *vm, char type, uint8_t data);
-int sonilo_op_b(sonilo_vm *vm, char type, uint32_t data);
+typedef struct sonilo sonilo;
+int sonilo_op_a(sonilo *s, char type, uint8_t data);
+int sonilo_op_b(sonilo *s, char type, uint32_t data);
 
 #include "wm.h"
 
@@ -229,7 +229,7 @@ static bool bufreader(cmp_ctx_t *ctx, void *data, size_t limit) {
     return read_bytes(data, limit, ctx->buf);
 }
 
-int word_machine_parse(word_machine *wm, cmp_ctx_t *cmp, sonilo_vm *vm)
+int word_machine_parse(word_machine *wm, cmp_ctx_t *cmp, sonilo *s)
 {
     cmpbuf buf;
     uint32_t st;
@@ -321,7 +321,7 @@ int word_machine_parse(word_machine *wm, cmp_ctx_t *cmp, sonilo_vm *vm)
                 break;
             case ST_2:
                 /* process A-form word */
-                rc = sonilo_op_a(vm, subtype, data);
+                rc = sonilo_op_a(s, subtype, data);
                 if (rc) return 3;
                 /* reset */
                 read_input = 1;
@@ -329,7 +329,7 @@ int word_machine_parse(word_machine *wm, cmp_ctx_t *cmp, sonilo_vm *vm)
                 break;
             case ST_3:
                 /* process B-form word */
-                rc = sonilo_op_b(vm, subtype, data);
+                rc = sonilo_op_b(s, subtype, data);
                 if (rc) return 4;
 
                 /* reset */

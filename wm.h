@@ -47,4 +47,4 @@ int word_machine_append_half(word_machine *wm, uint16_t hw, int which);
 int word_machine_reset(word_machine *wm);
 
 /* parse: parse message buffer via cmp library */
-int word_machine_parse(word_machine *wm, cmp_ctx_t *cmp, sonilo_vm *vm);
+int word_machine_parse(word_machine *wm, cmp_ctx_t *cmp, sonilo *s);

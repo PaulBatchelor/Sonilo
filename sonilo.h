@@ -148,7 +148,9 @@ int sonilo_ugen_register(sonilo *s,
         instr_func render);
 
 /* process: compute ugen block contained in context */
-int sonilo_process(sonilo_ctx *ctx);
+int sonilo_process_old(sonilo_ctx *ctx);
+/* same thing, just without context struct */
+int sonilo_process(sonilo *s, uint16_t ctx);
 
 /* mkugen: lookup and create ugen, and append to ugen block */
 int sonilo_mkugen(sonilo_ctx *ctx, const char *ugen);
@@ -218,14 +220,15 @@ int sonilo_vm_char(sonilo_vm *vm, char c);
 int sonilo_host_cfunc(sonilo_host *host, uint16_t key, instr_func func);
 int sonilo_host_ex(sonilo_host *host, uint32_t *mem, uint32_t i, uint32_t *rw);
 int sonilo_host_block(sonilo_host *host, uint32_t *mem, uint16_t p, uint32_t *rw);
+int sonilo_host_index(sonilo_host *host, uint16_t key);
 
 uint32_t sonilo_vm_blocklist(sonilo_vm *vm);
 
 /* process opcodes inside the sonilo VM */
 /* form A uses a 7-bit data type */
-int sonilo_op_a(sonilo_vm *vm, char type, uint8_t data);
+int sonilo_op_a(sonilo *s, char type, uint8_t data);
 /* form B uses a 32-bit data type */
-int sonilo_op_b(sonilo_vm *vm, char type, uint32_t data);
+int sonilo_op_b(sonilo *s, char type, uint32_t data);
 
 /* send: send byte to word machine */
 int sonilo_send(sonilo *s, unsigned char c);

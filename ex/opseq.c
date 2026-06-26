@@ -2,27 +2,28 @@
 #include <stdio.h>
 #include "sonilo.h"
 #include "array.h"
+#include "mem.h"
 #include "context.h"
 #include "iter.h"
+#define OPB(CMD,DAT) sonilo_op_b(s, CMD, DAT)
+#define OPA(CMD,DAT) sonilo_op_a(s, CMD, DAT)
 
-int render(sonilo_ctx *ctx, uint16_t sink)
+int render(sonilo *s, uint16_t ctx, uint16_t sink)
 {
     int rc;
-    sonilo *s;
     float *out;
     int i;
     FILE *fp;
     uint32_t *mem;
 
-    fp = fopen("seq.raw", "wb");
+    fp = fopen("opseq.raw", "wb");
 
-    s = ctx->s;
     mem = sonilo_mem(s);
     rc = sonilo_ugen_block(mem, sink, 0, &out);
     if (rc) return 1;
 
     for (i = 0; i < 3445*2; i++) {
-        rc = sonilo_process_old(ctx);
+        rc = sonilo_process(s, ctx);
         if (rc) return 1;
         fwrite(out, sizeof(float), 64, fp);
     }
@@ -31,6 +32,7 @@ int render(sonilo_ctx *ctx, uint16_t sink)
 
     return 0;
 }
+
 const int sequence[] = {
     0, 5, 7, 10, 12, 10, 7, 5,
     0, 5, 7, 10, 12, 10, 7, 5,
@@ -38,64 +40,61 @@ const int sequence[] = {
     -2, 3, 5, 8, 10, 8, 5, 3,
 };
 
-int mkseq(sonilo_ctx *ctx)
+int mkseq(sonilo *s, uint16_t ac)
 {
     uint32_t args;
     uint32_t val;
-    uint16_t arr, iter, stk;
+    uint16_t arr, stk;
     int rc;
     int i;
     uint32_t *mem;
 
-    mem = sonilo_mem(ctx->s);
+    mem = sonilo_mem(s);
+    stk = CTX_STACK(mem, ac);
 
-    stk = CTX_STACK(mem, ctx->context);
     /* create an array of 16 8-bit (2^3) values */
     /* array args are packed in a word: len.wrdsz */
     args = 3 | (32 << 4);
-    rc = sonilo_push(ctx, args);
+    rc = OPB('w', args);
     if (rc) return 1;
 
     /* push context address (needed for array) */
-    rc = sonilo_push(ctx, ctx->context);
+    rc = OPB('w', ac);
     if (rc) return 2;
 
-    rc = array_create(mem, stk);
+    /* create array */
+    rc = OPA('a', 0);
     if (rc) return 3;
 
-    /* get the address from the stack */
-    val = 0;
-    rc = sonilo_pop(ctx, &val);
+    /* pop the address from the stack */
+    rc = OPA('w', 0);
     if (rc) return 4;
+    val = 0;
+    sonilo_get(s, &val);
     arr = val;
 
     /* set up sequence values */
     for (i = 0; i < 32; i++) {
-        rc = sonilo_push(ctx, sequence[i] + 60);
+        rc = OPB('w', sequence[i] + 60);
         if (rc) return 5;
-        rc = sonilo_push(ctx, i);
+        rc = OPB('w', i);
         if (rc) return 6;
-        rc = sonilo_push(ctx, arr);
+        rc = OPB('w', arr);
         if (rc) return 7;
-        rc = array_write(mem, stk);
+
+        /* write array */
+        rc = OPA('a', 1);
         if (rc) return 8;
     }
 
     /* create an array iterator */
-    iter = 0;
-    rc = iter_alloc(mem, ctx->context, &iter);
-    if (rc) return 9;
-    rc = iter_init(mem, iter);
-    if (rc) return 10;
-    rc = iter_array(mem, iter, arr);
+
+    rc = OPB('w', arr);
+    rc = OPA('i', 0);
     if (rc) return 11;
 
-    /* push iterator onto stack */
-    rc = sonilo_push(ctx, iter);
-    if (rc) return 12;
-
     /* create sequencer ugen */
-    rc = sonilo_mkugen(ctx, "SEQ");
+    rc = OPB('u', sonilo_key("SEQ"));
     if (rc) return 13;
     return 0;
 }
@@ -103,61 +102,75 @@ int mkseq(sonilo_ctx *ctx)
 int main(int argc, char *argv[])
 {
     sonilo *s;
-    sonilo_ctx ctx;
     int rc;
     uint16_t sink;
+    sonilo_vm *vm;
+    uint16_t ac;
+    uint32_t val;
 
     s = NULL;
     rc = sonilo_create(&s);
     if (rc) goto clean;
-    rc = sonilo_ctx_init(&ctx, s);
+
+    vm = sonilo_get_vm(s);
+    /* create context */
+    OPA('C', 0);
+    rc = sonilo_get(s, &val);
     if (rc) goto clean;
+    ac = val;
+    sonilo_vm_cursor_select(vm, 0);
+    sonilo_vm_cursor_set(vm, ac);
 
     /* clock */
-    rc = sonilo_constant(&ctx, 125 * 4);
+    rc = OPB('c', sonilo_ftoq(125 * 4));
     if (rc) goto clean;
-    rc = sonilo_mkugen(&ctx, "CLK");
+    rc = OPB('u', sonilo_key("CLK"));
     if (rc) goto clean;
-    rc = sonilo_mkugen(&ctx, "MET");
+    rc = OPB('u', sonilo_key("MET"));
     if (rc) goto clean;
 
     /* sequencer driven by clock */
-    rc = mkseq(&ctx);
+    rc = mkseq(s, ac);
     if (rc) goto clean;
 
     /* smoother on pitch signal */
-    rc = sonilo_constant(&ctx, 0.005);
+    rc = OPB('c', sonilo_ftoq(0.005));
     if (rc) goto clean;
-    rc = sonilo_mkugen(&ctx, "SMO");
+    rc = OPB('u', sonilo_key("SMO"));
     if (rc) goto clean;
 
     /* midi to frequency */
-    rc = sonilo_mkugen(&ctx, "MTF");
+    rc = OPB('u', sonilo_key("MTF"));
     if (rc) goto clean;
 
     /* saw, controlled via freq signal */
-    rc = sonilo_mkugen(&ctx, "SAW");
+    rc = OPB('u', sonilo_key("SAW"));
     if (rc) goto clean;
 
-    rc = sonilo_constant(&ctx, 200);
-    if (rc) goto clean;
     /* filter saw with LPF */
-    rc = sonilo_mkugen(&ctx, "LPF");
+    rc = OPB('c', sonilo_ftoq(200));
+    if (rc) goto clean;
+    rc = OPB('u', sonilo_key("LPF"));
     if (rc) goto clean;
 
-    rc = sonilo_constant(&ctx, 0.7);
+    rc = OPB('c', sonilo_ftoq(0.7));
     if (rc) goto clean;
-    rc = sonilo_mkugen(&ctx, "MUL");
+    rc = OPB('u', sonilo_key("MUL"));
     if (rc) goto clean;
 
     /* output */
-    rc = sonilo_mkugen(&ctx, "SNK");
+    rc = OPB('u', sonilo_key("SNK"));
     if (rc) goto clean;
     sink = 0;
-    rc = sonilo_last_ugen(&ctx, &sink);
+    /* get last ugen */
+    rc = OPA('u', 0);
     if (rc) goto clean;
+    val = 0;
+    rc = sonilo_get(s, &val);
+    if (rc) goto clean;
+    sink = val;
     /* render  */
-    rc = render(&ctx, sink);
+    rc = render(s, ac, sink);
 
     if (rc) goto clean;
 
@@ -166,7 +179,8 @@ int main(int argc, char *argv[])
         fprintf(stderr, "sonilo error: %d\n", rc);
     }
 
-    sonilo_ctx_destroy(&ctx);
+    /* destroy context */
+    OPA('C', 1);
     sonilo_destroy(s);
 
     return 0;

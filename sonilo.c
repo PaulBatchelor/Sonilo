@@ -645,16 +645,21 @@ int sonilo_ppush(sonilo_ctx *ctx, uint32_t w)
     return 0;
 }
 
-int sonilo_process(sonilo_ctx *ctx)
+int sonilo_process_old(sonilo_ctx *ctx)
+{
+    return sonilo_process(ctx->s, ctx->context);
+}
+
+int sonilo_process(sonilo *s, uint16_t ctx)
 {
     int rc;
     uint16_t block, next, pos;
     uint32_t *mem;
 
-    mem = ctx->s->mem;
+    mem = sonilo_mem(s);
     /*  initialize local block and index variables */
     block = 0;
-    rc = context_ublock_head_get(mem, ctx->context, &block);
+    rc = context_ublock_head_get(mem, ctx, &block);
     if (rc) return 1;
 
     next = 0;
@@ -674,13 +679,13 @@ int sonilo_process(sonilo_ctx *ctx)
         if (rc) return 3;
         /* set up rw function args */
         rw = (ugen << 16) | (mem[ugen + 1] & 0xFFFF);
-        rc = sonilo_set(ctx->s, rw);
+        rc = sonilo_set(s, rw);
         if (rc) return 4;
         /* call direct */
-        rc = sonilo_call_direct(ctx->s);
+        rc = sonilo_call_direct(s);
         if (rc) return 5;
         /* check rc flags */
-        rc = sonilo_get(ctx->s, &rw);
+        rc = sonilo_get(s, &rw);
         if (rc || rw) return 6;
         /* update pointers */
         pos++;
@@ -1060,7 +1065,7 @@ int sonilo_end(sonilo *s)
 {
     int rc;
     /* parse */
-    rc = word_machine_parse(s->wm, &s->host.cmp, s->vm);
+    rc = word_machine_parse(s->wm, &s->host.cmp, s);
     if (rc) return 1;
 
     /* clear buffer */
@@ -1148,3 +1153,7 @@ void sonilo_wm_init(sonilo *s)
     word_machine_init(s->wm, 0);
 }
 
+int sonilo_host_index(sonilo_host *host, uint16_t key)
+{
+    return instr_map_index(&host->map, key);
+}
