@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdint.h>
+#include "sonilo.h"
 
 #define T ds[sp]    /* Top of Data Stack    */
 #define N ds[sp-1]  /* Next on Data Stack   */
@@ -32,6 +34,8 @@ C *blocks,   /* name of block file (ilo.blocks) */
 
 I a, b, f, s, d, l;
 C i[1];
+
+sonilo *son = NULL;
 
 V push(I v) { ds[sp + 1] = v; sp += 1; }
 I pop() { sp -= 1; return ds[sp + 1]; }
@@ -112,12 +116,22 @@ V ioe() { save_image(); }
 V iof() { load_image(); ip = -1; }
 V iog() { ip = 65536; }
 V ioh() { push(sp); push(rp); }
+V ioi() {
+    uint32_t w;
+    int err;
+    w = (uint32_t)pop();
+    err = sonilo_sendw(son, w);
+    if (err) {
+        printf("sonilo error.\n");
+    }
+}
 V io() {
   switch (pop()) {
     case 0: ioa(); break;  case 1: iob(); break;
     case 2: ioc(); break;  case 3: iod(); break;
     case 4: ioe(); break;  case 5: iof(); break;
     case 6: iog(); break;  case 7: ioh(); break;
+    case 8: ioi(); break;
     default: break;
   }
 }
@@ -165,9 +179,11 @@ V execute() {
 I main(I argc, C **argv) {
   blocks = (argc > 1) ? argv[1] : "ilo.blocks";
   rom    = (argc > 2) ? argv[2] : "ilo.rom";
+  sonilo_create(&son);
   load_image();
   execute();
   for (; sp > 0; sp -= 1) printf(" %d", ds[sp]); printf("\n");
+  sonilo_destroy(son);
   return 0;
 }
 

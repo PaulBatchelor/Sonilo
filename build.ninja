@@ -37,6 +37,7 @@ build dsp/seq.o: c89 dsp/seq.c
 build dsp/mtof.o: c89 dsp/mtof.c
 build dsp/smoother.o: c89 dsp/smoother.c
 build cmp/cmp.o: c89 cmp/cmp.c
+build konilo/ilo.o: c89 konilo/ilo.c
 build libsonilo.a: ar $
     mem.o $
     ins.o $
@@ -72,5 +73,6 @@ build ex/hello_ugen: link ex/hello_ugen.o | libsonilo.a
 build ex/sines: link ex/sines.o | libsonilo.a
 build ex/seq: link ex/seq.o | libsonilo.a
 build ex/opseq: link ex/opseq.o | libsonilo.a
+build sonilo: link konilo/ilo.o | libsonilo.a
 
-default t ex/hello_ugen ex/sines ex/seq ex/opseq
+default t ex/hello_ugen ex/sines ex/seq ex/opseq sonilo
