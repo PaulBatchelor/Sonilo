@@ -248,4 +248,12 @@ void sonilo_wm_init(sonilo *s);
 float sonilo_qtof(uint32_t w);
 uint32_t sonilo_ftoq(float x);
 
+/* tape commands */
+int sonilo_tape_open(sonilo *s, int track);
+int sonilo_tape_close(sonilo *s, int track);
+int sonilo_tape_bind(sonilo *s, int track, uint16_t sink);
+
+/* render N seconds of audio */
+int sonilo_render(sonilo *s, uint16_t ctx, uint32_t nsecs);
+
 #endif

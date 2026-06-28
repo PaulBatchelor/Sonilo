@@ -44,13 +44,9 @@ int mkseq(sonilo *s, uint16_t ac)
 {
     uint32_t args;
     uint32_t val;
-    uint16_t arr, stk;
+    uint16_t arr;
     int rc;
     int i;
-    uint32_t *mem;
-
-    mem = sonilo_mem(s);
-    stk = CTX_STACK(mem, ac);
 
     /* create an array of 16 8-bit (2^3) values */
     /* array args are packed in a word: len.wrdsz */
@@ -169,9 +165,12 @@ int main(int argc, char *argv[])
     rc = sonilo_get(s, &val);
     if (rc) goto clean;
     sink = val;
-    /* render  */
-    rc = render(s, ac, sink);
 
+    rc = sonilo_tape_open(s, 0);
+    if (rc) goto clean;
+    rc = sonilo_tape_bind(s, 0, sink);
+    if (rc) goto clean;
+    rc = sonilo_render(s, ac, 10);
     if (rc) goto clean;
 
     clean:
@@ -179,6 +178,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "sonilo error: %d\n", rc);
     }
 
+    sonilo_tape_close(s, 0);
     /* destroy context */
     OPA('C', 1);
     sonilo_destroy(s);

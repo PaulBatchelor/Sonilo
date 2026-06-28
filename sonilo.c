@@ -1166,3 +1166,28 @@ int sonilo_host_index(sonilo_host *host, uint16_t key)
 {
     return instr_map_index(&host->map, key);
 }
+
+int sonilo_tape_open(sonilo *s, int track)
+{
+    /* TODO: implement */
+    return 1;
+}
+
+int sonilo_tape_close(sonilo *s, int track)
+{
+    /* TODO: implement */
+    return 1;
+}
+
+int sonilo_tape_bind(sonilo *s, int track, uint16_t sink)
+{
+    /* TODO: implement */
+    return 1;
+}
+
+/* render N seconds of audio */
+int sonilo_render(sonilo *s, uint16_t ctx, uint32_t nsecs)
+{
+    /* TODO: implement */
+    return 1;
+}

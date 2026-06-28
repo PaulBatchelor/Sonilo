@@ -1,4 +1,4 @@
-cflags = -g -Wall -pedantic -std=c89 -I. -Icmp
+cflags = -g -Wall -pedantic -std=c89 -I. -Icmp -Idr_wav
 libs = -L. -lsonilo
 
 rule c89
@@ -38,6 +38,7 @@ build dsp/mtof.o: c89 dsp/mtof.c
 build dsp/smoother.o: c89 dsp/smoother.c
 build cmp/cmp.o: c89 cmp/cmp.c
 build konilo/ilo.o: c89 konilo/ilo.c
+build tape.o: c89 tape.c
 build libsonilo.a: ar $
     mem.o $
     ins.o $
@@ -49,6 +50,7 @@ build libsonilo.a: ar $
     universe.o $
     wm.o $
     op.o $
+    tape.o $
     cmp/cmp.o $
     dsp/load.o $
     dsp/sink.o $
