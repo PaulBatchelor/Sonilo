@@ -117,13 +117,24 @@ V iof() { load_image(); ip = -1; }
 V iog() { ip = 65536; }
 V ioh() { push(sp); push(rp); }
 V ioi() {
-    uint32_t w;
-    int err;
-    w = (uint32_t)pop();
-    err = sonilo_sendw(son, w);
-    if (err) {
-        printf("sonilo error.\n");
-    }
+  uint32_t w;
+  int err;
+  w = (uint32_t)pop();
+  err = sonilo_sendw(son, w);
+  if (err) {
+      printf("sonilo error.\n");
+  }
+}
+V ioj() {
+  uint32_t w;
+  w = 0;
+  sonilo_get(son, &w);
+  push(w);
+}
+V iok() {
+  uint32_t w;
+  w = (uint32_t)pop();
+  sonilo_set(son, w);
 }
 V io() {
   switch (pop()) {
@@ -131,7 +142,8 @@ V io() {
     case 2: ioc(); break;  case 3: iod(); break;
     case 4: ioe(); break;  case 5: iof(); break;
     case 6: iog(); break;  case 7: ioh(); break;
-    case 8: ioi(); break;
+    case 8: ioi(); break;  case 9: ioj(); break;
+    case 10: iok(); break;
     default: break;
   }
 }

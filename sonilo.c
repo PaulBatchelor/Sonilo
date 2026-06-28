@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "sonilo.h"
 #include "mem.h"
 #include "ugen.h"
@@ -973,6 +974,14 @@ static int process_sys(sonilo *s, uint8_t k, uint8_t v)
                 rc = sonilo_end(s);
                 if (rc) rc = 3;
                 break;
+            case 3: {
+                uint32_t w;
+                w = 0;
+                sonilo_get(s, &w);
+                printf("%x", w);
+                fflush(stdout);
+                break;
+            }
             default:
                 break;
         }
