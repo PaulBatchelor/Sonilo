@@ -308,6 +308,36 @@ static int a_ctx(sonilo *s, uint8_t data)
     return rc;
 }
 
+int a_tape(sonilo *s, uint8_t data)
+{
+    int rc;
+    uint32_t rw;
+    uint16_t msb, lsb;
+
+    rc = -1;
+
+    rw = 0;
+    sonilo_get(s, &rw);
+    msb = rw >> 16;
+    lsb = rw & 0xFFFF;
+
+    switch (data) {
+        case 0: /* open track (LSB: track number) */
+            rc = sonilo_tape_open(s, lsb);
+            break;
+        case 1: /* close track (LSB: track number) */
+            rc = sonilo_tape_close(s, lsb);
+            break;
+        case 2: /* track bind (LSB: track number, MSB: sink */
+            rc = sonilo_tape_bind(s, lsb, msb);
+            break;
+        default:
+            rc = -1;
+    }
+
+    return rc;
+}
+
 int sonilo_op_a(sonilo *s, char type, uint8_t data)
 {
     int rc;
@@ -335,12 +365,24 @@ int sonilo_op_a(sonilo *s, char type, uint8_t data)
         case 'w': /* create context */
             rc = a_word(vm, data);
             break;
+        case 't': /* tape */
+            rc = a_tape(s, data);
+            break;
         default:
             rc = -1;
             break;
     }
 
     return rc;
+}
+
+static int b_render(sonilo *s, uint32_t data)
+{
+    uint16_t ctx, nsecs;
+    nsecs = data & 0xFFFF;
+    ctx = sonilo_vm_cursor_get(sonilo_get_vm(s));
+
+    return sonilo_render(s, ctx, nsecs);
 }
 
 int sonilo_op_b(sonilo *s, char type, uint32_t data)
@@ -363,6 +405,9 @@ int sonilo_op_b(sonilo *s, char type, uint32_t data)
             break;
         case 'c':
             rc = b_const(vm, data);
+            break;
+        case 'r':
+            rc = b_render(s, data);
             break;
         default:
             rc = 1;

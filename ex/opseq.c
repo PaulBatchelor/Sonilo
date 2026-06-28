@@ -141,11 +141,18 @@ int main(int argc, char *argv[])
     if (rc) goto clean;
     sink = val;
 
-    rc = sonilo_tape_open(s, 0);
+    /* open tape track 0 */
+    OPB('!', 0);
+    rc = OPA('t', 0);
     if (rc) goto clean;
-    rc = sonilo_tape_bind(s, 0, sink);
+
+    /* bind sink to track 0 */
+    OPB('!', 0 | (sink << 16));
+    rc = OPA('t', 2);
     if (rc) goto clean;
-    rc = sonilo_render(s, ac, 10);
+
+    /* render 10 seconds of audio */
+    OPB('r', 10);
     if (rc) goto clean;
 
     clean:
@@ -153,7 +160,11 @@ int main(int argc, char *argv[])
         fprintf(stderr, "sonilo error: %d\n", rc);
     }
 
+    /* close tape track 0 */
     sonilo_tape_close(s, 0);
+    OPB('!', 0);
+    OPA('t', 1);
+
     /* destroy context */
     OPA('C', 1);
     sonilo_destroy(s);

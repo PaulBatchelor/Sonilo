@@ -811,6 +811,7 @@ int sonilo_create(sonilo **ps)
 
 void sonilo_destroy(sonilo *s)
 {
+    /* TODO: close out any open tapes */
     uint32_t *u;
     u = s->universe;
     free(u);
