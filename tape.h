@@ -1,5 +1,5 @@
 enum {
-    TAPE_CLOSED,
+    TAPE_INACTIVE,
     TAPE_WRITE,
     TAPE_READ
 };
@@ -12,7 +12,7 @@ typedef struct tape_track {
 } tape_track;
 
 /* initialize the track data structure */
-void tape_track_init(tape_track *trk);
+void tape_track_init(tape_track *trk, int id);
 
 /* open / close tracks */
 int tape_track_open(tape_track *trk);

@@ -8,31 +8,6 @@
 #define OPB(CMD,DAT) sonilo_op_b(s, CMD, DAT)
 #define OPA(CMD,DAT) sonilo_op_a(s, CMD, DAT)
 
-int render(sonilo *s, uint16_t ctx, uint16_t sink)
-{
-    int rc;
-    float *out;
-    int i;
-    FILE *fp;
-    uint32_t *mem;
-
-    fp = fopen("opseq.raw", "wb");
-
-    mem = sonilo_mem(s);
-    rc = sonilo_ugen_block(mem, sink, 0, &out);
-    if (rc) return 1;
-
-    for (i = 0; i < 3445*2; i++) {
-        rc = sonilo_process(s, ctx);
-        if (rc) return 1;
-        fwrite(out, sizeof(float), 64, fp);
-    }
-
-    fclose(fp);
-
-    return 0;
-}
-
 const int sequence[] = {
     0, 5, 7, 10, 12, 10, 7, 5,
     0, 5, 7, 10, 12, 10, 7, 5,

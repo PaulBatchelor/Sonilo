@@ -6,6 +6,8 @@
 #include "context.h"
 #include "ins.h"
 #include "wm.h"
+#include "dr_wav.h"
+#include "tape.h"
 
 /* NOTE: encoded in LE, the bytes are 8101 and 8102 */
 #define HALFWORD_MSB 0x0181
@@ -19,6 +21,7 @@ struct sonilo_host {
     instr_map map;
     /* cmp for msgpack parsing */
     cmp_ctx_t cmp;
+    tape_track tracks[8];
 };
 
 struct sonilo_vm {
@@ -925,6 +928,7 @@ size_t sonilo_host_sizeof(void)
 int sonilo_host_init(sonilo_host *host, sonilo_vm *vm)
 {
     uint32_t i;
+
     /* set up map interface */
     for (i = 0; i < MAX_INSTR; i++) {
         host->func[i] = NULL;
@@ -932,6 +936,11 @@ int sonilo_host_init(sonilo_host *host, sonilo_vm *vm)
     host->map.key = vm->key;
     host->map.func = host->func;
     host->map.nent = &vm->nentries;
+
+    /* set up tape */
+    for (i = 0; i < 8; i++) {
+        tape_track_init(&host->tracks[i], i);
+    }
     return 0;
 }
 
@@ -1169,25 +1178,46 @@ int sonilo_host_index(sonilo_host *host, uint16_t key)
 
 int sonilo_tape_open(sonilo *s, int track)
 {
-    /* TODO: implement */
-    return 1;
+    if (track < 0 || track >= 8) return 1;
+    return tape_track_open(&s->host.tracks[track]);
 }
 
 int sonilo_tape_close(sonilo *s, int track)
 {
-    /* TODO: implement */
-    return 1;
+    if (track < 0 || track >= 8) return 1;
+    return tape_track_close(&s->host.tracks[track]);
 }
 
 int sonilo_tape_bind(sonilo *s, int track, uint16_t sink)
 {
-    /* TODO: implement */
-    return 1;
+    if (track < 0 || track >= 8) return 1;
+    return tape_track_bind(&s->host.tracks[track], sink);
 }
 
 /* render N seconds of audio */
-int sonilo_render(sonilo *s, uint16_t ctx, uint32_t nsecs)
+int sonilo_render(sonilo *s, uint16_t ctx, uint16_t nsecs)
 {
-    /* TODO: implement */
-    return 1;
+    uint32_t nblocks;
+    uint32_t i;
+    uint32_t t;
+    tape_track *trks;
+    uint32_t *mem;
+    int rc;
+
+    mem = sonilo_mem(s);
+    nblocks = nsecs * sonilo_srate(mem) / 64;
+    trks = s->host.tracks;
+
+    for (i = 0; i < nblocks; i++) {
+        rc = sonilo_process(s, ctx);
+        if (rc) return 1;
+        for (t = 0; t < 8; t++) {
+            if (trks[t].rw != TAPE_INACTIVE) {
+                rc = tape_track_process(&trks[t], mem);
+                if (rc) return 2;
+            }
+        }
+    }
+
+    return 0;
 }

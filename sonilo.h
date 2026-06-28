@@ -254,6 +254,6 @@ int sonilo_tape_close(sonilo *s, int track);
 int sonilo_tape_bind(sonilo *s, int track, uint16_t sink);
 
 /* render N seconds of audio */
-int sonilo_render(sonilo *s, uint16_t ctx, uint32_t nsecs);
+int sonilo_render(sonilo *s, uint16_t ctx, uint16_t nsecs);
 
 #endif
