@@ -41,6 +41,19 @@ son:ins n:add ;
 :son:go son:begin #0 #107 son:opa son:end ;
 :son:ctx-destroy son:begin #1 #67 son:opa son:end ;
 
+'seq var Free !seq #9 allot #8 @seq store
+
+#123 @seq #0 a:store
+
+#0 #5 #7 #10 #12 #10 #7 #5
+#8 [
+@seq #7 I n:sub a:store
+] indexed-times
+
+'sequence s:put nl
+
+@seq [ n:put nl ] a:for-each
+
 son:ctx-create
 #0 son:cur son:go
 #62 int const mtof saw #200 int const lpf half const mul sink
