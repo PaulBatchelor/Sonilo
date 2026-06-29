@@ -32,19 +32,21 @@ son:ins n:add ;
 :sink #37716 ugen ;
 :last-ugen son:begin #0 #117 son:opa son:end ;
 :tape #116 son:opa ;
-:bind son:begin #2 tape son:end ;
+:bind #16 shift-left or son:rw-set son:begin #2 tape son:end ;
 :topen son:begin #0 tape son:end ;
 :tclose son:begin #1 tape son:end ;
 :render son:begin #114 son:opb son:end ;
-:son:ctx-init son:begin #0 #67 son:opa son:end ;
+:son:ctx-create son:begin #0 #67 son:opa son:end ;
 :son:cur son:begin #1 n:add #107 son:opa son:end ;
 :son:go son:begin #0 #107 son:opa son:end ;
+:son:ctx-destroy son:begin #1 #67 son:opa son:end ;
 
-son:ctx-init
+son:ctx-create
 #0 son:cur son:go
 #62 int const mtof saw #200 int const lpf half const mul sink
 #0 setw topen
-#0 last-ugen son:rw-get #16 shift-left or setw bind
+#0 last-ugen son:rw-get bind
 #11 render
 #0 setw tclose
+son:ctx-destroy
 bye
