@@ -308,7 +308,7 @@ static int a_ctx(sonilo *s, uint8_t data)
     return rc;
 }
 
-int a_tape(sonilo *s, uint8_t data)
+static int a_tape(sonilo *s, uint8_t data)
 {
     int rc;
     uint32_t rw;
@@ -333,6 +333,36 @@ int a_tape(sonilo *s, uint8_t data)
             break;
         default:
             rc = -1;
+    }
+
+    return rc;
+}
+
+static int a_cursor(sonilo_vm *vm, uint8_t data)
+{
+    int rc;
+    rc = -1;
+
+    switch (data) {
+        case 0: /* set cursor from RW */
+            sonilo_vm_cursor_set(vm, sonilo_vm_rw_get(vm));
+            rc = 0;
+            break;
+        case 1: /* select cursor 1 */
+            sonilo_vm_cursor_select(vm, 0);
+            rc = 0;
+            break;
+        case 2: /* select cursor 2 */
+            sonilo_vm_cursor_select(vm, 1);
+            rc = 0;
+            break;
+        case 3: /* swap cursors */
+            sonilo_vm_cursor_swap(vm);
+            rc = 0;
+            break;
+        default:
+            rc = -1;
+            break;
     }
 
     return rc;
@@ -367,6 +397,9 @@ int sonilo_op_a(sonilo *s, char type, uint8_t data)
             break;
         case 't': /* tape */
             rc = a_tape(s, data);
+            break;
+        case 'k': /* tape */
+            rc = a_cursor(vm, data);
             break;
         default:
             rc = -1;

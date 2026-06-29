@@ -37,11 +37,12 @@ son:ins n:add ;
 :tclose son:begin #1 tape son:end ;
 :render son:begin #114 son:opb son:end ;
 :son:ctx-init son:begin #0 #67 son:opa son:end ;
-:son:cur ;
-:son:go ;
+:son:cur son:begin #1 n:add #107 son:opa son:end ;
+:son:go son:begin #0 #107 son:opa son:end ;
 
 son:ctx-init
-#60 int const mtof saw #200 int const lpf half const mul sink
+#0 son:cur son:go
+#62 int const mtof saw #200 int const lpf half const mul sink
 #0 setw topen
 #0 last-ugen son:rw-get #16 shift-left or setw bind
 #11 render
