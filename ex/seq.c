@@ -60,7 +60,7 @@ int mkseq(sonilo_ctx *ctx)
     rc = sonilo_push(ctx, ctx->context);
     if (rc) return 2;
 
-    rc = array_create(mem, stk);
+    rc = array_create_old(mem, stk);
     if (rc) return 3;
 
     /* get the address from the stack */

@@ -1201,7 +1201,7 @@ void parse_memwrite(memwrite *mw, char c)
         uint32_t err;
         mw->prev = 0;
         cur = sonilo_vm_cursor_get(vm);
-        err = array_create(sonilo_vm_mem(vm), cur);
+        err = array_create_old(sonilo_vm_mem(vm), cur);
         sonilo_vm_err_set(vm, err);
         return;
     }

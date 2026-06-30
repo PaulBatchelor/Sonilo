@@ -13,6 +13,9 @@ rule link
     command = gcc $cflags $in -o $out $ldflags $libs
     description = creating $out
 
+rule unu
+    command = ./konilo/unu $in > $out
+
 build sonilo.o: c89 sonilo.c
 build t.o: c89 t.c
 build mem.o: c89 mem.c
@@ -38,6 +41,7 @@ build dsp/mtof.o: c89 dsp/mtof.c
 build dsp/smoother.o: c89 dsp/smoother.c
 build cmp/cmp.o: c89 cmp/cmp.c
 build konilo/ilo.o: c89 konilo/ilo.c
+build konilo/unu.o: c89 konilo/unu.c
 build tape.o: c89 tape.c
 build libsonilo.a: ar $
     mem.o $
@@ -76,5 +80,10 @@ build ex/sines: link ex/sines.o | libsonilo.a
 build ex/seq: link ex/seq.o | libsonilo.a
 build ex/opseq: link ex/opseq.o | libsonilo.a
 build sonilo: link konilo/ilo.o | libsonilo.a
+build ex/seq.fth: unu ex/seq.unu | konilo/unu
+
+build konilo/unu: link konilo/unu.o
+    libs=
 
 default t ex/hello_ugen ex/sines ex/seq ex/opseq sonilo
+default ex/seq.fth

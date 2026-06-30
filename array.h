@@ -1,5 +1,6 @@
 /* allocate array with current context */
-int array_create(uint32_t *mem, uint16_t stk);
+int array_create_old(uint32_t *mem, uint16_t stk);
+int array_create(uint32_t *mem, uint16_t ctx);
 
 /* write value of an array a[p] = x, (x, p, a) */
 int array_write(uint32_t *mem, uint16_t stk);

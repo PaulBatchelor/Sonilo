@@ -35,7 +35,7 @@ static int a_array(sonilo_vm *vm, uint8_t data)
     stk = CTX_STACK(mem, ctx);
     switch (data) {
         case 0:
-            rc = array_create(mem, stk);
+            rc = array_create(mem, ctx);
             break;
         case 1:
             rc = array_write(mem, stk);

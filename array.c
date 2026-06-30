@@ -2,9 +2,27 @@
 #include <stddef.h>
 #include "array.h"
 #include "mem.h"
+#include "context.h"
 
-/* int array_create(uint32_t *mem, uint16_t ctx, int wrdsz, uint16_t len, uint16_t *pa) */
-int array_create(uint32_t *mem, uint16_t stk)
+int array_create(uint32_t *mem, uint16_t ctx)
+{
+    /* the old version required pushing the context address
+     * onto the stack, but this would require extra steps
+     * inside the word machine. Since the context can
+     * get the stack, this function rework the logic so
+     * only the context is used. */
+    uint16_t stk;
+    int rc;
+    stk = CTX_STACK(mem, ctx);
+    rc = barray_append(mem, stk, ctx);
+    if (rc) return 1;
+
+    /* with the context address pushed onto the stack, the old
+     * array create function can be used */
+    return array_create_old(mem, stk);
+}
+
+int array_create_old(uint32_t *mem, uint16_t stk)
 {
     uint16_t ctx;
     uint8_t wrdsz;

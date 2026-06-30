@@ -23,15 +23,11 @@ int mkseq(sonilo *s, uint16_t ac)
     int rc;
     int i;
 
-    /* create an array of 16 8-bit (2^3) values */
+    /* create an array of 32 8-bit (2^3) values */
     /* array args are packed in a word: len.wrdsz */
     args = 3 | (32 << 4);
     rc = OPB('w', args);
     if (rc) return 1;
-
-    /* push context address (needed for array) */
-    rc = OPB('w', ac);
-    if (rc) return 2;
 
     /* create array */
     rc = OPA('a', 0);
