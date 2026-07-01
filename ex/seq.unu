@@ -1,47 +1,57 @@
-Set up the array for storing the pitch sequence.
-~~~
-'vals var @Free !vals #9 allot #8 @vals store
+Here is a simple sequencer patch in Sonilo.
+It begins by setting up something called a "context",
+which is the thing used to manage memory and create
+a patch.
 
-#0 #5 #7 #10 #12 #10 #7 #5
-#8 [
-@vals
-#7 I n:sub
-a:store
-] indexed-times
+A context is allocated a particular address in sonilo
+virtual memory. The address is stored in cursor 0.
 
-~~~
-Set up a context for creating a patch. Make sure that
-the address of this context is set to cursor 0.
 ~~~
 son:ctx-create #0 son:cur son:go
 ~~~
-Convert a clock signal into a
-trigger signal via metro.
+
+Create a trigger signal to drive the sequencer.
+A 125 BPM pulse is subdivided into 4 beats and fed into
+a clock signal generator that produces a ramp signal. To
+turn that ramp into a trigger, the metro object is used.
+
 ~~~
 #125 #4 n:mul const clock metro
 ~~~
-Create an array of 8 8-bit (2^3) values, packed in a
-single word: len.wrdsz.
+
+To build a sequence, create an array of 8 8-bit (expressed
+as $k=3$, where $2^k = 2^3 = 8$) using the {\tt arr}
+word, which is fed into {\tt seq}.
+
+The prefix {\tt %} is used to add values to the array
+in ascending order.
+
 ~~~
-#3 #8 #4 shift-left or son:array-create
+#3 #8 arr %0 %5 %7 %10 %12 %10 %7 %5 seq
 ~~~
-Retrieve the array address (pop, rwget), and populate
-with sequence values in the array stack.
+
+Bias by 60 (middle C). Add portamento via a smoothing
+filter {\tt smoother}, and convert to MIDI via {\tt mtof}.
+
 ~~~
-son:pop son:rw-get
-#8 [ dup @vals I a:fetch #60 n:add I son:array-write ] indexed-times
+#60 const add #0.001 constf smoother mtof
 ~~~
-Create an array iterator, followed by the sequencer
+
+Feed the frequency signal into a subtractive saw
+oscillator ({\tt saw} and {\tt lpf}), and change
+the gain. Write this to tape track 0 via {\tt tout}.
+
 ~~~
-son:iter seq #0.001 constf smoother
+saw #200 const lpf #0.500 constf mul sink #0 tout
 ~~~
-The rest of the patch
+
+Open the tape track 0 ({\tt topen}), render 11 seconds
+of audio ({\tt render}), and close the track ({\tt tclose}).
+
 ~~~
-mtof saw #200 const lpf #0.500 constf mul sink
-#0 setw topen
-#0 last-ugen son:rw-get bind
-#11 render
-#0 setw tclose
-son:ctx-destroy
-bye
+#0 topen #11 render #0 tclose
+~~~
+
+~~~
+son:ctx-destroy bye
 ~~~

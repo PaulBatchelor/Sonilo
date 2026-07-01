@@ -54,12 +54,25 @@ new #5 set
 7 :last-ugen son:begin #0 #117 son:opa son:end ;
 8 :tape #116 son:opa ;
 9 :bind #16 shift-left or son:rw-set son:begin #2 tape son:end ;
-10 :topen son:begin #0 tape son:end ;
-11 :tclose son:begin #1 tape son:end ;
+10 :topen setw son:begin #0 tape son:end ;
+11 :tclose setw son:begin #1 tape son:end ;
 12 :render son:begin #114 son:opb son:end ;
 save
 
 new #6 set
+0 (sonilo-core)
+1 #0 'AA var-n
+2 #0 'AI var-n
+3 :sigil:% s:to-n @AA @AI rot
+4 son:push son:push son:push
+5 son:begin #1 $a son:opa son:end @AI n:inc !AI ;
+6 &sigil:% $% sigil:set
+7 :arr #4 shift-left or son:array-create 
+8 son:pop son:rw-get dup !AA #0 !AI ;
+9 :tout last-ugen son:rw-get bind ;
+save
+
+new #9 set
 0 (sonilo-core) (ugens)
 1 :metro #24870 ugen ;
 2 :clock #4820 ugen ;
@@ -67,9 +80,11 @@ new #6 set
 4 :saw #36908 ugen ;
 5 :lpf #23498 ugen ;
 6 :mul #25878 ugen ;
-7 :seq #37152 ugen ;
+7 :sequence #37152 ugen ;
 8 :sink #37716 ugen ;
 9 :smoother #37660 ugen ;
+10 :add #198 ugen ;
+11 :seq son:iter sequence ;
 save
 
 bye
