@@ -1,0 +1,4404 @@
+================================================================
+ _              _
+(_|   |   |_/  | |
+  |   |   | _  | |  __   __   _  _  _    _    _|_  __
+  |   |   ||/  |/  /    /  \_/ |/ |/ |  |/     |  /  \_
+   \_/ \_/ |__/|__/\___/\__/   |  |  |_/|__/   |_/\__/
+
+
+                  _|    _|                      _|  _|
+                  _|  _|      _|_|    _|_|_|        _|    _|_|
+                  _|_|      _|    _|  _|    _|  _|  _|  _|    _|
+                  _|  _|    _|    _|  _|    _|  _|  _|  _|    _|
+                  _|    _|    _|_|    _|    _|  _|  _|    _|_|
+
+================================================================
+
+Copyright (c) charles childers
+
+Permission to use, copy, modify, and/or distribute this software
+for any purpose with or without fee is hereby granted, provided
+that the copyright notice and this permission notice appear in
+all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL
+THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR
+CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+================================================================
+
+Konilo is a small, pragmatic computing system built around a
+bespoke implementation of the Forth programming language. It
+runs on a tiny, highly portable virtual computer named ilo.
+
+The source code is written in a literate format known as unu.
+More information on this is available at unu.retroforth.org.
+
+Commentary is mixed throughout the code. I try to keep the
+comments brief, describing the provided functions and adding
+longer notes where I think they are relevant.
+
+Let's take a brief moment to look at the source format. The
+code is placed between fences (the ~~~ / ~~~) pairs. Anything
+outside of these fences is commentary. In addition, I have
+comment lines (starting with "c ") inside the code blocks.
+
+The code here is assembly, for the `pali` assembler.
+
+Pali assembly takes the form of:
+
+    <directive> <data>
+
+Directives are a single character. The length of the data part
+varies. The directives are:
+
++---+----------------------------------------------------------+
+| i | process parameter as instruction bundle                  |
+| o | set origin/offset in memory space                        |
+| * | reserve parameter cells of data in memory                |
+| r | parameter is a named item, assemble a pointer to it      |
+| R | parameter is a named immediate item, assemble a pointer  |
+|   | to it. In Forth, immediate words are run when encountered|
+|   | at either the listener or in a definition.               |
+| - | alias for `r`                                            |
+| d | parameter is a decimal value, assemble it inline         |
+| c | parameter is a comment to be ignored                     |
+| : | parameter is a label name                                |
+| s | parameter is a string, assemble as length prefixed       |
+| z | parameter is a string, assemble as null-terminated       |
+| D | parameter is a dictionary entry (name target [*])        |
++---+----------------------------------------------------------+
+
+Instruction bundles are groups of four ilo instructions. The
+instruction names are identified by two letter codes. These are
+shown in the following tables:
+
+  Opode  Instruction Names  Data Stack Effects
+  =====  =================  ====================================
+  00-05  .. li du dr sw pu  -     -n    n-nn   n-    nm-mn  n-
+  06-11  po ju ca cc cj re  -n    a-    a-     af-   af-    -
+  12-17  eq ne lt gt fe st  nn-f  nn-f  nn-f   nn-f  a-n    na-
+  18-23  ad su mu di an or  nn-n  nn-n  nn-nn  nn-n  nn-n   nn-n
+  24-29  xo sl sr cp cy io  nn-n  nn-n  nn-n   nnn-  nnn-   n-
+  =====  =================  ====================================
+
+An important note: instructions that modify the instruction
+pointer must only be followed by a non-op. These instructions
+are: ju ca cc cj re
+
+================================================================
+
+On startup ilo will load a memory image (the "rom") into ram and
+jump to address 0. I call `setup:sigls` to setup the environment
+and then jump into `forth` to begin actually handling the user
+environment.
+
+ilo provides 65,536 memory words. For Konilo, these are
+organized as:
+
++---------------+----------------------------------------------+
+| Range         | Used For                                     |
++===============+==============================================+
+| 00000 - 59999 | forth & user code / data                     |
+| 60000 - 61025 | block buffer                                 |
+| 61026 - 61091 | string evaluation buffers                    |
+| 61092 - 61104 | loop indices                                 |
+| 61105 - 61139 | number conversion                            |
+| 61140 - 61141 | lexical scope                                |
+| 61142 - 61206 | needs buffer                                 |
+| 61207 - 61335 | sigils table                                 |
+| 61336 - 63376 | reserved for future system use               |
+| 63377 - 64377 | misc. system variables                       |
+| 64378 - 65406 | string buffers (8 x 127 chars)               |
+| 65407 - 65535 | text input buffer (127 chars)                |
++---------------+----------------------------------------------+
+
+I map names to these before proceeding. This will help keep
+later code using these more readable.
+
+~~~
+c set to 1 after the actual start to leave room for a length
+c cell
+o 60001
+: sys:buffers/block
+o 61026
+: sys:buffers/string-eval
+o 61092
+: sys:buffers/loops
+o 61105
+: sys:buffers/numeric-conversion
+o 61140
+: sys:buffers/scope
+o 61142
+: sys:buffers/needs
+o 61207
+: Sigils
+
+c ! for fetching from variables
+o 61240
+r sigil:!
+c # for numbers
+o 61242
+r sigil:#
+c $ for characters
+o 61243
+r sigil:$
+c & for pointers
+o 61245
+r sigil:&
+c ' for strings
+o 61246
+r sigil:'
+c ( for comments
+o 61247
+r drop
+c : for colon definitions
+o 61265
+r sigil::
+c @ for fetching from variables
+o 61271
+r sigil:@
+c \ for creating names
+o 61299
+r sigil:\
+
+o 61336
+: sys:buffers/reserved
+o 63377
+: sys:buffers/variables
+o 64378
+: sys:buffers/strings+arrays
+o 65407
+: sys:buffers/input
+o 65408
+: sys:buffers/input/text
+o 65409
+: sys:buffers/input/text+1
+~~~
+
+~~~
+c A number of parts of the system make use of variables. I store
+c these in the system buffers 
+o 63377
+
+c Compiler tracks the compiler state (-1 for on, 0 for off)
+: Compiler
+d 0
+
+: BaseBlock
+c BaseBlock is used by the block i/o words
+d 0
+
+: Blocks
+c number of blocks available
+d 16
+
+: Block
+c number of the current block
+d 0
+
+c These are used to construct the choice table used by `choose`
+: choice:true
+d 0
+: choice:false
+d 0
+
+c ACount stores the number of matches found by `a:indices`
+: ACount
+d 0
+
+c Current is used by `indexed-times` to track the current loop
+c depth
+: Current
+d 0
+
+c Source, End, and At are used by the string evaluation code.
+: Source
+d 0
+: End
+d 0
+: At
+d 0
+
+c s:Length & s:Current are used by `s:to-n`
+: s:Length
+d 0
+: s:Current
+d 0
+
+c Next-String holds the number for the next string in the temp.
+c pool
+: Next-String
+d 0
+
+c Used by `needs`
+: needs.Len
+d 0
+~~~
+
+
+~~~
+c After creating the labels for the system buffers, return to
+c address 0 to start the actual code.
+
+c On startup this calls a function to populate the default
+c sigils, then jumps into forth.
+
+o 0
+i liju....
+r forth
+~~~
+
+================================================================
+
+With the configuration out of the way, I move on to implementing
+the various words.
+
+Being a Forth, functions or subroutines are called `words`.
+Information about these is stored in a `dictionary`.
+
+The first set of words I'm defining map directly to the
+instructions in the ilo computer.
+
+~~~
+c `dup` duplicates the top item on the data stack.
+c
+c    +---+     +---+---+
+c    | 1 | ==> | 1 | 1 |
+c    +---+     +---+---+
+c
+: dup
+c (n-nn)
+i dure....
+
+c `drop` discards the top item on the data stack.
+c
+c    +---+---+     +---+
+c    | 1 | 2 | ==> | 1 |
+c    +---+---+     +---+
+c
+: drop
+c (n-)
+i drre....
+
+c `swap` exchanges the positions of the top two values on the
+c data stack.
+c
+c    +---+---+     +---+---+
+c    | 1 | 2 | ==> | 2 | 1 |
+c    +---+---+     +---+---+
+c
+: swap
+c (nm-mn)
+i swre....
+
+c `eq?` compares two items on the stack for equality. If they
+c are equal, it will push a true (-1) flag. If they are not
+c equal, it pushes false (0) instead.
+c
+c    +---+---+     +----+
+c    | 1 | 1 | ==> | -1 |
+c    +---+---+     +----+
+c
+c    +---+---+     +----+
+c    | 2 | 1 | ==> |  0 |
+c    +---+---+     +----+
+c
+: eq?
+c (nn-f)
+i eqre....
+
+c `-eq?` compares two items on the stack for inequality. If they
+c are not equal, it will push a true (-1) flag. If they are
+c equal, it pushes false (0) instead.
+c
+c    +---+---+     +----+
+c    | 1 | 1 | ==> |  0 |
+c    +---+---+     +----+
+c
+c    +---+---+     +----+
+c    | 2 | 1 | ==> | -1 |
+c    +---+---+     +----+
+c
+: neq?
+c (nn-f)
+i nere....
+
+c    +---+---+     +----+
+c    | 1 | 1 | ==> |  0 |
+c    +---+---+     +----+
+c
+c    +---+---+     +----+
+c    | 2 | 1 | ==> |  0 |
+c    +---+---+     +----+
+c
+c    +---+---+     +----+
+c    | 1 | 2 | ==> | -1 |
+c    +---+---+     +----+
+c
+: lt?
+c (nn-f)
+i ltre....
+
+c    +---+---+     +----+
+c    | 1 | 1 | ==> |  0 |
+c    +---+---+     +----+
+c
+c    +---+---+     +----+
+c    | 2 | 1 | ==> | -1 |
+c    +---+---+     +----+
+c
+c    +---+---+     +----+
+c    | 1 | 2 | ==> |  0 |
+c    +---+---+     +----+
+c
+: gt?
+c (nn-f)
+i gtre....
+
+: fetch
+c (p-n)
+i fere....
+
+: store
+c (np-)
+i stre....
+
+c `n:add` adds two values, returning the result.
+c
+c    +---+---+     +---+
+c    | 1 | 2 | ==> | 3 |
+c    +---+---+     +---+
+c
+: n:add
+c (nn-n)
+i adre....
+
+c `n:sub` subtracts two values, returning the result.
+c
+c    +---+---+     +---+
+c    | 3 | 1 | ==> | 2 |
+c    +---+---+     +---+
+c
+: n:sub
+c (nn-n)
+i sure....
+
+c `n:mul` multiplies two values, returning the result.
+c
+c    +---+---+     +---+
+c    | 2 | 3 | ==> | 6 |
+c    +---+---+     +---+
+c
+: n:mul
+c (nn-n)
+i mure....
+
+c `n:divmod` divides two values, returning the result and
+c remainer.
+c
+: n:divmod
+c (nn-nn)
+i dire....
+
+: and
+c (nn-n)
+i anre....
+
+: or
+c (nn-n)
+i orre....
+
+: xor
+c (nn-n)
+i xore....
+
+: shift-left
+c (nn-n)
+i slre....
+
+: shift-right
+c (nn-n)
+i srre....
+
+c `io` triggers an i/o operation. The basic ilo system provides
+c just a few i/o devices.
+c
+c Using this is a matter of pushing any needed values to the
+c stack, pushing the i/o device number, then calling `io`. For
+c a list of devices:
+c
+c +--------+--------------------------------------+----------+
+c | Device | Action                               | Required |
+c +========+======================================+==========+
+c | 0      | Display a character. Consumes a      | Yes      |
+c |        | character from the stack.            |          |
+c | 1      | Read a character from the input      | Yes      |
+c |        | device. The character is pushed to   |          |
+c |        | the stack.                           |          |
+c | 2      | Read a block into memory.            | Yes      |
+c | 3      | Write memory to a block.             | Yes      |
+c | 4      | Write all memory to an image/rom.    | No       |
+c | 5      | Reload the image/rom, and jump to    | Yes      |
+c |        | address 0. Also empty all stacks.    |          |
+c | 6      | End execution. On a hosted system,   | No       |
+c |        | exit ilo. If native, suspend         |          |
+c |        | execution.                           |          |
+c | 7      | Obtain stack depths. Pushes the data | Yes      |
+c |        | depth then the address depth.        |          |
+c +--------+-------------------------------------------------+
+c
+: io
+c (...n-?)
+i iore....
+
+c `copy` copies "n" cells of memory starting at p1 to p2. For
+c example:
+c
+c    +---+---+---+---+---+---+---+---+---+
+c    | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+c    +---+---+---+---+---+---+---+---+---+
+c    | A | B | C | D | D | E | A | B | C |
+c    +---+---+---+---+---+---+---+---+---+
+c
+c With a stack of:
+c
+c    #2 #6 #3
+c
+c This would change memory to:
+c
+c    +---+---+---+---+---+---+---+---+---+
+c    | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+c    +---+---+---+---+---+---+---+---+---+
+c    | A | B | C | D | D | B | C | D | C |
+c    +---+---+---+---+---+---+---+---+---+
+c
+c The ilo specification does not require the system to support
+c overlapping copies. If the memory areas would overlap, test
+c and write a specific word to handle the overlap if needed.
+c
+: copy
+c (ppn-)
+i cyre....
+
+c `compare` will compare "n" cells of memory starting at p1 and
+c p2.
+c
+c As an example:
+c
+c    +---+---+---+---+---+---+---+---+---+
+c    | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+c    +---+---+---+---+---+---+---+---+---+
+c    | A | B | C | D | D | E | A | B | C |
+c    +---+---+---+---+---+---+---+---+---+
+c
+c With a stack of:
+c
+c    #1 #7 #3
+c
+c This would return true (-1) as the ABC sequences at 1 & 7
+c match.
+c
+c But a stack of:
+c
+c   #1 #5 #3
+c
+c Would return false (0) since the sequences (ABC & DEA) do not
+c match.
+c
+: compare
+c (ppn-)
+i cpre....
+~~~
+
+================================================================
+
+~~~
+c The next set makes a copy of the second item on the stack,
+c puts a copy of the top item under the second item, discards
+c the second item, discards the top two items, and makes copies
+c of the top two items.
+c
+c    +---+---+     +---+---+---+
+c    | 1 | 2 | ==> | 1 | 2 | 1 |
+c    +---+---+     +---+---+---+
+c
+: over
+c (xy-xyx)
+i puduposw
+i re......
+
+c   +---+---+     +---+---+---+
+c   | 1 | 2 | ==> | 2 | 1 | 2 |
+c   +---+---+     +---+---+---+
+c
+: tuck
+c (xy-yxy)
+i dupuswpo
+i re......
+
+c    +---+---+     +---+
+c    | 1 | 2 | ==> | 2 |
+c    +---+---+     +---+
+c
+: nip
+c (xy-y)
+i swdrre..
+
+c `drop-pair` discards the top two stack items. (In some Forths
+c this is called "2drop")
+c
+c    +---+---+
+c    | 1 | 2 | ==>
+c    +---+---+
+c
+: drop-pair
+c (xy-)
+i drdrre..
+
+c `dup-pair` makes a copy of the top two stack items. (In some
+c Forths this is called "2dup")
+c
+c    +---+---+     +---+---+---+---+
+c    | 1 | 2 | ==> | 1 | 2 | 1 | 2 |
+c    +---+---+     +---+---+---+---+
+c
+: dup-pair
+c (xy-xyxy)
+i puduposw
+i puduposw
+i re......
+~~~
+
+================================================================
+
+~~~
+c There is a second stack, which holds return addresses. It's
+c used for subroutine calls, but you can temporarily store data
+c there as well. `push` and `pop` provide access to this stack.
+c
+c Note that this is more complicated than simply pushing values.
+c Thess definitions take the direct threading implementation
+c into account to ensure that code does not crash when using
+c them, as long as the `push` and `pop` operations are paired
+c correctly.
+c
+: push
+c (n-) (A:-n)
+i poswposw
+i pupupure
+
+: pop
+c (-n) (A:n-)
+i popoposw
+i puswpure
+
+c A better way to work with data items on the address stack is
+c to use `dip` and `sip`. Using these ensures that the address
+c stack remains balanced, and is more idomatic.
+c
+c In this case, `dip` removes the value before calling the
+c function, but `sip` does not. In both, the value is restored
+c to the stack after the function return.
+c
+: dip
+c (np-n)
+i swpuca..
+i pore....
+
+: sip
+c (np-n)
+i puduposw
+i puca....
+i pore....
+
+c For those familiar with traditional Forth systems, the `push`,
+c `pop`, `dip`, and `sip` are similar to:
+c
+c +--------------+---------------+
+c | Konilo       | Traditional   |
+c +==============+===============+
+c | push ... pop | >R ... R>     |
+c | [ ... ] dip  | >R ... R>     |
+c | [ ... ] sip  | dup >R ... R> |
+c +--------------+---------------+
+c
+~~~
+
+================================================================
+
+~~~
+c Konilo provides a number of words for controlling the flow
+c of execution.
+c
+c The initial building blocks are calls, jumps, and returns. A
+c call takes an address and jumps to it, saving the previous
+c execution address on the return (or address) stack. Return
+c will take the address from the return stack and jump back to
+c it. A jump is like call, but does not save a return address
+c and thus can not be used with return.
+c
+: jump
+c (p-)
+i popopodr
+i drdrju..
+
+: call
+c (p-)
+i ju......
+~~~
+
+================================================================
+
+~~~
+c `?jump` branches to a function if a passed flag is true
+c (non-zero).
+
+: ?jump
+i swline..
+d 0
+i licj....
+r jump
+i drre....
+~~~
+
+================================================================
+
+# Loops
+
+~~~
+c The `times` combinator takes a count and an address. It then
+c runs the function the specified number of times.
+c
+c An example:
+c
+c    #0 #10 [ dup n:put n:inc ] times drop
+
+: times
+c (np-)
+i sw......
+: times.loop
+i dulieq..
+d 0
+i licj....
+r times.done
+i lisupudu
+d 1
+i puca....
+i popoliju
+r times.loop
+: times.done
+i drdrre..
+
+c The `until` combinator takes a function address. The function
+c must leave a flag on the stack. `until` runs the function
+c repeatedly until the flag is true (non-zero).
+
+: until
+c (p-)
+c pointer must return a value to be used as a flag
+i dupuca..
+i poswlieq
+d 0
+i licj....
+r until
+i drre....
+
+c The `while` combinator takes a function address. The function
+c must leave a flag on the stack. `while` runs the function
+c repeatedly until the flag is false (zero).
+
+: while
+c (p-)
+c pointer must return a value to be used as a flag
+i dupuca..
+i poswline
+d 0
+i licj....
+r while
+i drre....
+
+c `forever` runs a function repeatedly in an unending loop.
+
+: forever
+c (p-)
+i dupuca..
+i poliju..
+r forever
+~~~
+
+================================================================
+
+
+~~~
+c `restart` triggers the reset functionality in ilo. This will
+c reload the image, reset the stack pointers to empty, and then
+c jump to address 0.
+
+: restart
+c (...-)
+i liio....
+d 5
+
+c `bye` triggers the shutdown functionality it ilo. On a hosted
+c system, this will normally return to the system shell.
+
+: bye
+c (-)
+i liio....
+d 6
+~~~
+
+================================================================
+
+# Block I/O
+
+~~~
+: block:load
+c (np-)
+i pulifead
+r BaseBlock
+i poliiore
+d 2
+
+: block:save
+c (np-)
+i pulifead
+r BaseBlock
+i poliiore
+d 3
+~~~
+
+# Maths
+
+~~~
+c `n:zero?` and `n:-zero?` compare a value to zero.
+
+: n:zero?
+c (n-f)
+i lieqre..
+d 0
+
+: n:-zero?
+c (n-f)
+i linere..
+d 0
+
+c `n:divmod` wraps the instruction that divides and returns the
+c quotient and remainder. These separate out the functionality.
+
+: n:mod
+c (n-n)
+i didrre..
+
+: n:div
+c (n-n)
+i diswdrre
+
+c `n:min` returns the lesser of two values; `n:max` returns the
+c greater. In this, I implement `n:max` after `n:limit` so that
+c `n:limit` can fall through into it, saving a jump.
+
+: n:min
+c (nn-n)
+c inline dup-pair
+i puduposw
+i puduposw
+i ltlilili
+r drop
+r nip
+r choose
+i ju......
+
+c I use `n:min` and `n:max` to implement `n:limit`, which takes
+c a value, and an upper and lower limit. It will return the
+c value if it is in range, or the closest value in range if
+c outside it.
+
+: n:limit
+i swlilica
+r n:min
+r dip
+
+: n:max
+c (nn-n)
+c inline dup-pair
+i puduposw
+i puduposw
+i gtlilili
+r drop
+r nip
+r choose
+i ju......
+
+: not
+c (n-n)
+i lixore..
+d -1
+~~~
+
+================================================================
+
+# Memory
+
+~~~
+c `fetch-next` takes an address. It fetches the value stored at
+c the address, and returns both this and the next address.
+
+: fetch-next
+c (p-pn)
+i duliadsw
+d 1
+i fere....
+
+c `store-next` takes a value and an address. It stores the value
+c in the address, then returns the next address.
+
+: store-next
+c (np-p)
+i duliadpu
+d 1
+i stpore..
+
+c `fill` is used to fill a region of memory with a specified
+c value.
+c
+c Takes a value, and address, and a length.
+
+: fill
+c (npn-)
+i pu......
+c inline dup-pair
+i puduposw
+i puduposw
+i stliadpo
+d 1
+i lisuduli
+d 1
+d 0
+i eqlicj..
+r fill.done
+i liju....
+r fill
+: fill.done
+i drdrdrre
+
+c `gc` runs a function, saving and restoring the value of `Free`
+c This replaces the pattern of `@Free [ ... ] dip !Free` with
+c `[ ... ] gc`, a shorter and more readable approach.
+
+: gc
+c (p-)
+i lifepuca
+r Free
+i polistre
+r Free
+~~~
+
+# Conditionals
+
+~~~
+c `choose` takes a flag and two function addresses. If the flag
+c is true (non-zero), it runs the first function. If false
+c (zero), it will run the second.
+c
+c This works by storing the pointers in a table. A pointer to
+c the second entry in the table (the false operation) is then
+c placed on the stack, and the flag is added to the pointer. If
+c true (-1) it will then point to the true function. I can then
+c just fetch and branch.
+c
+c A small bit of logic is inserted to ensure the flags are
+c either -1 or 0.
+
+: choose
+c (fpp-)
+c store possible branch targets
+i listlist
+r choice:false
+r choice:true
+c normalize the flag to 0 or -1, then add this to the "false"
+c target address
+i lineliad
+d 0
+r choice:false
+c branch to the selected target
+i feju....
+
+c `if` and `-if` each take a flag and a function pointer. `if`
+c will run the function if the flag is true. `-if` will run it
+c if the flag is false.
+
+: -if
+c (fp-)
+i pulieqpo
+d 0
+: if
+c (fp-)
+i cj......
+i re......
+~~~
+
+`lteq?` checks to see if a value is less than or equal to
+another value. Given:
+
+    | 1 | 2 |
+
+This would return true (-1) since 1 is less than or equal to 2.
+
+~~~
+: lteq?
+c (nn-f)
+c inline dup-pair
+i puduposw
+i puduposw
+i eqpultpo
+i orre....
+~~~
+
+`gteq?` is like `lteq?`, but checks for greater than or equal
+to.
+
+~~~
+: gteq?
+c (nn-f)
+i swliju..
+r lteq?
+~~~
+
+# Dictionary
+
+The dictionary maps names to functions. It is set up as a simple
+linked list, with the following fields:
+
++---+-----------+---------------------------+
+| # | Accessor  | Description               |
++===+===========+===========================+
+| 0 | d:link    | link to previous entry    |
+| 1 | d:hash    | hash of word name         |
+| 2 | d:address | pointer to word start     |
++---+-----------+---------------------------+
+
+Note that the name of the word is not actually saved, just a
+hash of it. This saves considerable space and makes lookups
+fast, but comes at the cost of some flexibility.
+
+Prior implementations of Konilo have used *word classes* to
+handle different word behaviors. This implementation does not.
+You have normal words or immediate ones, with all other cases
+being handled by use of sigils.
+
+Immediate words are kept to a minimum:
+
+    ; [ ]
+
+`d:lookup` takes a string with the word name and returns the
+address of the dictionary header, or zero if the word is not
+found in the dictionary.
+
+~~~
+: d:lookup
+c (s-d)
+
+c get the hash of the nam we are trying to find
+i lica....
+r a:hash
+
+c push a pointer to the most recent entry to the stack,
+c then run a loop looking for the end. When done, clean
+c up the stack and return a pointer to the dictionary
+c header (or 0 if not found)
+i lifelica
+r Latest
+r d:lookup.next
+i swdrre..
+
+: d:lookup.next
+c the lookup loop begins
+
+c duplicate the top two entries on the stack
+i puduposw
+i puduposw
+
+c get the contents of the `d:hash` field; compare
+c to the desired hash. If they match, branch to
+c "d:lookup.done".
+i liadfene
+d 1
+i dulieqli
+d 0
+r d:lookup.done
+i cj......
+
+c if not a match, we fetch the next header. If it
+c is zero, no other entries remain. Otherwise we
+c then repeat the loop.
+i drfedudu
+i lieqlicj
+d 0
+r d:lookup.done
+i drliju..
+r d:lookup.next
+
+c finish up and return to `d:lookup`
+: d:lookup.done
+i drre....
+~~~
+
+# Dictionary Fields
+
+Given a dictionary pointer, these return the address of each
+field.
+
+~~~
+: d:link
+c (d-p)
+i re......
+
+: d:hash
+c (d-p)
+i liadre..
+d 1
+
+: d:address
+c (d-p)
+i liadre..
+d 2
+~~~
+
+`d:exists?` checks for the presence of a word. It uses
+`d:lookup` to seach for a word, then returns either true (-1)
+or false (0).
+
+~~~
+: d:exists?
+c (s-f)
+i lica....
+r d:lookup
+i linere..
+d 0
+~~~
+
+# Arrays & Strings
+
+Arrays are linear sequences of values. They start with a count
+and are immediately followed by the values.
+
+Strings are arrays where the values are the ASCII character
+codes.
+
+E.g.,
+
+    'hello
+
+In memory is:
+
+    5 104 101 108 108 111
+
+The array words are placed in the `a:` namespace. They are
+mirrored under the `s:` namespace for strings.
+
+`a:length` takes a pointer to an array and returns the length.
+
+~~~
+: a:length
+c (a-n)
+i fere....
+~~~
+
+`a:copy` makes a copy of an array. Provide a pointer to the
+array and a pointer to the destination.
+
+    :a:copy over a:length n:inc copy ;
+
+~~~
+: a:copy
+c (ap-)
+i puduposw
+i feliadcy
+d 1
+i re......
+~~~
+
+`a:dup` takes a pointer to an array. It makes a copy of this
+and then returns a pointer to the new one.
+
+    :a:dup here [ dup a:length comma &comma a:for-each ] dip ;
+
+The copy is made at `here`, so using this can generate garbage.
+
+~~~
+: a:dup
+c (a-a)
+c get a pointer to `here`, move it out of the way
+i lifepu..
+r Free
+c get the length, comma it to the new array
+i dulica..
+r a:length
+i lica....
+r comma
+c run `comma` against each value, copying them to the
+c new array
+i lilica..
+r comma
+r a:for-each
+c restore the pointer to the new array, and we're done
+i pore....
+~~~
+
+`a:th` takes a pointer to an array and an index. It then returns
+the address that the index corresponds to.
+
+~~~
+: a:th
+c (an-p)
+i liadadre
+d 1
+~~~
+
+`a:fetch` takes a pointer to an array and an index. It then
+returns the value stored in the array at the specified index.
+
+~~~
+: a:fetch
+c (an-n)
+i liadadfe
+d 1
+i re......
+~~~
+
+`a:store` takes a value, a pointer to an array, and an index.
+It stores the value into the array at the specified index.
+
+~~~
+: a:store
+c (nan-)
+i liadadst
+d 1
+i re......
+~~~
+
+`a:hash` returns a hash (using a modified djb2 model) for the
+values in an array.
+
+This is a very important function as the dictionary is stored
+as hashes of the word names. If you alter this, please be aware 
+that you will need to update the dictionary hashes, and likely
+some code in blocks that use hashes as well.
+
+The hashes are constrained due to the use of 32-bit signed
+integers. If using a host system with larger cells, you will
+either need to update the dictionary and other places the hashes
+are used, or ensure that your system handles overflow and wrap-
+around as expected by ilo.
+
+~~~
+: a:hash
+c (a-n)
+i liswlili
+d 5381
+r a:hash.values
+r a:for-each
+i ju......
+
+: a:hash.values
+i swlimuad
+d 33
+i re......
+~~~
+
+`a:for-each` takes an array and a pointer to a function. It
+then pushes each value from the array to the stack and runs
+the code indicated by the pointer for each value.
+
+Assuming an array of and a pointer to `[ n:put nl ]`:
+
+    here #3 comma $98 comma $99 comma $100 comma
+    [ n:put nl ] a:for-each
+
+Is the same as doing:
+
+    $98 n:put nl
+    $99 n:put nl
+    $100 n:put nl
+
+~~~
+: a:for-each
+c (ap-)
+
+c get the length and a pointer to the first data element
+c in the array
+i swlica..
+r fetch-next
+
+c reorder the stack. We are now:
+c pointer-to-data pointer-to-function length
+i puswpo..
+
+c run the actual loop over the data, then clean up
+i lica....
+r a:for-each.value
+i drdrdrre
+
+: a:for-each.value
+c (ppn-ppn)
+c is there remaining data?
+i duline..
+d 0
+i dulieq..
+d 0
+c if not, branch to the exit point
+i licj....
+r a:for-each.value.done
+c if so, move the length and function pointers out of the
+c way and get a pointer to the next data item and the current
+c item
+i dr......
+i pupulica
+r fetch-next
+c reorder the stack to:  value ptr-function
+c then call the function
+i swpodupu
+i swpuca..
+c restore the various pointers (data, function) and length,
+c then decrease the length by 1.
+i popopoli
+d 1
+i suliju..
+c and repeat until completed
+r a:for-each.value
+
+: a:for-each.value.done
+i drre....
+~~~
+
+Use `a:prepend` to merge two arrays into a new one. Takes two
+pointers, with the items from the second one being placed
+before the items in the first.
+
+    :a:prepend
+      here
+      &swap dip swap
+      &swap dip swap
+      dup-pair a:length swap a:length n:add comma
+      &comma a:for-each &comma a:for-each ;
+
+~~~
+: a:prepend
+c (aa-a)
+i lifepusw
+r Free
+i poswpusw
+i poswlica
+r dup-pair
+i lica....
+r a:length
+i swlica..
+r a:length
+i adlica..
+r comma
+i lilica..
+r comma
+r a:for-each
+i liliju..
+r comma
+r a:for-each
+~~~
+
+Use `a:append` to merge two arrays into a new one. Takes two
+pointers, with the items from the first one being placed before
+the items in the second.
+
+~~~
+: a:append
+c (aa-a)
+i swliju..
+r a:prepend
+~~~
+
+To reverse the order of items in an array, use `a:reverse`. It
+takes a pointer to an array and returns a new array.
+
+A quick Forth take on this:
+
+    :a:reverse (a-a)
+      here [
+        dup fetch dup comma allot (length+space)
+        here n:dec swap [ over store n:dec ] a:for-each drop
+      ] dip ;
+
+~~~
+: a:reverse
+c (a-a)
+i lifepu..
+r Free
+i dufedu..
+i lica....
+r comma
+i lica....
+r allot
+i lifelisu
+r Free
+d 1
+i swlilica
+r a:reverse.values
+r a:for-each
+i drpo....
+i dulica..
+r s:temp
+i swlistre
+r Free
+
+: a:reverse.values
+i puduposw
+i stlisure
+d 1
+~~~
+
+Arrays are important, being the data structure used for strings
+and a variety of other things. This is a very simple way to
+create them.
+
+~~~
+: a:make
+c (...n-a)
+i lifepu..
+r Free
+i dulica..
+r comma
+i lilica..
+r comma
+r times
+i pore....
+
+: a:make/temp
+c (...n-a)
+i liliju..
+r a:make/temp.internal
+r gc
+
+: a:make/temp.internal
+i lica....
+r a:make
+i liju....
+r s:temp
+~~~
+
+`a:reduce` will iterate over an array and value, applying a
+function to reduce the array down to a single value. For instance,
+to sum an array:
+
+    &array #0 &n:add a:reduce
+
+~~~
+: a:reduce
+c (anq-n)
+i puswpoli
+r a:for-each
+i ju......
+~~~
+
+To map a function to each value in an array, I provide `a:map`.
+This modifies the original array, not a copy of it.
+
+~~~
+: a:map
+c (aq-a)
+i swdupu..
+i lica....
+r fetch-next
+i lilica..
+r a:map.inner
+r times
+i drdrpore
+
+: a:map.inner
+i dupufepu
+c "over"
+i duposwca
+i polilica
+r store
+r sip
+i liadre..
+d 1
+~~~
+
+The next couple of words allow for extracting portions of an
+array into a new array. The subsets will be stored in the
+temporary buffers.
+
+~~~
+: a:middle
+c (afl-a)
+c here push dup comma push n:inc n:add pop here fetch swap copy
+c pop dup !Free s:temp
+i lifepu..
+r Free
+i dulica..
+r comma
+i puliadad
+d 1
+i polifesw
+r Free
+i cypoduli
+r Free
+i stliju..
+r s:temp
+
+: a:left
+c (an-a)
+c #0 swap a:middle
+i liswliju
+d 0
+r a:middle
+
+: a:right
+c (an-a)
+c over fetch over n:sub swap a:middle
+i puduposw
+i fe......
+i puduposw
+i suswliju
+r a:middle
+~~~
+
+`allot` reserves memory. Provide it a number and it'll reserve
+that amount of memory. You can reclaim memory by passing in a
+negative value.
+
+Note that memory is allocated at `here`, in a linear fashion.
+Expect issues if you reclaim memory after something else also
+allocates memory.
+
+    :allot @Free n:add !Free ;
+
+~~~
+: allot
+c (n-)
+i lifead..
+r Free
+i listre..
+r Free
+~~~
+
+Input tokens are whitespace delimited. This presents an issue
+for strings: how to add spaces?
+
+The solution used here is to replace (via `s:map`) underscores
+with spaces. I've been doing this now for many years, and it's
+not proven to be a problem. The `sigil:'` will use the latest
+`s:rewrite` it can find, so you can redefine this to make other
+changes if you need to.
+
+~~~
+: s:rewrite
+c (s-)
+i liliju..
+r s:rewrite.spaces
+r a:map
+
+: s:rewrite.spaces
+i dulieqli
+d 95
+r s:rewrite.replace
+i liju....
+r if
+
+: s:rewrite.replace
+i drlire..
+d 32
+~~~
+
+`a:indices` returns an array with the locations of a value that
+matches the passed value. `a:index` returns the first location
+that matches.
+
+~~~
+: a:indices
+c (av-a)
+c reset the count
+i lilist..
+d 0
+r ACount
+i lifepu..
+r Free
+i swlilica
+d 0
+r comma
+i lilica..
+r a:indices.iterate
+r a:for-each
+i drpolife
+r Free
+i puduposw
+i sulisu..
+d 1
+i puduposw
+i stdulica
+r s:temp
+i swlistre
+r Free
+
+: a:indices.iterate
+i puduposw
+i eqlilica
+r a:indices.record
+r if
+i liliju..
+r ACount
+r v:inc
+
+: a:indices.record
+i lifeliju
+r ACount
+r comma
+
+: a:index
+c (av-n)
+i lifepu..
+r Free
+i lica....
+r a:indices
+i lilica..
+d 0
+r a:fetch
+i polistre
+r Free
+~~~
+
+~~~
+: a:contains?
+c (an-f)
+i swliswli
+d 0
+r a:contains?.inner
+i lica....
+r a:for-each
+i swdrre..
+
+: a:contains?.inner
+i swpu....
+i puduposw
+i eqpoorre
+~~~
+
+`a:filter` runs a quote against each value in an array. The quote
+needs to consume the value and return a single flag. If true, the
+value is added to a new array.
+
+~~~
+: a:filter
+i lifepuli
+r Free
+r a:filter.action
+i lica....
+r curry
+i lifepu..
+r Free
+i puduposw
+i felica..
+r comma
+i lica....
+r a:for-each
+i polifepu
+r Free
+i duposwsu
+i lisupudu
+d 1
+i poswst..
+i lica....
+r s:temp
+i polistre
+r Free
+
+: a:filter.action
+i puduposw
+i puca....
+i poswlili
+r comma
+r drop
+i liju....
+r choose
+~~~
+
+~~~
+: c:lowercase?
+c (c-f) $a $z n:between? ;
+i lililiju
+d 97
+d 122
+r n:between?
+
+: c:uppercase?
+c (c-f) $A $Z n:between? ;
+i lililiju
+d 65
+d 90
+r n:between?
+
+: c:to-upper
+c (c-c) dup c:lowercase? [ #32 n:sub ] if ;
+i dulica..
+r c:lowercase?
+i liliju..
+r c:to-upper.change
+r if
+
+: c:to-upper.change
+i lisure..
+d 32
+
+: c:to-lower
+c (c-c) dup c:uppercase? [ #32 n:add ] if ;
+i dulica..
+r c:uppercase?
+i liliju..
+r c:to-lower.change
+r if
+
+: c:to-lower.change
+i liadre..
+d 32
+
+: c:to-s
+c (c-s) '_ s:temp tuck #0 s:store ;
+i lilica..
+r c:to-s.temp
+r s:temp
+i dupuswpo
+i liliju..
+d 0
+r a:store
+
+: c:to-s.temp
+s _
+
+: s:to-upper
+c (s-s) [ s:dup &c:to-upper s:map s:temp ] gc
+i lifepu..
+r Free
+i lica....
+r a:dup
+i lilica..
+r c:to-upper
+r a:map
+i lica....
+r s:temp
+i polistre
+r Free
+
+: s:to-lower
+c  (s-s) [ s:dup &c:to-lower s:map s:temp ] gc ;
+i lifepu..
+r Free
+i lica....
+r a:dup
+i lilica..
+r c:to-lower
+r a:map
+i lica....
+r s:temp
+i polistre
+r Free
+~~~
+
+~~~
+: bi
+c (xqq-)    &sip dip call ;
+i pulica..
+r sip
+i poju....
+
+: bi@
+c (xyq-)    dup bi* ;
+c using fall-through here
+i du......
+
+: bi*
+c (xyqq-)   &dip dip call ;
+i pulica..
+r dip
+i poju....
+
+: tri
+c (xqqq-)   [ &sip dip sip ] dip call ;
+i pulilica
+r sip
+r dip
+i lica....
+r sip
+i poju....
+
+
+: tri@
+c (xyzq-)   dup dup tri* ;
+c using fall-through here
+i dudu....
+
+: tri*
+c (xyzqqq-) [ [ swap &dip dip ] dip dip ] dip call ;
+i pupusw..
+i lilica..
+r dip
+r dip
+i polica..
+r dip
+i poju....
+
+: a:eq?
+c (aa-f) &a:hash bi@ eq? ;
+i lilica..
+r a:hash
+r bi@
+i eqre....
+
+: a:-eq?
+c (aa-a) &a:hash bi@ -eq? ;
+i lilica..
+r a:hash
+r bi@
+i nere....
+
+: a:chop
+c (a-a) a:temp &v:dec sip ;
+i lica....
+r s:temp
+i liliju..
+r v:dec
+r sip
+
+: a:behead
+c (a-a)
+c a:chop [ [ n:inc dup n:inc swap ]
+c          &a:length bi copy ] sip ;
+i lica....
+r a:chop
+i dupulili
+r a:behead.inner
+r a:length
+i lica....
+r bi
+i cypore..
+
+: a:behead.inner
+i liadduli
+d 1
+d 1
+i adswre..
+
+
+
+: a:first
+c (a-n) #0 a:fetch ;
+i liliju..
+d 0
+r a:fetch
+
+: a:last
+c (a-n) dup a:length n:dec a:fetch ;
+i dulica..
+r a:length
+i lisuliju
+d 1
+r a:fetch
+~~~
+
+~~~
+: get-index
+i lilifead
+r sys:buffers/loops
+r Current
+i re......
+
+: prepare
+c increment Current
+i lilica..
+r Current
+r v:inc
+c zero out the loop counter
+i lilica..
+d 0
+r get-index
+i stre....
+
+: cleanup
+c decrement Current
+i liliju..
+r Current
+r v:dec
+
+: indexed-times.inner
+i swpudupu
+i ca......
+i polica..
+r get-index
+i lica....
+r v:inc
+i polisu..
+d 1
+i dupuswpo
+i linelicj
+d 0
+r indexed-times.inner
+i drdrre..
+
+: I
+c (-n)
+i lica....
+r get-index
+i fere....
+
+: J
+c (-n)
+i lica....
+r get-index
+i lisufere
+d 1
+
+: K
+c (-n)
+i lica....
+r get-index
+i lisufere
+d 2
+
+: indexed-times
+c (nq-)
+i puduposw
+i lieq....
+d 0
+i lililiju
+r drop-pair
+r indexed-times.run
+r choose
+
+: indexed-times.run
+i lica....
+r prepare
+i lica....
+r indexed-times.inner
+i liju....
+r cleanup
+~~~
+
+~~~
+: n:get
+c (-n)
+i lica....
+r s:get/token
+i lica....
+r s:temp
+i liju....
+r s:to-n
+~~~
+
+================================================================
+
+# The main entry point
+
+On startup this tries to find a word named `startup`. If found,
+it then runs it. After this is complete, it drops into listen,
+which runs the interactive listener (REPL).
+
+~~~
+: forth
+c look for a word named `startup`
+i lilica..
+r $startup
+r d:lookup
+
+c if it was found, run it
+i dulieq..
+d 0
+i lililica
+r drop
+r run-startup
+r choose
+
+c after checking for (and running if found) the latest `startup`
+c word, we enter the listener loop.
+
+: listen
+c (-)
+i lica....
+r s:get/token
+i lica....
+r interpret
+i liju....
+r listen
+~~~
+
+~~~
+: run-startup
+i liadfeju
+d 2
+
+: $startup
+s startup
+~~~
+
+get length
+start address, dest address, length
+copy
+get length
+decrement
+store new length
+
+~~~
+: remove-sigil
+c sigils receive a string with the input token sans the sigil.
+c This removes the sigil by copying the rest of the string over
+c the original data in the TIB and decrementing the count.
+i lililicy
+r sys:buffers/input/text+1
+r sys:buffers/input/text
+d 127
+i liliju..
+r sys:buffers/input
+r v:dec
+~~~
+
+The `interpret` word takes a token and processes it.
+
+If the token starts with a defined sigil, the sigil is removed
+and the remainder of the token is passed to the sigil function
+to deal with.
+
+If it does not, the dictionary is searched for the word name.
+
+Assuming it's found, the word type (normal or immediate) and
+address are obtained, and the word is either called or compiled
+into a definition as needed.
+
+If the token was not found in the dictionary, a warning is
+reported.
+
+~~~
+: interpret
+c (s-)
+
+c copy token to tib
+i lilicyli
+r sys:buffers/input
+d 129
+r sys:buffers/input
+
+c check the first character in a string to see if a sigil has
+c been defined for it. Returns a flag normalized to true (-1)
+c or false (0)
+i duliadfe
+d 1
+i lica....
+r sigil:get
+i line....
+d 0
+
+c then dispatch to appropriate handler
+i lililica
+r with-sigil
+r without-sigil
+r choose
+i re......
+~~~
+
+~~~
+: with-sigil
+i lifelica
+r sys:buffers/input/text
+r remove-sigil
+i lica....
+r sigil:get
+i ju......
+~~~
+
+~~~
+: without-sigil
+c see if the word is in the dictionary
+i lica....
+r d:lookup
+i dulieq..
+d 0
+c if not found, branch to not-found
+i licj....
+r not-found
+c if found, get the address
+i liadfe..
+d 2
+c if address is negative, it's immediate
+i dulilt..
+d 0
+c then, based on the flags, either run it (immediate) or pass
+c the address to handle-word for further processing
+i lililiju
+r handle-immediate
+r handle-word
+r choose
+
+: not-found
+i ........
+i ........
+i drlilica
+r sys:buffers/input
+r a:length
+i lieqlicj
+d 0
+r empty-token
+i lilica..
+r $not-found
+r s:put
+i lilica..
+r sys:buffers/input
+r s:put
+i lica....
+r nl
+: empty-token
+i re......
+
+: $not-found
+s word not found: 
+c note: the above string ends with a space character. This may
+c       be hidden by your editor.
+~~~
+
+~~~
+: handle-word
+c (p-)
+c if compiling (`Compiler` set to -1), comma the address into
+c the current definition. If not, call the word.
+i lifelicj
+r Compiler
+r comma
+i ju......
+
+: handle-immediate
+c immediate words are always called.
+i limuju..
+d -1
+~~~
+
+================================================================
+
+String evaluation. I am doing this by remapping `c:get` to read
+input from a string instead of the keyboard. This is done to
+ensure that evaluation and direct entry are treated the same.
+
+If at the end of the input buffer, reset `c:get` to the default,
+then return ASCII 32 (space).
+
+~~~
+: get/last
+c (-c)
+i lilist..
+d 0
+r c:get
+i lililiad
+d 0
+r c:get
+d 1
+i stlire..
+d 32
+~~~
+
+When not at the end, return the current character, and advance
+the At pointer.
+
+~~~
+: get/next
+c (-c)
+i lifelife
+r Source
+r At
+i lica....
+r a:fetch
+i liliju..
+r At
+r v:inc
+~~~
+
+A top level "get" decides which of the prior functions
+(get/last and get/next) to use.
+
+~~~
+: get
+c (-c)
+i lifelife
+r At
+r End
+i eqlili..
+r get/last
+r get/next
+i liju....
+r choose
+~~~
+
+The "process" function takes in a token and runs `interpret` on
+it if the token is not empty.
+
+~~~
+: process
+c (s-)
+c check for non-empty token
+
+c (s-sf)
+i dulica..
+r a:length
+i line....
+d 0
+
+c process token if not empty
+i lililiju
+r interpret
+r drop
+r choose
+~~~
+
+~~~
+: s:evaluate
+c (s-)
+
+c patch `c:get` to jump to "get" instead of reading keyboard
+i lilist..
+d 1793
+r c:get
+i lililiad
+r get
+r c:get
+d 1
+i st......
+
+c obtain length of string to evaluate; set Source, End, and
+c At
+i dulica..
+r a:length
+i listlist
+r End
+r Source
+i lilist..
+d 0
+r At
+
+c begin the actual evaluation loop. Read in a token, then
+c "process" it.
+: s:evaluate/loop
+i lica....
+r s:get/token
+i lica....
+r process
+
+c Check to see if we have reached the End of the string. If
+c so, branch to the exit point. Otherwise, repeat the loop.
+i lifelife
+r At
+r End
+i eqlicj..
+r s:evaluate/done
+i liju....
+r s:evaluate/loop
+
+c This is the exit point.
+: s:evaluate/done
+i re......
+~~~
+
+================================================================
+
+Convert a string to a number with `s:to-n`.
+
+The process used here is to fetch each character, determine the
+value it represents, adding it to a placeholder on the stack.
+The placeholder is then multiplied by ten before the next cycle.
+Some care is taken to not do the multiplication if it would
+cause the value to overflow. A sign value is factored in as
+well. The `-` character changes the sign.
+
+In higher level Forth:
+
+  'Length var
+  'Currently var
+
+  :scale &Length fetch &Currently fetch -eq?
+         [ #10 n:mul &Currently v:inc ] if ;
+
+  :s:to-n (s-n)
+    dup a:length &Length store #1 &Currently store
+    #1 swap #0 swap
+    [ dup #45 eq? [ drop swap n:negate swap ]
+                  [ #48 n:sub n:add scale ] choose ] a:for-each
+      n:mul ;
+
+  '2147483647 s:to-n bye
+
+~~~
+: s:to-n.scale
+c this will adjust the current sum to get it ready for adding
+c the next value. Basically, just multiplying by the base (10).
+
+c The scaling is only done if we aren't at the end of the input.
+c This is done to avoid an overflow issue with large numbers.
+i lifelife
+r s:Length
+r s:Current
+i gtliliju
+r s:to-n.adjust
+r if
+
+: s:to-n.adjust
+i limulili
+d 10
+r s:Current
+r v:inc
+i ju......
+
+: s:to-n
+c (s-n)
+i dufelist
+r s:Length
+i lilist..
+d 1
+r s:Current
+i liswlisw
+d 1
+d 0
+i lilica..
+r s:to-n.digit
+r a:for-each
+i mure....
+
+: s:to-n.digit
+c check to see if the character is a "-" (indicating a negative
+c value). If so, branch to the negative handler. Otherwise,
+c branch to the general digit handler.
+i dulieqli
+d 45
+r s:to-n.handle-negative
+i liliju..
+r s:to-n.process-digit
+r choose
+
+: s:to-n.handle-negative
+c for negative values, we multiply the value by -1 and then
+c return to process the next character.
+i drswlimu
+d -1
+i swliliju
+r s:Current
+r v:inc
+
+: s:to-n.process-digit
+c processing digits is modestly involved. I start by checking
+c for a few characters I want to ignore: . and ,
+
+c ignore "."
+i dulieq..
+d 46
+i licj....
+r s:to-n.ignore
+
+c ignore ","
+i dulieq..
+d 44
+i licj....
+r s:to-n.ignore
+
+c if not an ignored character, process as digit. Convert the
+c ASCII value to a simple decimal, add it to the running sum,
+c and then setup for the next character.
+i lisuad..
+d 48
+i liju....
+r s:to-n.scale
+
+: s:to-n.ignore
+c handles ignored characters
+i drliliju
+r s:Current
+r v:inc
+~~~
+
+The inverse is `n:to-s`, which converts a number into a string.
+
+~~~
+: n:to-s
+c (n-s)
+
+c get the current `here` and move it out of the way.
+i lifepu..
+r Free
+
+c assign `Free` to the numeric conversion buffer.
+i lilist..
+r sys:buffers/numeric-conversion
+r Free
+
+c store an initial count (0)
+i lilica..
+d 0
+r comma
+
+c make a copy of the number, but ensure the copy is positive
+i dulica..
+r n:abs
+
+c with these done, we are ready for the main loop. This will
+c iterate over the number, dividing by the base, converting to
+c ASCII, and then adding it to the string representation. We
+c are at the end when the remainder is zero.
+
+: n:to-s.internal
+i lica....
+r convert&record
+i duline..
+d 0
+i licj....
+r n:to-s.internal
+
+c at this point there are no remaining values. Clean up the
+c stack and check to see if the original value was negative.
+c if so, call "add-negative-sign"
+i drlilt..
+d 0
+i licc....
+r add-negative-sign
+
+c we now have a complete string, but it's in reversed order.
+c This is corrected using `a:reverse`.
+i lilica..
+r sys:buffers/numeric-conversion
+r a:reverse
+
+c the last step is to reset `Free` to the saved value from the
+c start.
+i polistre
+r Free
+
+: add-negative-sign
+i liliju..
+d 45
+r record
+
+: convert&record
+c divide the value by the base (hard coded to 10) to get a
+c positional value
+i lidisw..
+d 10
+c convert the positional value to an ASCII character
+i liswlica
+r $valid-digits
+r a:fetch
+c fall through into recording the character
+: record
+c add the ASCII character for the digit to the string and
+c increment the length
+i lica....
+r comma
+i liliju..
+r sys:buffers/numeric-conversion
+r v:inc
+
+: $valid-digits
+s 0123456789
+~~~
+
+================================================================
+
+`v:inc` increments the value stored in a variable.
+
+~~~
+: v:inc
+c (p-)
+i dufeliad
+d 1
+i swstre..
+~~~
+
+`v:dec` decrements the value stored in a variable.
+
+~~~
+: v:dec
+c (p-)
+i dufelisu
+d 1
+i swstre..
+~~~
+
+`n:abs` returns the absolute value of a number.
+
+~~~
+: n:abs
+c (n-n)
+i duliltli
+d 0
+r n:negate
+i liju....
+r if
+~~~
+
+Use `n:negate` to invert the sign of a number.
+
+~~~
+: n:negate
+c (n-n)
+i limure..
+d -1
+~~~
+
+`nl` displays a newline.
+
+~~~
+: nl
+i liliju..
+d 10
+r c:put
+~~~
+
+`sp` displays a space.
+
+~~~
+: sp
+i liliju..
+d 32
+r c:put
+~~~
+
+`tab` displays a tab.
+
+~~~
+: tab
+i liliju..
+d 9
+r c:put
+~~~
+
+# Input
+
+~~~
+: c:get
+c (-c)
+c Leave two cells filled with nop's. This allows the definition
+c to be temporarily replaced later. (Used by `s:evaluate`)
+i ........
+i ........
+i liiore..
+d 1
+~~~
+
+`s:get/token` reads a whitespace delimited token into the text
+input buffer (tib).
+
+If you use this and need to keep the token around, pass it to
+`s:temp`.
+
+~~~
+: s:get/token
+c (-s)
+c clear tib (by seting length to zero)
+i lilist..
+d 0
+r sys:buffers/input
+
+c run an input loop
+i lica....
+r s:get.loop
+c clean up the stack and push the TIB address before returning
+i drlire..
+r sys:buffers/input
+
+: s:get.loop
+c the actual input handling occurs here
+i lica....
+r c:get
+
+c check to see if the character is an end of line/token (ASCII
+c 10 [line feed] or 32 [space])
+i dudulieq
+d 10
+i swlieqor
+d 32
+
+c if we are at end of input, branch to the end
+i lixoduli
+d -1
+d 0
+i eqlicj..
+r s:get.loop.done
+
+c if not, check to see if the user entered a backspace (ASCII 8
+c or 127). If so, branch to a backspace handler.
+i drdulieq
+d 8
+i licj....
+r s:get.backspace
+i dulieq..
+d 127
+i licj....
+r s:get.backspace
+
+c if not end of token or backspace, we add it to the TIB using
+c a helper function, then repeat the loop.
+i lica....
+r add-to-tib
+i liju....
+r s:get.loop
+
+c this is the exit point of the entry loop
+: s:get.loop.done
+i drre....
+
+: s:get.backspace
+c this handles backspacing. Note that this does not prevent
+c writing to memory before the start of the TIB.
+i dr......
+c check to see if the buffer is empty. If so, abort this.
+i lifelieq
+r sys:buffers/input
+d 0
+i licj....
+r s:get.loop
+i lifelisu
+r sys:buffers/input
+d 1
+i listliju
+r sys:buffers/input
+r s:get.loop
+
+: add-to-tib
+c this adds a character to the TIB and increases the length
+c counter.
+i lidufead
+r sys:buffers/input
+i liadstli
+d 1
+r sys:buffers/input
+i liju....
+r v:inc
+~~~
+
+# Output
+
+~~~
+: c:put
+c (c-)
+c Leave two cells filled with nop's. This allows the definition
+c to be temporarily replaced later.
+i ........
+i ........
+i liiore..
+d 0
+~~~
+
+Display a string.
+
+~~~
+: s:put
+c (s-)
+i liliju..
+r c:put
+r a:for-each
+~~~
+
+Display a number
+
+~~~
+: n:put
+i lica....
+r n:to-s
+i liju....
+r s:put
+~~~
+
+# Setup the System
+
+# Sigils
+
+~~~
+: sigil:set
+c (ac-)
+i liadstre
+r Sigils
+
+: sigil:get
+c (c-p)
+i liadfere
+r Sigils
+~~~
+
+~~~
+: )
+c (-)
+i re......
+~~~
+
+~~~
+: process-data
+i lica....
+r compiling?
+i liliju..
+r process-data.compile
+r if
+
+: process-data.compile
+i lilica..
+r lit
+r comma
+i liju....
+r comma
+~~~
+
+~~~
+c The $ sigil returns the first character in a string.
+: sigil:$
+c (s-c)
+i lilica..
+d 0
+r a:fetch
+i liju....
+r process-data
+~~~
+
+New definitions start with a `:` sigil. This sigil creates a new
+dictionary header (via `d:create`), then runs `compiler:dtc` to
+setup a call to the `dtc` word, and finally turns the `Compiler`
+on.
+
+~~~
+: sigil::
+c (s-)
+i lica....
+r d:create
+i lica....
+r compiler:dtc
+i liju....
+r compiler:on
+~~~
+
+Numbers are provided via the `#` sigil. This is done by
+converting the token to a number, then calling `process-data`
+to compile it into a definition if necessary.
+
+~~~
+: sigil:#
+c (s-n)
+i lica....
+r s:to-n
+i liju....
+r process-data
+~~~
+
+Pointers are provided by the `&` sigil. This will lookup an
+entry in the dictionary. It fetches the `d:address` field, then
+uses `process-data` to compile it into a definition if
+necessary.
+
+~~~
+: sigil:&
+c (s-p)
+i lica....
+r d:lookup
+i liadfe..
+d 2
+i liju....
+r process-data
+~~~
+
+The `'` sigil processes strings. At compile time, it passes the
+string to `s:keep`. At interpret time it passes it to `s:temp`
+instead. Prior to this, it passes the string to `s:rewrite`
+for preliminary processing (if defined).
+
+~~~
+: sigil:'
+c (s-s)
+
+c check to see if `s:rewrite` is in the dictionary
+i lilica..
+r $s:rewrite
+r d:lookup
+
+c if it is, call it to rewrite the string
+i duline..
+d 0
+i lililica
+r run.s:rewrite
+r drop
+r choose
+
+c check to see if we are compiling or at the listener. Call
+c either `s:keep` or `s:temp` based on the compiler status.
+i lica....
+r compiling?
+i lililiju
+r s:keep
+r s:temp
+r choose
+
+c a string with the `s:rewrite` name.
+: $s:rewrite
+s s:rewrite
+
+: run.s:rewrite
+c this is a helper used to run `s:rewrite` if present.
+i liadfeju
+d 2
+~~~
+
+~~~
+: sigil:@
+c (s-a)
+i lica....
+r d:lookup
+i lica....
+r d:address
+i felife..
+r Compiler
+i lililiju
+r sigil:@.compile
+r fetch
+r choose
+
+: sigil:@.compile
+c (a-)
+i lilica..
+r lit
+r comma
+i lica....
+r comma
+i liliju..
+r fetch
+r comma
+~~~
+
+~~~
+: sigil:!
+c (ns-)
+i lica....
+r d:lookup
+i lica....
+r d:address
+i felife..
+r Compiler
+i lililiju
+r sigil:!.compile
+r store
+r choose
+
+: sigil:!.compile
+c (a-)
+i lilica..
+r lit
+r comma
+i lica....
+r comma
+i liliju..
+r store
+r comma
+~~~
+
+~~~
+: sigil:\
+c (as-)
+i lica....
+r d:create
+i lifelica
+r Latest
+r d:address
+i stre....
+~~~
+
+~~~
+: depths
+c (-nn) (data, address)
+i liiore..
+d 7
+
+: depth/data
+i liiodrre
+d 7
+
+: depth/address
+i liioswdr
+d 7
+i re......
+~~~
+
+~~~
+: {{
+i lifeduli
+r Latest
+r sys:buffers/scope
+i lica....
+r store-next
+i stre....
+
+: ---reveal---
+i lilica..
+r scope.hidden
+r d:create
+i lifelili
+r Latest
+r sys:buffers/scope
+d 1
+i adstre..
+
+: scope.hidden
+s _
+
+: }}
+i lilica..
+r sys:buffers/scope
+r fetch-next
+i swfelica
+r d:link
+i stre....
+~~~
+
+~~~
+: var
+c (s-)
+i lisw....
+d 0
+c fall through into var-n
+: var-n
+c (ns-)
+i lica....
+r d:create
+i liju....
+r comma
+
+: rot
+c (abc-bca)
+i puswposw
+i re......
+
+: n:between?
+c (nlu-f)
+i puswposw
+i dupu....
+i puswposw
+i puswposw
+i lica....
+r n:limit
+i poeqre..
+~~~
+
+# Compiler
+
+Compilation is mostly easy. To compile code, we needs to create
+a new dictionary header with `d:create`, set a variable that
+indicates we wish to compile to true (`Compiler`), lay down a
+call to `dtc`, then just let `interpret` and the sigils handle
+the actual details of laying down the addresses.
+
+I define helper functions to enable and disable the `Compiler`.
+
+~~~
+: compiler:on
+c (-)
+i lilistre
+d -1
+r Compiler
+~~~
+
+~~~
+: compiler:off
+c (-)
+i lilistre
+d 0
+r Compiler
+~~~
+
+And a `compiling?` to return the value of `Compiler`. This one
+is just a readability aid.
+
+~~~
+: compiling?
+c (-f)
+i lifere..
+r Compiler
+~~~
+
+The compiler needs to be able to store data in memory. This is
+done with `comma` (called "," in most Forths). To implement
+this I need a variable to track the next free memory address.
+This variable is named `Free`. I also define a word (`here`) to
+return the value of `Free`.
+
+~~~
+: Free
+r FREE-SPACE
+
+: here
+c (-p)
+i lifere..
+r Free
+~~~
+
+With these, `comma` is easy. Fetch `Free`, use `store-next` to
+write the value, then update `Free` with the next address.
+
+~~~
+: comma
+c (n-)
+i lifelica
+r Free
+r store-next
+i listre..
+r Free
+~~~
+
+Ending a word is done with `;`. This is one of a small number of
+immediate words.
+
+A DTC sequence ends with a NULL (0) value, so this uses `comma`
+to write this value, then `compiler:off` to end compilation.
+
+~~~
+: ;
+c (-)
+i lilica..
+d 0
+r comma
+i liju....
+r compiler:off
+~~~
+
+`compiler:dtc` lays down a call to the `dtc` word at the start
+of a compiled word.
+
+~~~
+: compiler:dtc
+c (-)
+c compile a "lica...." bundle
+i lilica..
+d 2049
+r comma
+c then a reference to `dtc`
+i liliju..
+r dtc
+r comma
+~~~
+
+   :d:create
+     here swap @Latest comma
+     a:hash comma
+     dup #3 n:add comma
+     !Latest ;
+
+`d:create` makes a new dictionary header.
+
+~~~
+: d:create
+c (s-)
+
+c get a pointer to `here`, and a pointer to the previous
+c entry. Store the pointer to the previous entry.
+i lifeswli
+r Free
+r Latest
+i felica..
+r comma
+
+c calculate the hash of the word name, store it
+i lica....
+r a:hash
+i lica....
+r comma
+
+c calculate the starting address of the word and store it
+i duliad..
+d 3
+i lica....
+r comma
+
+c finally, patch Latest (`Dictionary`) to point to the start
+c of this entry.
+i listre..
+r Latest
+~~~
+
+# Quotations
+
+Quotations are anonymous code blocks. They are basically words
+with no names attached. Konilo uses them for a lot: loops,
+conditionals, some stack flow, etc.
+
+~~~
+: [
+c (-a)
+c get the current Compiler state
+i lica....
+r compiling?
+c begin compiling
+i lica....
+r compiler:on
+c lay down a call to `internal:quote`
+i lilica..
+r quote
+r comma
+c get a pointer to `here` for later use
+i lifelica
+r Free
+r tuck
+c store a dummy value for the length. This will be patched
+c by `]`.
+i lilica..
+d 0
+r comma
+c use `compiler:dtc` to lay down code tostart a DTC code
+c sequence
+i liju....
+r compiler:dtc
+
+
+: ]
+c (a-a)
+c lay down a 0 to end the quote definition
+i lilica..
+d 0
+r comma
+c determine the length of the quotation
+i life....
+r Free
+i puduposw
+i sulisu..
+d 1
+c update the dummy length with the actual length
+i swst....
+c reset the compiler state to whatever it was prior
+c to invoking `[`
+i list....
+r Compiler
+c if the compiler is still on, we are nested in a
+c defintion. In this case, we can just drop the value
+c on the stack.
+c 
+c if at the interpreter, we can just increment the
+c value on the stack to get a pointer to the actual
+c code. This gets left on the stack.
+i lifelili
+r Compiler
+r drop
+r interpreting-quote
+i liju....
+r choose
+
+: interpreting-quote
+i liju....
+r n:inc
+~~~
+
+# Direct Threading
+
+Most words in Konilo are direct threaded. This means that
+they consist of a series of addresses, ending in a NULL (0).
+A single word, `dtc`, walks through these lists, calling each
+address in order.
+
+The in memory representation of a word like:
+
+    :foo #1 #2 n:add ;
+
+Would look like:
+
+    0000 i lica....
+    0001 r dtc
+    0002 - internal:lit
+    0003 d 1
+    0002 - internal:lit
+    0003 d 2
+    0004 - n:add
+    0005 d 0
+
+The `internal:lit` pushes the value in the following cell to the
+data stack and advances the instruction pointer.
+
+DTC is slower than subroutine threading as it has an additional
+layer of processing before each call. But it can be more dense,
+and is easily disassembled/decompiled if you have name data.
+
+~~~
+: dtc
+c (-)
+c get the starting address of the DTC sequence. This will be
+c the cell following the call to `dtc`.
+i poliad..
+d 1
+c then walk through the list of addresses
+i lica....
+r dtc:walk
+c when done, clean up and return to the parent of the caller
+i drre....
+
+: dtc:walk
+c get the function address (and a pointer to the next address)
+i duliadsw
+d 1
+i fe......
+
+c check to see if we are at the end (function pointer set to
+c zero). If so, exit the loop.
+i dulieqli
+d 0
+r dtc:done
+i cj......
+c if not, move the pointer to the next function address out of
+c the way and call the function
+i swpuca..
+c then restore the address of the next function and repeat the
+c loop
+i poliju..
+r dtc:walk
+
+: dtc:done
+i drre....
+~~~
+
+This is exposed to the Forth dictionary as `internal:lit`. (We
+had issues with mistyping `lit` and `list`, so moved both this
+and the following "quote" under an `internal:` namespace)
+
+~~~
+: lit
+c (-n)
+i popoduli
+d 1
+i adswfesw
+i puswpure
+~~~
+
+This is exposed to the Forth dictionary as `internal:quote`.
+
+~~~
+: quote
+c (-p)
+i popoduli
+d 1
+i adswfesw
+i dupuadpo
+i swpuswpu
+i re......
+~~~
+
+# Numbers
+
+`n:inc` and `n:dec` increment and decrement numbers.
+
+~~~
+: n:inc
+c (n-n)
+i liadre..
+d 1
+
+: n:dec
+c (n-n)
+i lisure..
+d 1
+~~~
+
+The words in `compile:` are intended to help in writing compiler
+extensions for generating ilo code words. I use them to implement
+`curry`, which binds a value and function together into a new
+function.
+
+E.g.,
+
+    #678 &n:put curry \display:678
+
+~~~
+: compile:lit
+c (n-)
+i lilica..
+d 1
+r comma
+i liju....
+r comma
+
+: compile:call
+c (a-)
+i lilica..
+i lica....
+r comma
+i liju....
+r comma
+
+: compile:jump
+c (a-)
+i lilica..
+i liju....
+r comma
+i liju....
+r comma
+
+: curry
+c (vq-q)
+i lifepu..
+r Free
+i swlica..
+r compile:lit
+i lica....
+r compile:jump
+i pore....
+~~~
+
+# Strings
+
+In Konilo, strings are arrays containing character data.
+
+I provide a rotating buffer of space for temporary strings (and
+general arrays). In a default configuation this has space for 8
+items.
+
+I use this along with the buffer address (the rather long
+`sys:buffers/strings+arrays`) to calculate an address for
+a temporary string.
+
+Note here that strings/arrays are (somewhat) limited to 127
+values. Longer ones can be made and used with `s:keep` or
+moved to another buffer. A longer string/array will have some
+degree of data corruption with later entries.
+
+~~~
+: s:temp-pointer
+c (-p)
+i lifelimu
+r Next-String
+d 128
+i liadre..
+r sys:buffers/strings+arrays
+~~~
+
+The next word updates the "Next-String" variable, constraining
+it to a max of 8 entries.
+
+~~~
+: s:next
+c (-)
+c increment Next-String
+i lilica..
+r Next-String
+r v:inc
+c compare Next-String to 8
+i lilifeeq
+d 8
+r Next-String
+c if 8, use "s:adjust" to reset the counter
+i liliju..
+r s:adjust
+r if
+~~~
+
+`s:adjust` resets the "Next-String" variable to zero. It is
+called when by "s:next" when it reaches the end of the string
+space.
+
+~~~
+: s:adjust
+c (-)
+i lilistre
+d 0
+r Next-String
+~~~
+
+`s:temp` moves a string into the temporary buffer pool.
+
+~~~
+: s:temp
+c (s-s)
+i lica....
+r s:temp-pointer
+i dupuswpo
+i lica....
+r a:copy
+i liju....
+r s:next
+~~~
+
+    :data:string pop pop dup fetch-next n:add push swap push ;
+
+~~~
+: data:string
+c (-s)
+i popodu..
+i lica....
+r fetch-next
+i lica....
+r n:add
+i puswpure
+~~~
+
+`s:keep` inlines a string to memory at `here`. It'll also add
+code to skip over the string (in case of compilation being
+active).
+
+~~~
+: s:keep
+c (s-s)
+c compile a call to `data:string`
+i lilica..
+r data:string
+r comma
+
+c get a reference to here, tuck it out of the way
+i lifesw..
+r Free
+
+c get the string length, store it `here`
+i dulica..
+r a:length
+i lica....
+r comma
+
+c then use `a:for-each` to copy the characters to `here`
+i lilica..
+r comma
+r a:for-each
+
+c finally, if compiling, drop the pointer from the stack. (If
+c not compiling, we just leave it on the stack)
+i lifelili
+r Compiler
+r drop
+r if
+i ju......
+~~~
+
+`s:append` is similar to `a:append`, but specifically uses the
+temporary buffer memory.
+
+~~~
+: s:append
+c (ss-s)
+i lifepu..
+r Free
+i lica....
+r s:temp-pointer
+i listlica
+r Free
+r s:next
+i lica....
+r a:append
+i polistre
+r Free
+
+: s:prepend
+c (ss-)
+i swliju..
+r s:append
+~~~
+
+
+~~~
+: block:buffer
+c (-a)
+i lire....
+r sys:buffers/block
+~~~
+
+~~~
+: e:to-line
+c (n-a) #64 n:mul block:buffer n:add ;
+i limuliad
+d 64
+r sys:buffers/block
+i re......
+
+: e:line
+c (n-) e:to-line #64 [ fetch-next c:put ] times drop nl ;
+i lica....
+r e:to-line
+i lililica
+d 64
+r e:line.inner
+r times
+i drliju..
+r nl
+
+: e:line.inner
+i lica....
+r fetch-next
+i liju....
+r c:put
+
+: sep
+i lica....
+r sp
+i lica....
+r sp
+i lica....
+r sp
+i lililica
+d 6
+r ed.sep.mid
+r times
+i lilica..
+r ed.sep.end$
+r s:put
+i liju....
+r nl
+
+: ed.sep.mid
+i liliju..
+r ed.sep.mid$
+r s:put
+
+: ed.sep.mid$
+s +----5----
+
+: ed.sep.end$
+s +---
+
+: l/n
+i lica....
+r I
+i duliltli
+d 10
+r sp
+i lica....
+r if
+i lica....
+r n:put
+i liju....
+r sp
+
+: line
+i lica....
+r l/n
+i lica....
+r I
+i liju....
+r e:line
+
+: list#
+: lines
+i lililiju
+d 16
+r line
+r indexed-times
+
+: info
+i lilica..
+r info$
+r d:lookup
+i duline..
+d 0
+i lililiju
+r info.action
+r drop
+r choose
+
+: info.action
+i lica....
+r d:address
+i feju....
+
+: info$
+s sys:info
+
+: list*
+c (-)
+i lililiju
+d 16
+r list*.inner
+r indexed-times
+
+: list*.inner
+i lica....
+r I
+i liju....
+r e:line
+
+: list
+c (-)
+i lica....
+r sep
+i lica....
+r lines
+i lica....
+r sep
+i liju....
+r info
+
+: e:Display
+r list
+~~~
+
+~~~
+: ed.reset
+c #1024 block:buffer n:dec store ;
+i lililisu
+d 1024
+r sys:buffers/block
+d 1
+i stre....
+
+: ed.constrain
+c @Block #0 @Blocks n:dec n:limit !Block ;
+i lifeli..
+r Block
+d 0
+i lifelisu
+r Blocks
+d 1
+i lica....
+r n:limit
+i listre..
+r Block
+
+: set
+c (n-) !Block constrain ;
+i listliju
+r Block
+r ed.constrain
+
+: save
+c (-)  @Block block:buffer block:save ;
+i lifeli..
+r Block
+r sys:buffers/block
+i liju....
+r block:save
+
+: load
+c (-)  @Block block:buffer block:load reset ;
+i lifeli..
+r Block
+r sys:buffers/block
+i lica....
+r block:load
+i liju....
+r ed.reset
+
+: next
+c (-)  &Block v:inc constrain load ;
+i lilica..
+r Block
+r v:inc
+i lica....
+r ed.constrain
+i liju....
+r load
+
+: prev
+c (-)  &Block v:dec constrain load ;
+i lilica..
+r Block
+r v:dec
+i lica....
+r ed.constrain
+i liju....
+r load
+
+: new
+c (-)  #32 block:buffer #1024 fill reset ;
+i lilili..
+d 32
+r sys:buffers/block
+d 1024
+i lica....
+r fill
+i liju....
+r ed.reset
+
+: edit
+c (n-) set load @e:Display call ;
+i lica....
+r set
+i lica....
+r load
+i lifeju..
+r e:Display
+
+: run
+c (-)  reset block:buffer n:dec s:evaluate ;
+i lica....
+r ed.reset
+i lilisu..
+r sys:buffers/block
+d 1
+i liju....
+r s:evaluate
+
+: use
+c (block)  set load run ;
+i lica....
+r set
+i lica....
+r load
+i liju....
+r run
+
+: using
+c (first,last)  over n:sub swap use [ next run ] times ;
+i puduposw
+i suswlica
+r use
+i liliju..
+r using.times
+r times
+
+: using.times
+i lica....
+r next
+i liju....
+r run
+~~~
+
+~~~
+: s:get/line.handle
+i dulieqpu
+d 8
+i duposwli
+d 127
+i eqorlili
+r s:get/line.handle:b/s
+r comma
+i liju....
+r choose
+
+: s:get/line.handle:b/s
+i dr......
+i lifelife
+r Free
+r s:get/line.Start
+i eqlicj..
+r s:get/line.process
+i liliju..
+d -1
+r allot
+
+: s:get/line.process
+i dulieqli
+d 10
+r s:get/line.process:done
+i liliju..
+r s:get/line.process.handle
+r choose
+
+: s:get/line.process:done
+i drlire..
+d -1
+
+: s:get/line.process.handle
+i lica....
+r s:get/line.handle
+i lire....
+d 0
+
+: s:get/line.Start
+d 0
+
+: s:get/line
+c (-s)
+c here n:inc &s:get/line.Start store
+c here [ #0 comma [ c:get process ] until ] sip
+c here over n:sub n:dec over !Free swap store drop
+c here s:temp ;
+i lifeliad
+r Free
+d 1
+i list....
+r s:get/line.Start
+i lifedupu
+r Free
+i lilica..
+d 0
+r comma
+i lilica..
+r s:get/line.read
+r until
+i polifepu
+r Free
+i duposwsu
+i lisupudu
+d 1
+i poswlist
+r Free
+i swstdrli
+r Free
+i feliju..
+r s:temp
+
+: s:get/line.read
+i lica....
+r c:get
+i liju....
+r s:get/line.process
+~~~
+
+~~~
+: e:erase/line
+c (n-)
+c e:to-line #32 swap #64 fill ;
+i lica....
+r e:to-line
+i liswli..
+d 32
+d 64
+i liju....
+r fill
+
+: e:replace
+c (sn-)
+c n:inc swap e:to-line over n:dec s:length copy ;
+i liadsw..
+d 1
+i lica....
+r e:to-line
+i puduposw
+i lisulica
+d 1
+r a:length
+i cyre....
+
+: e:replace-at
+c (snn-)
+c [ &e:to-line dip n:add ] dip
+c [ over store n:inc ] s:for-each drop ;
+i pulilica
+r e:to-line
+r dip
+i adpolili
+r e:replace-at:internal
+r a:for-each
+i ca......
+i drre....
+
+: e:replace-at:internal
+i puduposw
+i stliadre
+d 1
+
+: e:insert
+c (n"-)
+c dup e:erase/line s:get/line e:replace ;
+i ........
+i ........
+i dulica..
+r e:erase/line
+i lica....
+r s:get/line
+i liju....
+r e:replace
+
+: e:insert-at
+c (nn"-)
+c s:get/line e:replace-at ;
+i lica....
+r s:get/line
+i liju....
+r e:replace-at
+
+: 0
+c ("-)
+i liliju..
+d 0
+r e:insert
+
+: 1
+c ("-)
+i liliju..
+d 1
+r e:insert
+
+: 2
+c ("-)
+i liliju..
+d 2
+r e:insert
+
+: 3
+c ("-)
+i liliju..
+d 3
+r e:insert
+
+: 4
+c ("-)
+i liliju..
+d 4
+r e:insert
+
+: 5
+c ("-)
+i liliju..
+d 5
+r e:insert
+
+: 6
+c ("-)
+i liliju..
+d 6
+r e:insert
+
+: 7
+c ("-)
+i liliju..
+d 7
+r e:insert
+
+: 8
+c ("-)
+i liliju..
+d 8
+r e:insert
+
+: 9
+c ("-)
+i liliju..
+d 9
+r e:insert
+
+: 10
+c ("-)
+i liliju..
+d 10
+r e:insert
+
+: 11
+c ("-)
+i liliju..
+d 11
+r e:insert
+
+: 12
+c ("-)
+i liliju..
+d 12
+r e:insert
+
+: 13
+c ("-)
+i liliju..
+d 13
+r e:insert
+
+: 14
+c ("-)
+i liliju..
+d 14
+r e:insert
+
+: 15
+c ("-)
+i liliju..
+d 15
+r e:insert
+~~~
+
+~~~
+: .
+c ("-)
+c #62 [ c:get drop ] times ;
+i lililiju
+d 62
+r .:internal
+r times
+
+: .:internal
+i lica....
+r c:get
+i drre....
+~~~
+
+The basic `use` and `using` words aren't very convienient as you
+need to keep track of the exact blocks to load. `needs` allows
+you to use the first part of a block title line (typically a
+comment for code blocks) instead. It'll scan through the block
+set, running any blocks that match the provided text. E.g., to
+load a block set named "(pali)":
+
+    '(pali) needs
+
+Blocks are loaded in order from 0 to N, where N is the value in
+`Blocks`. This can be very slow if you have a large block set or
+are loading multiple sets of blocks. You may want to consider
+keeping blocks towards the low end of the block set and limiting
+`Blocks` before running this.
+
+~~~
+: needs.check
+c (-f)
+c block:buffer &sys:buffers/needs @Len compare ;
+i lililife
+r sys:buffers/block
+r sys:buffers/needs
+r needs.Len
+i cpre....
+
+: needs.setup
+c (s-)
+c dup s:length !Len n:inc &sys:buffers/needs @Len copy ;
+i dulica..
+r a:length
+i listliad
+r needs.Len
+d 1
+i lilifecy
+r sys:buffers/needs
+r needs.Len
+i re......
+
+: needs
+c (s-)
+c setup @Block [
+c   @Blocks [ I set load check &run if ] indexed-times
+c ] dip !Block load ;
+i lica....
+r needs.setup
+i lifepu..
+r Block
+i lifelili
+r Blocks
+r needs:internal
+r indexed-times
+i ca......
+i polist..
+r Block
+i liju....
+r load
+
+: needs:internal
+i lica....
+r I
+i lica....
+r set
+i lica....
+r load
+i lica....
+r needs.check
+i liliju..
+r run
+r if
+~~~
+
+For generating an index of the blocks, `titles` is provided.
+This shows the block number and index line for any block with
+a title line.
+
+~~~
+: titles
+c (-)
+c @Block @Blocks
+c [ I set load block:buffer fetch #32 -eq?
+c   [ I n:put sp #64 block:buffer n:dec &store &s:put bi nl ] if
+c ] indexed-times !Block load ;
+i lifelife
+r Block
+r Blocks
+i lilica..
+r titles:inner
+r indexed-times
+i listliju
+r Block
+r load
+
+: titles:inner
+i lica....
+r I
+i lica....
+r set
+i lica....
+r load
+i lifeline
+r sys:buffers/block
+d 32
+i liliju..
+r titles:display
+r if
+
+: titles:display
+i lica....
+r I
+i lica....
+r n:put
+i lica....
+r sp
+i lililisu
+d 64
+r sys:buffers/block
+d 1
+i lililica
+r store
+r s:put
+r bi
+i liju....
+r nl
+~~~
+
+`sys:info` is called by the editor. It displays a status line below
+the editor output. You can write a new `sys:info`, and the the code
+will use the most recent one.
+
+~~~
+: sys:info
+c (-)
+c '___B: s:put @Block n:put $/ c:put @Blocks n:dec n:put
+i lilica..
+r sys:info:B$
+r s:put
+i lifelica
+r Block
+r n:put
+i lilica..
+d 47
+r c:put
+i lifelisu
+r Blocks
+d 1
+i lica....
+r n:put
+
+c '___S: s:put depth/data n:put $/ c:put #32 n:put
+i lilica..
+r sys:info:S$
+r s:put
+i lica....
+r depth/data
+i lica....
+r n:put
+i lilica..
+d 47
+r c:put
+i lilica..
+d 32
+r n:put
+
+c '___M: s:put here n:put $/ c:put #59999 n:put nl ;
+i lilica..
+r sys:info:M$
+r s:put
+i lifelica
+r Free
+r n:put
+i lilica..
+d 47
+r c:put
+i lilica..
+d 59999
+r n:put
+
+i liju....
+r nl
+
+: sys:info:B$
+s    B:
+: sys:info:S$
+s    S:
+: sys:info:M$
+s    M:
+~~~
+
+================================================================
+
+The last couple of things are just to save the image and set a
+startup word. The default startup word runs the code in blocks
+1 and 2, then starts the editor on block 0.
+
+~~~
+: ~startup:process
+c (n-f)
+i lica....
+r set
+i lica....
+r load
+i lifelieq
+r sys:buffers/block
+d 40
+i liliju..
+r run
+r if
+
+: prelude
+i lilica..
+d 1
+r ~startup:process
+i liliju..
+d 2
+r ~startup:process
+
+: startup
+i liju....
+r prelude
+
+: rom:save
+c (-)
+i liiore..
+d 4
+~~~
+
+# Initial Dictionary
+
+~~~
+: dictionary-headers
+D ) )
+D ---reveal--- ---reveal---
+D -eq? neq?
+D -if -if
+D . .
+D 0 0
+D 1 1
+D 10 10
+D 11 11
+D 12 12
+D 13 13
+D 14 14
+D 15 15
+D 2 2
+D 3 3
+D 4 4
+D 5 5
+D 6 6
+D 7 7
+D 8 8
+D 9 9
+D ; ; *
+D ?jump ?jump
+D BaseBlock BaseBlock
+D Block Block
+D Blocks Blocks
+D Compiler Compiler
+D Dictionary Latest
+D Free Free
+D I I
+D J J
+D K K
+D Sigils Sigils
+D [ [ *
+D ] ] *
+D a:-eq? a:-eq?
+D a:append a:append
+D a:behead a:behead
+D a:chop a:chop
+D a:contains? a:contains?
+D a:copy a:copy
+D a:dup a:dup
+D a:eq? a:eq?
+D a:fetch a:fetch
+D a:filter a:filter
+D a:first a:first
+D a:for-each a:for-each
+D a:hash a:hash
+D a:index a:index
+D a:indices a:indices
+D a:last a:last
+D a:left a:left
+D a:length a:length
+D a:make a:make
+D a:make/temp a:make/temp
+D a:map a:map
+D a:middle a:middle
+D a:prepend a:prepend
+D a:reduce a:reduce
+D a:reverse a:reverse
+D a:right a:right
+D a:store a:store
+D a:temp s:temp
+D a:th a:th
+D allot allot
+D and and
+D bi bi
+D bi* bi*
+D bi@ bi@
+D block:buffer block:buffer
+D block:load block:load
+D block:save block:save
+D bye bye
+D c:get c:get
+D c:lowercase? c:lowercase?
+D c:put c:put
+D c:to-lower c:to-lower
+D c:to-s c:to-s
+D c:to-upper c:to-upper
+D c:uppercase? c:uppercase?
+D call call
+D choose choose
+D comma comma
+D compare compare
+D compile:call compile:call
+D compile:jump compile:jump
+D compile:lit compile:lit
+D compiling? compiling?
+D copy copy
+D curry curry
+D d:address d:address
+D d:create d:create
+D d:exists? d:exists?
+D d:hash d:hash
+D d:link d:link
+D d:lookup d:lookup
+D depth/address depth/address
+D depth/data depth/data
+D depths depths
+D dip dip
+D drop drop
+D drop-pair drop-pair
+D dtc dtc
+D dup dup
+D dup-pair dup-pair
+D e:Display e:Display
+D e:erase/line e:erase/line
+D e:insert e:insert
+D e:insert-at e:insert-at
+D e:line e:line
+D e:replace e:replace
+D e:replace-at e:replace-at
+D e:to-line e:to-line
+D edit edit
+D eq? eq?
+D fetch fetch
+D fetch-next fetch-next
+D fill fill
+D forever forever
+D gc gc
+D gt? gt?
+D gteq? gteq?
+D here here
+D if if
+D indexed-times indexed-times
+D internal:lit lit
+D internal:quote quote
+D interpret interpret
+D io io
+D jump jump
+D list list
+D list# list#
+D list* list*
+D load load
+D lt? lt?
+D lteq? lteq?
+D n:-zero? n:-zero?
+D n:abs n:abs
+D n:add n:add
+D n:between? n:between?
+D n:dec n:dec
+D n:div n:div
+D n:divmod n:divmod
+D n:get n:get
+D n:inc n:inc
+D n:limit n:limit
+D n:max n:max
+D n:min n:min
+D n:mod n:mod
+D n:mul n:mul
+D n:negate n:negate
+D n:put n:put
+D n:sub n:sub
+D n:to-s n:to-s
+D n:zero? n:zero?
+D needs needs
+D new new
+D next next
+D nip nip
+D nl nl
+D not not
+D not-found not-found
+D or or
+D over over
+D pop pop
+D prelude prelude
+D prev prev
+D process-data process-data
+D push push
+D restart restart
+D rom:save rom:save
+D rot rot
+D run run
+D s:-eq? a:-eq?
+D s:append s:append
+D s:behead a:behead
+D s:chop a:chop
+D s:contains? a:contains?
+D s:copy a:copy
+D s:dup a:dup
+D s:eq? a:eq?
+D s:evaluate s:evaluate
+D s:fetch a:fetch
+D s:filter a:filter
+D s:first a:first
+D s:for-each a:for-each
+D s:get/line s:get/line
+D s:get/token s:get/token
+D s:hash a:hash
+D s:index/c a:index
+D s:indices a:indices
+D s:keep s:keep
+D s:last a:last
+D s:left a:left
+D s:length a:length
+D s:map a:map
+D s:middle a:middle
+D s:prepend s:prepend
+D s:put s:put
+D s:reduce a:reduce
+D s:reverse a:reverse
+D s:rewrite s:rewrite
+D s:right a:right
+D s:store a:store
+D s:temp s:temp
+D s:th a:th
+D s:to-lower s:to-lower
+D s:to-n s:to-n
+D s:to-upper s:to-upper
+D save save
+D set set
+D shift-left shift-left
+D shift-right shift-right
+D sigil:! sigil:!
+D sigil:# sigil:#
+D sigil:$ sigil:$
+D sigil:& sigil:&
+D sigil:' sigil:'
+D sigil:( drop
+D sigil:: sigil::
+D sigil:@ sigil:@
+D sigil:\ sigil:\
+D sigil:get sigil:get
+D sigil:set sigil:set
+D sip sip
+D sp sp
+D startup startup
+D store store
+D store-next store-next
+D swap swap
+D sys:buffers/block sys:buffers/block
+D sys:buffers/input sys:buffers/input
+D sys:buffers/loops sys:buffers/loops
+D sys:buffers/needs sys:buffers/needs
+D sys:buffers/numeric-conversion sys:buffers/numeric-conversion
+D sys:buffers/reserved sys:buffers/reserved
+D sys:buffers/scope sys:buffers/scope
+D sys:buffers/strings+arrays sys:buffers/strings+arrays
+D sys:buffers/variables sys:buffers/variables
+D sys:info sys:info
+D tab tab
+D times times
+D titles titles
+D tri tri
+D tri* tri*
+D tri@ tri@
+D tuck tuck
+D unless -if
+D until until
+D use use
+D using using
+D v:dec v:dec
+D v:inc v:inc
+D var var
+D var-n var-n
+D when if
+D while while
+D xor xor
+D {{ {{
+: final_dict_entry
+D }} }}
+
+: Latest
+r final_dict_entry
+
+: FREE-SPACE
+~~~

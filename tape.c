@@ -14,10 +14,10 @@ void tape_track_init(tape_track *trk, int id)
 int tape_track_open(tape_track *trk)
 {
     char filename[8];
+    sk_drwav_data_format format;
 
     trk->rw = TAPE_WRITE;
 
-    sk_drwav_data_format format;
     format.container = sk_drwav_container_riff;
     format.format = DR_WAVE_FORMAT_IEEE_FLOAT;
     format.channels = 1;
