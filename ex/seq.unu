@@ -23,7 +23,7 @@ To build a sequence, create an array of 8 8-bit (expressed
 as $k=3$, where $2^k = 2^3 = 8$) using the {\tt arr}
 word, which is fed into {\tt seq}.
 
-The prefix {\tt %} is used to add values to the array
+The prefix {\tt \%} is used to add values to the array
 in ascending order.
 
 ~~~
@@ -51,7 +51,7 @@ of audio ({\tt render}), and close the track ({\tt tclose}).
 ~~~
 #0 topen #11 render #0 tclose
 ~~~
-
+Destroy the context, and quit Konilo.
 ~~~
 son:ctx-destroy bye
 ~~~
