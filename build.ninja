@@ -1,5 +1,5 @@
 cflags = -g -Wall -pedantic -O3 -I. -Icmp -Idr_wav
-libs = -L. -lsonilo
+libs = -L. -lsonilo -lm
 
 rule c89
     command = gcc -std=c89 -c $cflags $in -o $out
