@@ -89,8 +89,7 @@ int word_machine_send(word_machine *wm, unsigned char c)
 /* begin: begin a new message */
 int word_machine_begin(word_machine *wm)
 {
-    /* TODO: implement */
-    return 1;
+    return word_machine_reset(wm);
 }
 
 /* end: parse bytes in buffer and clear message */
@@ -254,13 +253,13 @@ int word_machine_parse(word_machine *wm, cmp_ctx_t *cmp, sonilo *s)
 
         if (read_input && !cmp_read_object(cmp, &obj)) {
             if (buf.pos >= buf.len) break;
-            else return 1;
+            else return (1 << 8);
         }
 
         /* see comment in enum declaration for info on stat emachine */
         switch(st) {
             case ST_ERR:
-                return 1;
+                return (2 << 8) | 1;
             case ST_INIT: /* look for maps of size 1 (M) */
                 switch(obj.type) {
                     case CMP_TYPE_FIXMAP:
@@ -285,7 +284,7 @@ int word_machine_parse(word_machine *wm, cmp_ctx_t *cmp, sonilo *s)
                     case CMP_TYPE_STR16:
                     case CMP_TYPE_STR32:
                         if (!read_bytes(sbuf, obj.as.str_size, &buf)) {
-                            return 2;
+                            return (2 << 8) | 2;
                         }
                         sbuf[obj.as.str_size] = 0;
                         if (obj.as.str_size == 1) {
@@ -322,7 +321,7 @@ int word_machine_parse(word_machine *wm, cmp_ctx_t *cmp, sonilo *s)
             case ST_2:
                 /* process A-form word */
                 rc = sonilo_op_a(s, subtype, data);
-                if (rc) return 3;
+                if (rc) return (3 << 8) | (rc & 0xFF);
                 /* reset */
                 read_input = 1;
                 st = ST_INIT;

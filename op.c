@@ -297,8 +297,10 @@ static int a_ctx(sonilo *s, uint8_t data)
             break;
         case 1: { /* destroy context */
             uint16_t ac;
+            rc = 0;
             ac = sonilo_vm_cursor_get(sonilo_get_vm(s));
             context_destroy(sonilo_mem(s), ac);
+            break;
         }
         default:
             rc = -1;
@@ -368,6 +370,68 @@ static int a_cursor(sonilo_vm *vm, uint8_t data)
     return rc;
 }
 
+static int b_render(sonilo *s, uint32_t data)
+{
+    uint16_t ctx, nsecs;
+    nsecs = data & 0xFFFF;
+    ctx = sonilo_vm_cursor_get(sonilo_get_vm(s));
+
+    return sonilo_render(s, ctx, nsecs);
+}
+
+static int a_param(sonilo_vm *vm, uint8_t data)
+{
+    int rc;
+    uint16_t ps;
+    uint32_t *mem;
+    uint16_t ctx;
+
+    rc = -1;
+
+    mem = sonilo_vm_mem(vm);
+    ctx = sonilo_vm_cursor_get(vm);
+    ps = CTX_PARAM_STACK(mem, ctx);
+
+    switch (data) {
+        case 0: /* bdup */
+            rc = pstack_dup(mem, ps);
+            break;
+        case 1: /* bdrop */
+            rc = pstack_drop(mem, ps);
+            break;
+        default:
+            rc = -1;
+            break;
+    }
+
+    return rc;
+}
+
+static int a_sys(sonilo_vm *vm, uint8_t data)
+{
+    int rc;
+    rc = -1;
+
+    switch (data) {
+        case 0:
+            rc = 0;
+            printf("%x\n", sonilo_vm_rw_get(vm));
+            break;
+        case 1: { /* get error register */
+            uint32_t err;
+            rc = 0;
+            err = sonilo_vm_err_get(vm);
+            sonilo_vm_rw_set(vm, err);
+        }
+            break;
+        default:
+            rc = -1;
+
+    }
+
+    return rc;
+}
+
 int sonilo_op_a(sonilo *s, char type, uint8_t data)
 {
     int rc;
@@ -378,7 +442,7 @@ int sonilo_op_a(sonilo *s, char type, uint8_t data)
     rc = 0;
     switch (type) {
         case '!': /* print rw */
-            printf("%x\n", sonilo_vm_rw_get(vm));
+            rc = a_sys(vm, data);
             break;
         case 'a': /* array */
             rc = a_array(vm, data);
@@ -401,21 +465,16 @@ int sonilo_op_a(sonilo *s, char type, uint8_t data)
         case 'k': /* tape */
             rc = a_cursor(vm, data);
             break;
+        case 'p': /* parameters */
+            rc = a_param(vm, data);
+            break;
         default:
-            rc = -1;
+            rc = 0 | 0xFF;
+            type = '?';
             break;
     }
-
+    if (rc) rc = (type << 8) | (rc & 0xFF); 
     return rc;
-}
-
-static int b_render(sonilo *s, uint32_t data)
-{
-    uint16_t ctx, nsecs;
-    nsecs = data & 0xFFFF;
-    ctx = sonilo_vm_cursor_get(sonilo_get_vm(s));
-
-    return sonilo_render(s, ctx, nsecs);
 }
 
 int sonilo_op_b(sonilo *s, char type, uint32_t data)

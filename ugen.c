@@ -81,6 +81,12 @@ int pstack_pop(uint32_t *mem, uint16_t p, uint32_t *wp)
     return 0;
 }
 
+int pstack_drop(uint32_t *mem, uint16_t p)
+{
+    uint32_t dummy;
+    return pstack_pop(mem, p, &dummy);
+}
+
 int pstack_hold(uint32_t *mem, uint16_t p)
 {
     uint32_t *stk;

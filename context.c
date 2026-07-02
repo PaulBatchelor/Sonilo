@@ -65,6 +65,9 @@ uint16_t context_init(uint32_t *mem, uint16_t blist)
     mem[zp] = bst << 16 | blist;
     mem[zp + 1] = bsm << 16 | stk;
 
+    /* VM + 8 megablocks  = (2^16 / 256) + 8 (reserved) = 264 */
+    mem[zp + SLOT_UNIVERSE_FREE] = 264;
+
     /* return zero page address */
 
     return zp;

@@ -883,7 +883,7 @@ again is fair game to me.
 @m 0wx
 @c {\tt 0x81} is a fixmap of size 1. {\tt 00} is a positive fixint of 0.
 {\tt 0xCC00} declares uint8 of 0.
-@m #8100CC00 ww
+@m #8100CC00 ce ww
 @c Print the word, and the error code.
 Hopefully it is the magic word and an error code of 0.
 @m sp pw sp pe nl

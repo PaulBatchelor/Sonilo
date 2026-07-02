@@ -969,11 +969,12 @@ uint32_t sonilo_vm_blocklist(sonilo_vm *vm)
 static int process_sys(sonilo *s, uint8_t k, uint8_t v)
 {
     int rc;
-    rc = 1;
+    rc = 0xFF;
     if (k == 0) {
         switch(v) {
             case 0:
                 /* set RW to magic constant */
+                rc = 0;
                 sonilo_vm_rw_set(s->vm, 0x67676767);
                 break;
             case 1:
@@ -1053,7 +1054,7 @@ int sonilo_send(sonilo *s, unsigned char c)
             if (rc) return 1;
             /* process system command */
             rc = process_sys(s, k, v);
-            if (rc) return 2;
+            if (rc) return (2 << 8) | (rc & 0xFF);
         } else {
             /* otherwise, append to word machine */
             return word_machine_append(s->wm, w);
@@ -1068,8 +1069,13 @@ int sonilo_sendw(sonilo *s, uint32_t w)
     int i;
     for (i = 0; i < 4; i++) {
         unsigned char c;
+        int rc;
         c = (w >> (3 - i)*8) & 0xFF;
-        sonilo_send(s, c);
+        rc = sonilo_send(s, c);
+        if (rc) {
+            sonilo_vm_err_set(sonilo_get_vm(s), rc);
+            return rc;
+        }
     }
     return 0;
 }

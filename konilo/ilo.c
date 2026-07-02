@@ -122,7 +122,8 @@ V ioi() {
   w = (uint32_t)pop();
   err = sonilo_sendw(son, w);
   if (err) {
-      printf("sonilo error.\n");
+      printf("sonilo error: %x\n", err);
+      sonilo_vm_err_set(sonilo_get_vm(son), 0);
   }
 }
 V ioj() {

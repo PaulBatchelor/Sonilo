@@ -57,6 +57,8 @@ new #5 set
 10 :topen setw son:begin #0 tape son:end ;
 11 :tclose setw son:begin #1 tape son:end ;
 12 :render son:begin #114 son:opb son:end ;
+13 :bdup son:begin #0 $p son:opa son:end ;
+14 :bdrop son:begin #1 $p son:opa son:end ;
 save
 
 new #6 set
@@ -70,6 +72,8 @@ new #6 set
 7 :arr #4 shift-left or son:array-create 
 8 son:pop son:rw-get dup !AA #0 !AI ;
 9 :tout last-ugen son:rw-get bind ;
+10 :err son:begin #1 $! son:opa son:end son:rw-get 
+11 #0 -eq? [ 'error s:put nl bye ] if ;
 save
 
 new #9 set
@@ -85,6 +89,7 @@ new #9 set
 9 :smoother #37660 ugen ;
 10 :add #198 ugen ;
 11 :seq son:iter sequence ;
+12 :bigverb #3426 ugen ;
 save
 
 bye
