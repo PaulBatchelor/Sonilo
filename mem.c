@@ -47,44 +47,24 @@ static uint32_t *get_avail(uint32_t *mem, uint16_t p_top)
     return &mem[p_avail];
 }
 
-static void availf_set_v2(uint32_t *avail, int k, int p)
+static void availf_set(uint32_t *avail, int k, int p)
 {
     avail[k] = linkf_set(avail[k], p);
 }
 
-static int availf_get_v2(uint32_t *avail, int k) 
+static int availf_get(uint32_t *avail, int k) 
 {
     return linkf_get(avail[k]);
 }
 
-static void availb_set_v2(uint32_t *avail, int k, int p)
+static void availb_set(uint32_t *avail, int k, int p)
 {
     avail[k] = linkb_set(avail[k], p);
 }
 
-static int availb_get_v2(uint32_t *avail, int k) 
-{
-    return linkb_get(avail[k]);
-}
-
-static void availf_set(uint32_t *avail, int k, int p)
-{
-    availf_set_v2(avail, k, p);
-}
-
-static int availf_get(uint32_t *avail, int k) 
-{
-    return availf_get_v2(avail, k);
-}
-
-static void availb_set(uint32_t *avail, int k, int p)
-{
-    availb_set_v2(avail, k, p);
-}
-
 static int availb_get(uint32_t *avail, int k)
 {
-    return availb_get_v2(avail, k);
+    return linkb_get(avail[k]);
 }
 
 static void kval_set(uint32_t *mem, uint16_t p_top, int p, int k)
