@@ -14,6 +14,7 @@
 #define HALFWORD_LSB 0x0281
 
 int sonilo_load_ugens(sonilo *s);
+void mem_dump(uint32_t *mem, uint16_t p_top, const char *filename);
 
 struct sonilo_host {
     /* instruction map */
@@ -69,6 +70,7 @@ struct sonilo {
 
     /* word machine: virtual device to interact with sonilo  */
     word_machine *wm;
+
 };
 
 int sonilo_init(sonilo *s)
@@ -1227,4 +1229,25 @@ int sonilo_render(sonilo *s, uint16_t ctx, uint16_t nsecs)
     }
 
     return 0;
+}
+
+void sonilo_mem_aux(sonilo_vm *vm, int mode)
+{
+    uint16_t ctx;
+    uint32_t rw;
+    int err;
+    uint16_t p;
+
+    p = 0;
+
+    ctx = sonilo_vm_cursor_get(vm);
+    rw = sonilo_vm_rw_get(vm);
+    switch (mode) {
+        case 0:
+        default:
+            err = sonilo_alloc(sonilo_vm_mem(vm), ctx, rw, &p);
+            sonilo_vm_rw_set(vm, p);
+            sonilo_vm_err_set(vm, err);
+            break;
+    }
 }

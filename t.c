@@ -11,6 +11,8 @@
 
 #define BLOCKLIST_OFFSET 0x400
 
+void sonilo_mem_aux(sonilo_vm *vm, int mode);
+
 static volatile int running = 0;
 
 static uint32_t reverse_nibbles(uint32_t w);
@@ -192,9 +194,6 @@ static int iscmd(memwrite *mw, char c, const char *cmd)
 void parse_memwrite(memwrite *mw, char c)
 {
     sonilo_vm *vm;
-#ifdef DEBUG
-    fputc(c, stdout);
-#endif
     vm = mw->vm;
     /* handle 5-bit encoding mode */
     if (mw->encode) {
@@ -1437,6 +1436,20 @@ void parse_memwrite(memwrite *mw, char c)
             return;
         }
         return;
+    }
+
+    /* ax: main allocator aux utilities */
+    if (iscmd(mw, c, "ax")) {
+        int mode;
+        uint32_t rw;
+        mw->prev = 0;
+
+        rw = sonilo_vm_rw_get(mw->vm);
+        mode = rw & 0xF;
+        rw >>= 4;
+        sonilo_vm_rw_set(mw->vm, rw);
+        sonilo_mem_aux(mw->vm, mode);
+
     }
 
     mw->prev = c;

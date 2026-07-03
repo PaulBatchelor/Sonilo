@@ -6,7 +6,7 @@
 #define LOC_AVAIL(K) (K + AVAIL_OFFSET)
 #define TAGS(MEM, TOP) (MEM[TOP + 1])
 #define AVAIL(MEM, TOP) (MEM[TOP] & 0xFFFF)
-/* TODO: what is block again? */
+/* BLOCK: extract address for word block containing memory */
 #define BLOCK(MEM, TOP) ((MEM[TOP] >> 16) & 0xFFFF)
 #define RC_ENTRY_SIZE 22 /* bits */
 #define RC_NENTRY 48
@@ -15,7 +15,9 @@
 #define SLOT(MEM, A, S) MEM[A + 2 + S]
 #define BUDSLOT_SIZE 12
 #define BUDBLK_HEADER_SIZE 4
+#define NULL_LINK 127
 
+/* LINKF: pointer to front of list */
 static uint32_t linkf_set(uint32_t w, int a)
 {
     w &= ~(127);
@@ -28,6 +30,7 @@ static int linkf_get(uint32_t w)
     return (w) & 127;
 }
 
+/* LINKB: pointer to back of list */
 static uint32_t linkb_set(uint32_t w, int a)
 {
     w &= ~(127 << 7);
@@ -74,7 +77,7 @@ static void kval_set(uint32_t *mem, uint16_t p_top, int p, int k)
 
     p_block = BLOCK(mem, p_top);
     block = &mem[p_block];
-    /* TODO: what are the other 14 bits used for ? */
+    /* TODO: put this ink linkk_set */
     block[p] &= ~(7 << 14);
     block[p] |= (k & 7) << 14;
 }
@@ -129,6 +132,10 @@ static uint32_t* get_word(uint32_t *mem, uint16_t p_top, int p)
 
     avail = &mem[p_avail];
     block = &mem[p_block];
+
+    /* virtual memory mapping, where we pretend
+     * the memory block is right next to the AVAIL list
+     */
     if (p < 64) return &block[p];
     else return &avail[p - 64];
 }
@@ -299,6 +306,8 @@ void mem_init(uint32_t *mem,
     tags[0] = tags[1] = 0;
 
 
+    /* a single block is available of size
+     * 2^m (2^6 = 64) words */
     /* AVAILF[m] = AVAILB[m] = 0 */
     availf_set(avail, m, 0);
     availb_set(avail, m, 0);
@@ -312,10 +321,17 @@ void mem_init(uint32_t *mem,
     *w = linkf_set(*w, LOC_AVAIL(m));
     *w = linkb_set(*w, LOC_AVAIL(m));
 
-    /* AVAILF[k] = AVAILB[k] = LOC(AVAIL[k])*/
+    /* AVAILF[k] = AVAILB[k] = LOC(AVAIL[k]) for 0 <= k < m */
     for (i = 0; i < m; i++) {
         availf_set(avail, i, LOC_AVAIL(i));
         availb_set(avail, i, LOC_AVAIL(i));
+    }
+   
+    /* initialize remaining links with special null value */
+    for (i = 1; i < 64; i++) {
+        w = &block[i];
+        *w = linkf_set(*w, NULL_LINK);
+        *w = linkb_set(*w, NULL_LINK);
     }
 }
 
@@ -335,11 +351,11 @@ int mem_alloc(uint32_t *mem, uint16_t p_top, uint16_t k)
     avail = get_avail(mem, p_top);
     tags = &mem[p_tags];
     block = &mem[BLOCK(mem, p_top)];
-    /* R1: find block */
 
+    /* R1: find block */
     j = -1;
     for (i = k; i <= 6; i++) {
-        /* AVAILF != LOC(AVAIL(j) */
+        /* smallest j, AVAILF[j] != LOC(AVAIL(j)), k <= j <= 6 */
         if (availf_nonempty(avail, i)) {
             j = i;
             break;
@@ -352,8 +368,10 @@ int mem_alloc(uint32_t *mem, uint16_t p_top, uint16_t k)
 
     /* R2: Remove from list */
     /* L <- AVAILB[j] */
+    /* L: pointer to block location */
     L = availb_get(avail, j);
     /* P <- LINKB(L) */
+    /* links are stored in the block, so use L address */
     P = linkb_get(block[L]);
     /* AVAILB[j] <- P */
     availb_set(avail, j, P);
@@ -362,6 +380,7 @@ int mem_alloc(uint32_t *mem, uint16_t p_top, uint16_t k)
     *w = linkf_set(*w, LOC_AVAIL(j));
     /* TAG(L) <- 0 */
     tag_set(tags, L, 0);
+    /* NOTE: L.k <- k is not part of R2? */
     kval_set(mem, p_top, L, k);
 
     /* R3: Split required? */
@@ -451,6 +470,70 @@ uint32_t mem_cksum(uint32_t *mem, uint16_t p_top)
     cksum |= (nwords & 127) << b;
 
     return cksum;
+}
+
+#define SKEY(S) "\""#S"\""
+void mem_dump(uint32_t *mem, uint16_t p_top, const char *filename)
+{
+    FILE *fp;
+    int i;
+    uint32_t *tags;
+    uint32_t *block;
+    uint32_t *avail;
+
+    tags = &mem[TAGS(mem, p_top)];
+    block = &mem[BLOCK(mem, p_top)];
+    avail = get_avail(mem, p_top);
+    fp = fopen(filename, "w");
+    fprintf(fp, "{\n");
+
+    /* top: top memory address */
+    fprintf(fp, SKEY(top)":%d,\n", p_top);
+
+    /* tags: marks if a block at an address is available */
+    fprintf(fp, SKEY(tags)":[");
+
+    for (i = 0; i < 64; i++) {
+        if (i > 0) fprintf(fp, ",");
+        fprintf(fp, "%d", tag_get(tags, i));
+    }
+
+    fprintf(fp, "],\n");
+
+    /* block: list entries in block */
+    fprintf(fp, SKEY(block)":[");
+
+    for (i = 0; i < 64; i++) {
+        uint32_t w;
+        
+        w = block[i];
+        if (i > 0) fprintf(fp, ",");
+        fprintf(fp, "{\n");
+        fprintf(fp, SKEY(k)":%d,\n", (w >> 14) & 7);
+        fprintf(fp, SKEY(next)":%d,\n", linkf_get(w));
+        fprintf(fp, SKEY(prev)":%d\n", linkb_get(w));
+        fprintf(fp, "}\n");
+    }
+
+    fprintf(fp, "],\n");
+
+    /* avail: list entries in AVAIL */
+    fprintf(fp, SKEY(avail)":[");
+    for (i = 0; i <= 6; i++) {
+        uint32_t w;
+        
+        w = avail[i];
+        if (i > 0) fprintf(fp, ",");
+        fprintf(fp, "{\n");
+        fprintf(fp, SKEY(k)":%d,\n", i);
+        fprintf(fp, SKEY(tail)":%d,\n", linkf_get(w));
+        fprintf(fp, SKEY(head)":%d\n", linkb_get(w));
+        fprintf(fp, "}\n");
+    }
+    fprintf(fp, "]\n");
+
+    fprintf(fp, "\n}");
+    fclose(fp);
 }
 
 static int find_buddy(int x, int k)
@@ -1243,6 +1326,7 @@ int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz)
         uint16_t budtop;
 
         /* make sure there's a slot available */
+        /* TODO: is it really 64 slots? */
         if (nslots >= 64) return 1;
 
         /* allocate block to main (this holds the interesting things) */
@@ -1278,14 +1362,18 @@ int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz)
                 /* AVAIL */
                 budtop + 4,
                 /* TAGS */
-                budtop + 10);
+                budtop + 11);
 
         /* store top and memory block address as pair
          * in next slot position */
         slot = nslots;
         SLOT(mem, a, slot) = (((memblk & 0xFFFF) << 16)) | (budtop & 0xFFFF);
         NSLOTS(mem, a)++;
+
+        /* update budcnt */
+        mem[bd] = budcnt + 1;
     }
+
 
     /* push args onto stack (base, k, buddy) */
     stk = mem[ctx + 1] & 0xFFFF;
