@@ -12,13 +12,15 @@
 #define RC_NENTRY 48
 #define RC_ADDR(E) (E & 0xFFFF)
 #define NSLOTS(MEM, A) MEM[A + 1]
-#define SLOT(MEM, A, S) MEM[A + 2 + S]
+/* TODO: what goes into a BUDBLK header? */
 
 /* TODO: what goes into a BUDSLOT? */
 #define BUDSLOT_SIZE 12
-
-/* TODO: what goes into a BUDBLK header? */
 #define BUDBLK_HEADER_SIZE 4
+/* TODO: what is the 2 offset for? */
+#define SLOT(MEM, A, S) MEM[A + 2 + S]
+
+
 #define NULL_LINK 127
 
 #define MEM_TOP_SZ 3
