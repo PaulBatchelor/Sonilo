@@ -1243,6 +1243,17 @@ void sonilo_mem_aux(sonilo_vm *vm, int mode)
     ctx = sonilo_vm_cursor_get(vm);
     rw = sonilo_vm_rw_get(vm);
     switch (mode) {
+        case 2: /* get address of memory from slot, set to rw */
+            p = 0;
+            err = allocator_get_slot(sonilo_vm_mem(vm),
+                    ctx,
+                    rw,
+                    &p);
+            sonilo_vm_rw_set(vm, p);
+            sonilo_vm_err_set(vm, err);
+            break;
+        case 1: /* dump state from last allocator call */
+            break;
         case 0:
         default:
             err = sonilo_alloc(sonilo_vm_mem(vm), ctx, rw, &p);

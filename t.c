@@ -191,6 +191,23 @@ static int iscmd(memwrite *mw, char c, const char *cmd)
     return mw->prev == cmd[0] && c == cmd[1];
 }
 
+static void context_aux(sonilo_vm *vm, int mode)
+{
+    int rc;
+    uint16_t ctx;
+
+    rc = 1;
+    ctx = sonilo_vm_cursor_get(vm);
+    if (mode == 0) { /* get stack address, set to RW */
+        uint16_t stk;
+        stk = CTX_STACK(sonilo_vm_mem(vm), ctx);
+        sonilo_vm_rw_set(vm, stk);
+        rc = 0;
+    }
+
+    sonilo_vm_err_set(vm, rc);
+}
+
 void parse_memwrite(memwrite *mw, char c)
 {
     sonilo_vm *vm;
@@ -1449,7 +1466,19 @@ void parse_memwrite(memwrite *mw, char c)
         rw >>= 4;
         sonilo_vm_rw_set(mw->vm, rw);
         sonilo_mem_aux(mw->vm, mode);
+    }
 
+    /* cx: context aux functions */
+    if (iscmd(mw, c, "cx")) {
+        int mode;
+        uint32_t rw;
+        mw->prev = 0;
+
+        rw = sonilo_vm_rw_get(mw->vm);
+        mode = rw & 0xF;
+        rw >>= 4;
+        sonilo_vm_rw_set(mw->vm, rw);
+        context_aux(mw->vm, mode);
     }
 
     mw->prev = c;

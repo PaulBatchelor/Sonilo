@@ -13,9 +13,17 @@
 #define RC_ADDR(E) (E & 0xFFFF)
 #define NSLOTS(MEM, A) MEM[A + 1]
 #define SLOT(MEM, A, S) MEM[A + 2 + S]
+
+/* TODO: what goes into a BUDSLOT? */
 #define BUDSLOT_SIZE 12
+
+/* TODO: what goes into a BUDBLK header? */
 #define BUDBLK_HEADER_SIZE 4
 #define NULL_LINK 127
+
+#define MEM_TOP_SZ 3
+#define MEM_AVAIL_SZ 7
+#define MEM_TAGS_SZ 2
 
 /* LINKF: pointer to front of list */
 static uint32_t linkf_set(uint32_t w, int a)
@@ -289,6 +297,10 @@ void mem_init(uint32_t *mem,
     uint32_t *avail;
     uint32_t *w;
     uint32_t *block;
+
+
+    /* TOP memory layout: 2 words, storing addresses for
+     * AVAIL, BLOCK, and TAGS */
 
     /* write virtual pointer addresses to memory */
     mem[p_top] = p_avail  | (p_block << 16);
@@ -1354,15 +1366,19 @@ int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz)
         }
         /* set up top struct */
         /* compute local word offset */
-        budtop = budcnt * BUDSLOT_SIZE + BUDBLK_HEADER_SIZE;
+        budtop = (budcnt * BUDSLOT_SIZE) + BUDBLK_HEADER_SIZE;
         /* add global offset (start of allocator) */
         budtop += a;
+        fprintf(stderr, "new bud: %X %X\n", budtop, memblk);
         mem_init(mem,
-                budtop, budblk,
-                /* AVAIL */
-                budtop + 4,
-                /* TAGS */
-                budtop + 11);
+                /* top pointer */
+                budtop,
+                /* BLOCK */
+                budblk,
+                /* AVAIL (after top-struct) */
+                budtop + MEM_TOP_SZ,
+                /* TAGS (after AVAIL) */
+                budtop + MEM_TOP_SZ + MEM_AVAIL_SZ);
 
         /* store top and memory block address as pair
          * in next slot position */
@@ -1375,8 +1391,9 @@ int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz)
     }
 
 
+    fprintf(stderr, "selected slot %d\n", slot);
     /* push args onto stack (base, k, buddy) */
-    stk = mem[ctx + 1] & 0xFFFF;
+    stk = CTX_STACK(mem, ctx);
     slt = SLOT(mem, a, slot);
 
     /* TODO: add error checking */
@@ -1481,4 +1498,44 @@ int barray_drop(uint32_t *mem, uint16_t a)
     stk[0]--;
 
     return 0;
+}
+
+int allocator_get_slot(uint32_t *mem, uint16_t ctx, int slot, uint16_t *addr)
+{
+    uint16_t a;
+    int nslots;
+
+    a = CTX_ALLOC(mem, ctx);
+    nslots = NSLOTS(mem, a);
+
+    if (addr == NULL) return 1;
+    if (slot >= nslots) return 2;
+
+    *addr = SLOT(mem, a, slot) & 0xFFFF;
+    return 0;
+}
+
+/* block cksum: compute a checksum for a block of 64 words, starting
+ * at given word address.
+ * source: https://en.wikipedia.org/wiki/Longitudinal_redundancy_check
+ *
+ */
+uint32_t cksum_range(uint32_t *mem, uint16_t w, uint16_t sz)
+{
+    uint32_t cksum;
+    uint16_t i;
+
+    cksum = 0;
+    for (i = 0; i < sz; i++) {
+        cksum = (cksum + mem[w + i]) & 0xFFFFFFFF;
+    }
+
+    cksum = ((cksum ^ 0xFFFFFFFF) + 1) & 0xFFFFFFFF; 
+
+    return cksum;
+}
+
+uint32_t block_cksum(uint32_t *mem, uint16_t w)
+{
+    return cksum_range(mem, w, 64);
 }
