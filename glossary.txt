@@ -72,3 +72,4 @@ un:universe utility.
 wi:initialize word machine.
 ws:wordslice to value.
 ww:send word to word machine.
+cs:perform checksum starting at address w with size sz: s.wwww

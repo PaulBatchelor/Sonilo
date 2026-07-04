@@ -12,6 +12,7 @@
 #define BLOCKLIST_OFFSET 0x400
 
 void sonilo_mem_aux(sonilo_vm *vm, int mode);
+uint32_t cksum_range(uint32_t *mem, uint16_t w, uint16_t sz);
 
 static volatile int running = 0;
 
@@ -250,10 +251,12 @@ void parse_memwrite(memwrite *mw, char c)
     /* '.' used to visually group nibbles */
     if (c == '.') return;
 
+    /* pr: print word */
     if (iscmd(mw, c, "pr")) {
         uint32_t rw;
         rw = sonilo_vm_rw_get(vm);
         printf("%x\n", rw);
+        fflush(stdout);
         mw->prev = 0;
         return;
     }
@@ -1481,6 +1484,25 @@ void parse_memwrite(memwrite *mw, char c)
         context_aux(mw->vm, mode);
     }
 
+    /* cs: perform block checksum */
+    if (iscmd(mw, c, "cs")) {
+        uint32_t w;
+        uint32_t sz;
+        uint32_t rw;
+        mw->prev = 0;
+
+        rw = sonilo_vm_rw_get(mw->vm);
+
+        w = rw & 0xFFFF;
+        sz = rw >> 16;
+
+        rw = cksum_range(sonilo_vm_mem(vm), w, sz);
+
+        sonilo_vm_rw_set(mw->vm, rw);
+
+        return;
+    }
+
     mw->prev = c;
 }
 
@@ -1532,6 +1554,7 @@ int main (int argc, char *argv[])
         /* print mode */
         fputc(c, stdout);
     }
+
     sonilo_destroy(mw->s);
     free(mw);
     return 0;
