@@ -19,6 +19,7 @@ int pstack_rot(uint32_t *mem, uint16_t p);
 int pstack_hold(uint32_t *mem, uint16_t p);
 int pstack_unhold(uint32_t *mem, uint16_t p);
 int pstack_sweep(uint32_t *mem, uint16_t p);
+uint32_t pstack_size(uint32_t *mem, uint16_t p);
 
 int ugen_create(uint32_t *mem,
         uint16_t ctx,

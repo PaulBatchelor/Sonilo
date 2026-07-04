@@ -25,6 +25,15 @@ void pstack_init(uint32_t *mem, uint16_t p)
     }
 }
 
+uint32_t pstack_size(uint32_t *mem, uint16_t p)
+{
+    uint32_t *stk;
+    int i;
+
+    stk = get_stack(mem, p);
+    return stk[0];
+}
+
 uint32_t pstack_param(int type, uint32_t data)
 {
     return (data << 2) | (type & 0x3);

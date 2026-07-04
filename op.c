@@ -105,6 +105,20 @@ static int last_ugen(sonilo_vm *vm, uint16_t ctx)
     return 0;
 }
 
+static int ugen_pstack_size(sonilo_vm *vm, uint16_t ctx)
+{
+    uint16_t ps;
+    uint32_t *mem;
+
+    mem = sonilo_vm_mem(vm);
+
+    ps = CTX_PARAM_STACK(mem, ctx);
+
+    sonilo_vm_rw_set(vm, pstack_size(mem, ps));
+
+    return 0;
+}
+
 static int a_ugen(sonilo_vm *vm, uint32_t data)
 {
     int rc;
@@ -116,6 +130,9 @@ static int a_ugen(sonilo_vm *vm, uint32_t data)
     switch (data) {
         case 0:
             rc = last_ugen(vm, ctx);
+            break;
+        case 1:
+            rc = ugen_pstack_size(vm, ctx);
             break;
         default:
             rc = -1;
@@ -302,6 +319,19 @@ static int a_ctx(sonilo *s, uint8_t data)
             context_destroy(sonilo_mem(s), ac);
             break;
         }
+        case 2: { /* print stack size */
+            uint16_t ac;
+            uint16_t stk;
+            sonilo_vm *vm;
+            uint32_t *mem;
+            vm = sonilo_get_vm(s);
+            mem = sonilo_vm_mem(vm);
+            rc = 0;
+            ac = sonilo_vm_cursor_get(vm);
+            stk = CTX_STACK(mem, ac);
+            sonilo_vm_rw_set(vm, mem[stk]);
+            break;
+        }
         default:
             rc = -1;
             break;
@@ -453,16 +483,16 @@ int sonilo_op_a(sonilo *s, char type, uint8_t data)
         case 'u': /* ugens */
             rc = a_ugen(vm, data);
             break;
-        case 'C': /* create context */
+        case 'C': /* context opcodes */
             rc = a_ctx(s, data);
             break;
-        case 'w': /* create context */
+        case 'w': /* word opcodes */
             rc = a_word(vm, data);
             break;
         case 't': /* tape */
             rc = a_tape(s, data);
             break;
-        case 'k': /* tape */
+        case 'k': /* cursor */
             rc = a_cursor(vm, data);
             break;
         case 'p': /* parameters */
