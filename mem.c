@@ -20,12 +20,32 @@
 /* TODO: what is the 2 offset for? */
 #define SLOT(MEM, A, S) MEM[A + 2 + S]
 
-
 #define NULL_LINK 127
-
-#define MEM_TOP_SZ 3
+#define MEM_TOP_SZ 2
 #define MEM_AVAIL_SZ 7
 #define MEM_TAGS_SZ 2
+
+/* allocator memory layout */
+/* WORD 1: context address, initially buddy-data storage */
+/* WORD 2: number of slots */
+/* WORDS 3-64: slots. each slot contains (buddy slot address, memory) */
+
+/* buddy slot block memory layout */
+/* WORD 1: number of buddys in block */
+/* WORD 2: (potentially?) link to previous buddy block */
+
+/* buddy system memory layout */
+/* WORD 1: avail and block address (used to store links) */
+/* WORD 2: tags address */
+
+/* buddy compoents:
+ * AVAIL list: 7 words. Each word contains head/tail of linked list
+ * BLOCK: 64 links, each corresponding to an memory offset for
+ * a word in a block. A link contains the prev/next pointers
+ * and a k-value. A link is stored in a word.
+ * TAGS: used to check if a particular address is available
+ * for allocation. 64 tags = 64 bits = 2 words
+ */
 
 /* LINKF: pointer to front of list */
 static uint32_t linkf_set(uint32_t w, int a)
@@ -1369,9 +1389,8 @@ int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz)
         /* set up top struct */
         /* compute local word offset */
         budtop = (budcnt * BUDSLOT_SIZE) + BUDBLK_HEADER_SIZE;
-        /* add global offset (start of allocator) */
-        budtop += a;
-        fprintf(stderr, "new bud: %X %X\n", budtop, memblk);
+        /* add global offset (start of buddy data) */
+        budtop += bd;
         mem_init(mem,
                 /* top pointer */
                 budtop,
@@ -1393,7 +1412,6 @@ int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz)
     }
 
 
-    fprintf(stderr, "selected slot %d\n", slot);
     /* push args onto stack (base, k, buddy) */
     stk = CTX_STACK(mem, ctx);
     slt = SLOT(mem, a, slot);
