@@ -1486,20 +1486,8 @@ void parse_memwrite(memwrite *mw, char c)
 
     /* cs: perform block checksum */
     if (iscmd(mw, c, "cs")) {
-        uint32_t w;
-        uint32_t sz;
-        uint32_t rw;
         mw->prev = 0;
-
-        rw = sonilo_vm_rw_get(mw->vm);
-
-        w = rw & 0xFFFF;
-        sz = rw >> 16;
-
-        rw = cksum_range(sonilo_vm_mem(vm), w, sz);
-
-        sonilo_vm_rw_set(mw->vm, rw);
-
+        sonilo_cksum(mw->vm);
         return;
     }
 

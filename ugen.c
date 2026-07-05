@@ -28,7 +28,6 @@ void pstack_init(uint32_t *mem, uint16_t p)
 uint32_t pstack_size(uint32_t *mem, uint16_t p)
 {
     uint32_t *stk;
-    int i;
 
     stk = get_stack(mem, p);
     return stk[0];
@@ -325,6 +324,11 @@ void * ugen_state(uint32_t *mem, uint16_t ugen)
     return &mem[p];
 }
 
+/* Memory layout of a ugen block
+ * 0: number of ugens in block (lsb), pointer to next block (msb) 
+ * 1-63: treated as 126 entries. even/odd entries -> LSB/MSB of word
+ */
+
 int ugen_block_create(uint32_t *mem, uint16_t ctx)
 {
     uint16_t blk, stk;
@@ -397,6 +401,7 @@ int ugen_block_get(uint32_t *mem,
     uint32_t w;
 
     wpos = (idx >> 1) + 1;
+    wpos += blk;
     w = mem[wpos];
 
     /* even/odd -> LSB/MSB */
@@ -431,6 +436,7 @@ int ugen_block_set(uint32_t *mem,
     uint32_t w;
 
     wpos = (idx >> 1) + 1;
+    wpos += blk;
     w = mem[wpos];
 
     /* even/odd -> LSB/MSB */

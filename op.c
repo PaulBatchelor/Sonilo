@@ -454,6 +454,10 @@ static int a_sys(sonilo_vm *vm, uint8_t data)
             sonilo_vm_rw_set(vm, err);
         }
             break;
+        case 2:
+            rc = 0;
+            sonilo_cksum(vm);
+            break;
         default:
             rc = -1;
 

@@ -14,6 +14,7 @@
 #define HALFWORD_LSB 0x0281
 
 int sonilo_load_ugens(sonilo *s);
+uint32_t cksum_range(uint32_t *mem, uint16_t w, uint16_t sz);
 void mem_dump(uint32_t *mem, uint16_t p_top, const char *filename);
 
 struct sonilo_host {
@@ -683,7 +684,7 @@ int sonilo_process(sonilo *s, uint16_t ctx)
         ugen = 0;
         rc = ugen_block_get(mem, block, pos, &ugen);
         if (rc) return 3;
-        /* set up rw function args */
+        /* set up rw function args: ugen data addr, callback */
         rw = (ugen << 16) | (mem[ugen + 1] & 0xFFFF);
         rc = sonilo_set(s, rw);
         if (rc) return 4;
@@ -1261,4 +1262,20 @@ void sonilo_mem_aux(sonilo_vm *vm, int mode)
             sonilo_vm_err_set(vm, err);
             break;
     }
+}
+
+void sonilo_cksum(sonilo_vm *vm)
+{
+    uint32_t w;
+    uint32_t sz;
+    uint32_t rw;
+
+    rw = sonilo_vm_rw_get(vm);
+
+    w = rw & 0xFFFF;
+    sz = rw >> 16;
+
+    rw = cksum_range(sonilo_vm_mem(vm), w, sz);
+
+    sonilo_vm_rw_set(vm, rw);
 }

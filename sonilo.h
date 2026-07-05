@@ -256,4 +256,8 @@ int sonilo_tape_bind(sonilo *s, int track, uint16_t sink);
 /* render N seconds of audio */
 int sonilo_render(sonilo *s, uint16_t ctx, uint16_t nsecs);
 
+/* cksum: perform checksumming on memory offset(o) + size (s)
+ * RW should be s.oooo */
+void sonilo_cksum(sonilo_vm *vm);
+
 #endif
