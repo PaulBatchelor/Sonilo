@@ -429,6 +429,9 @@ static int a_param(sonilo_vm *vm, uint8_t data)
         case 1: /* bdrop */
             rc = pstack_drop(mem, ps);
             break;
+        case 2: /* bswap */
+            rc = pstack_swap(mem, ps);
+            break;
         default:
             rc = -1;
             break;

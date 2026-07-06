@@ -59,6 +59,7 @@ new #5 set
 12 :render son:begin #114 son:opb son:end ;
 13 :bdup son:begin #0 $p son:opa son:end ;
 14 :bdrop son:begin #1 $p son:opa son:end ;
+15 :bswap son:begin #2 $p son:opa son:end ;
 save
 
 new #6 set
@@ -74,6 +75,7 @@ new #6 set
 9 :tout last-ugen son:rw-get bind ;
 10 :err son:begin #1 $! son:opa son:end son:rw-get 
 11 #0 -eq? [ 'error s:put nl bye ] if ;
+12 :son:patch-setup son:ctx-create #0 son:cur son:go ;
 save
 
 new #9 set
@@ -90,6 +92,7 @@ new #9 set
 10 :add #198 ugen ;
 11 :seq son:iter sequence ;
 12 :bigverb #3426 ugen ;
+13 :env #9066 ugen ;
 save
 
 bye
