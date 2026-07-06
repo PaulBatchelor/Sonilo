@@ -5,8 +5,42 @@
 #include "mem.h"
 #include "context.h"
 #include "ugen.h"
-#define SK_BIGVERB_PRIV
-#include "bigverb.h"
+
+typedef struct sk_bigverb sk_bigverb;
+typedef struct sk_bigverb_delay sk_bigverb_delay;
+sk_bigverb * sk_bigverb_new(int sr);
+
+static void sk_bigverb_size(sk_bigverb *bv, float size);
+static void sk_bigverb_cutoff(sk_bigverb *bv, float cutoff);
+static void sk_bigverb_tick(sk_bigverb *bv,
+        float inL, float inR,
+        float *outL, float *outR);
+
+struct sk_bigverb_delay {
+    float *buf;
+    size_t sz;
+    int wpos;
+    int irpos;
+    int frpos;
+    int rng;
+    int inc;
+    int counter;
+    int maxcount;
+    float dels;
+    float drift;
+    float y;
+};
+
+struct sk_bigverb {
+    int sr;
+    float size;
+    float cutoff;
+    float pcutoff;
+    float filt;
+    float *buf;
+    sk_bigverb_delay delay[8];
+};
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -19,7 +53,7 @@ struct bigverb_paramset {
 
 typedef struct dsp_bigverb {
     sk_bigverb *bv;
-    SKFLT *buf;
+    float *buf;
 } dsp_bigverb;
 
 static const struct bigverb_paramset params[8] = {
@@ -38,13 +72,13 @@ static const struct bigverb_paramset params[8] = {
 static int get_delay_size(const struct bigverb_paramset *p, int sr);
 static void delay_init(sk_bigverb_delay *d,
         const struct bigverb_paramset *p,
-        SKFLT *buf,
+        float *buf,
         size_t sz,
         int sr);
-static SKFLT delay_compute(sk_bigverb_delay *d,
-        SKFLT in,
-        SKFLT fdbk,
-        SKFLT filt,
+static float delay_compute(sk_bigverb_delay *d,
+        float in,
+        float fdbk,
+        float filt,
         int sr);
 static void generate_next_line(sk_bigverb_delay *d, int sr);
 
@@ -63,14 +97,14 @@ sk_bigverb * sk_bigverb_new(int sr)
     {
         unsigned long total_size;
         int i;
-        SKFLT *buf;
+        float *buf;
 
         total_size = 0;
         buf = NULL;
         for (i = 0; i < 8; i++) {
             total_size += get_delay_size(&params[i], sr);
         }
-        buf = calloc(1, sizeof(SKFLT) * total_size);
+        buf = calloc(1, sizeof(float) * total_size);
         bv->buf = buf;
         printf("total size: %lu samples\n", total_size);
         {
@@ -90,7 +124,7 @@ sk_bigverb * sk_bigverb_new(int sr)
     return bv;
 }
 
-static void bigverb_init(sk_bigverb *bv, int sr, SKFLT *buf)
+static void bigverb_init(sk_bigverb *bv, int sr, float *buf)
 {
     if (sr > 44100) {
         /* nope */
@@ -119,21 +153,21 @@ static void bigverb_init(sk_bigverb *bv, int sr, SKFLT *buf)
     }
 }
 
-void sk_bigverb_size(sk_bigverb *bv, SKFLT size)
+static void sk_bigverb_size(sk_bigverb *bv, float size)
 {
     bv->size = size;
 }
 
-void sk_bigverb_cutoff(sk_bigverb *bv, SKFLT cutoff)
+static void sk_bigverb_cutoff(sk_bigverb *bv, float cutoff)
 {
     bv->cutoff = cutoff;
 }
 
-void sk_bigverb_tick(sk_bigverb *bv,
-        SKFLT inL, SKFLT inR,
-        SKFLT *outL, SKFLT *outR)
+static void sk_bigverb_tick(sk_bigverb *bv,
+        float inL, float inR,
+        float *outL, float *outR)
 {
-    SKFLT lsum, rsum;
+    float lsum, rsum;
 
     lsum = 0;
     rsum = 0;
@@ -145,7 +179,7 @@ void sk_bigverb_tick(sk_bigverb *bv,
     }
     {
         int i;
-        SKFLT jp;
+        float jp;
 
         jp = 0;
 
@@ -182,46 +216,49 @@ void sk_bigverb_tick(sk_bigverb *bv,
     *outL = lsum;
     *outR = rsum;
 }
+
 static int get_delay_size(const struct bigverb_paramset *p, int sr)
 {
-    SKFLT sz;
-    sz = (SKFLT)p->delay/44100 + (p->drift * 0.0001) * 1.125;
+    float sz;
+    sz = (float)p->delay/44100 + (p->drift * 0.0001) * 1.125;
     return floor(16 + sz*sr);
 }
+
 static void delay_init(sk_bigverb_delay *d,
         const struct bigverb_paramset *p,
-        SKFLT *buf,
+        float *buf,
         size_t sz,
         int sr)
 {
-    SKFLT readpos;
+    float readpos;
     d->buf = buf;
     d->sz = sz;
     d->wpos = 0;
     d->rng = p->seed;
-    readpos = ((SKFLT)p->delay / 44100);
+    readpos = ((float)p->delay / 44100);
     readpos += d->rng * (p->drift * 0.0001) / 32768.0;
     readpos = sz - (readpos * sr);
     d->irpos = floor(readpos);
     d->frpos = floor((readpos - d->irpos) * FRACSCALE);
     d->inc = 0;
     d->counter = 0;
-    d->maxcount = floor((sr / ((SKFLT)p->randfreq * 0.001)));
+    d->maxcount = floor((sr / ((float)p->randfreq * 0.001)));
     d->dels = p->delay / 44100.0;
     d->drift = p->drift;
     generate_next_line(d, sr);
     d->y = 0.0;
 }
-static SKFLT delay_compute(sk_bigverb_delay *del,
-        SKFLT in,
-        SKFLT fdbk,
-        SKFLT filt,
+
+static float delay_compute(sk_bigverb_delay *del,
+        float in,
+        float fdbk,
+        float filt,
         int sr)
 {
-    SKFLT out;
-    SKFLT frac_norm;
-    SKFLT a, b, c, d;
-    SKFLT s[4];
+    float out;
+    float frac_norm;
+    float a, b, c, d;
+    float s[4];
     out = 0;
     del->buf[del->wpos] = in - del->y;
     del->wpos++;
@@ -231,9 +268,9 @@ static SKFLT delay_compute(sk_bigverb_delay *del,
         del->frpos &= FRACMASK;
     }
     if (del->irpos >= del->sz) del->irpos -= del->sz;
-    frac_norm = del->frpos / (SKFLT)FRACSCALE;
+    frac_norm = del->frpos / (float)FRACSCALE;
     {
-        SKFLT tmp[2];
+        float tmp[2];
         d = ((frac_norm * frac_norm) - 1) / 6.0;
         tmp[0] = ((frac_norm + 1.0) * 0.5);
         tmp[1] = 3.0 * d;
@@ -243,7 +280,7 @@ static SKFLT delay_compute(sk_bigverb_delay *del,
     }
     {
         int n;
-        SKFLT *x;
+        float *x;
         n = del->irpos;
         x = del->buf;
 
@@ -275,11 +312,12 @@ static SKFLT delay_compute(sk_bigverb_delay *del,
     }
     return out;
 }
+
 static void generate_next_line(sk_bigverb_delay *d, int sr)
 {
-    SKFLT curdel;
-    SKFLT nxtdel;
-    SKFLT inc;
+    float curdel;
+    float nxtdel;
+    float inc;
     if (d->rng < 0) d->rng += 0x10000;
     /* 5^6 = 15625 */
     d->rng = (1 + d->rng * 0x3d09);
@@ -287,11 +325,11 @@ static void generate_next_line(sk_bigverb_delay *d, int sr)
     if (d->rng >= 0x8000) d->rng -= 0x10000;
     d->counter = d->maxcount;
     curdel = d->wpos -
-        (d->irpos + (d->frpos/(SKFLT)FRACSCALE));
+        (d->irpos + (d->frpos/(float)FRACSCALE));
     while (curdel < 0) curdel += d->sz;
     curdel /= sr;
     nxtdel = (d->rng * (d->drift * 0.0001) / 32768.0) + d->dels;
-    inc = ((curdel - nxtdel) / (SKFLT)d->counter)*sr;
+    inc = ((curdel - nxtdel) / (float)d->counter)*sr;
     inc += 1;
     d->inc = floor(inc * FRACSCALE);
 }
@@ -374,7 +412,7 @@ static uint32_t init(uint32_t *mem, uint16_t ctx)
 
     /* 24684 samples @ 44.1kHz = ~97 megablocks */
     tmp = resolve(mem, allot(mem, ctx, 97));
-    bv->buf = (SKFLT *)tmp;
+    bv->buf = (float *)tmp;
     /* sk_bigverb needs about 120 words, so one block will cover it */
     tmp = resolve(mem, allot(mem, ctx, 1));
     bv->bv = (sk_bigverb *)tmp;
