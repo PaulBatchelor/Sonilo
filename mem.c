@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "mem.h"
 #include "context.h"
 #define AVAIL_OFFSET 64
@@ -449,6 +450,7 @@ int mem_klen(uint32_t *mem, uint16_t p_top, int k)
     int navail;
     uint32_t *block;
     uint32_t *avail;
+    int i;
 
     block = &mem[BLOCK(mem, p_top)];
     avail = get_avail(mem, p_top);
@@ -456,9 +458,19 @@ int mem_klen(uint32_t *mem, uint16_t p_top, int k)
     navail = 0;
     L = availf_get(avail, k);
 
+    i = 0;
+
     while (L != LOC_AVAIL(k)) {
         navail++;
         L = linkf_get(block[L]);
+        i++;
+
+        /* HACK: escape hatch for infinite loop
+         * If this happens, it's too late */
+        if (i > 1000) {
+            printf("critical memory error\n");
+            exit(1);
+        }
     }
 
     return navail;
@@ -902,6 +914,24 @@ int rc_sweep(uint32_t *mem, uint16_t r)
     return count;
 }
 
+uint32_t rc_find_next(uint32_t *mem, uint16_t r)
+{
+    int i;
+    uint16_t avail;
+
+    avail = 0;
+
+    for (i = 0; i < RC_NENTRY; i++) {
+        uint32_t e = rc_entry_get(mem, r, i);
+        if (RC_ADDR(e) != 0 && !rc_used_get(e)) {
+            avail = RC_ADDR(e);
+            break;
+        }
+    }
+
+    return avail;
+}
+
 uint16_t rc_get(uint32_t *mem, uint16_t r)
 {
     int i;
@@ -1061,7 +1091,7 @@ int rc_get_hold(uint32_t *mem, uint16_t r, uint16_t m)
     return rc_hold_get(e);
 }
 
-int rc_get_active(uint32_t *mem, uint16_t r)
+int rc_nactive(uint32_t *mem, uint16_t r)
 {
     int i;
     int count;

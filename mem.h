@@ -45,19 +45,56 @@ uint32_t bits_get(uint32_t *mem, uint32_t off, uint32_t sz);
 
 /* reference counter */
 void rc_init(uint32_t *mem, uint16_t r);
+
+/* add: add memory address to the RC list */
 int rc_add(uint32_t *mem, uint16_t r, uint16_t m);
+
+/* del: remove memory address from RC list */
 int rc_del(uint32_t *mem, uint16_t r, uint16_t m);
+
+/* find: attempts to find entry corresponding with
+ * memory address in RC list. Returns slot on succes,
+ * and 255 (0xFF) on failure. */
 int rc_find(uint32_t *mem, uint16_t r, uint16_t m);
+
+/* sweep: scans through list entries, and marks entries
+ * with zero counts as being unused */
 int rc_sweep(uint32_t *mem, uint16_t r);
+
+/* get: returns an unused memory block in the RC list */
 uint16_t rc_get(uint32_t *mem, uint16_t r);
+
+/* hold: mark a memory address in the RC list to be
+ * reserved indefinitely until it is explicitly told not
+ * to via "unhold".
+ * Note that this address must exist in the RC list already.
+ */
 int rc_hold(uint32_t *mem, uint16_t r, uint16_t m);
+/* unhold: unmarks a memory address in the RC list marked
+ * as "reserved". After calling this, the block can be allowed
+ * for re-use */
 int rc_unhold(uint32_t *mem, uint16_t r, uint16_t m);
+
+/* length: returns number of blocks in RC list */
 int rc_length(uint32_t *mem, uint16_t r);
+
+/* incr: increase RC count for memory address */
 int rc_incr(uint32_t *mem, uint16_t r, uint16_t m);
+
+/* decr: decrease RC count for memory address */
 int rc_decr(uint32_t *mem, uint16_t r, uint16_t m);
+
+/* getters for RC entry fields.
+ * count: indicates how many places it is being used.
+ * when zero, it will be marked as being available.
+ *
+ * hold: when set, RC will not free the block.
+ */
 int rc_get_count(uint32_t *mem, uint16_t r, uint16_t m);
 int rc_get_hold(uint32_t *mem, uint16_t r, uint16_t m);
-int rc_get_active(uint32_t *mem, uint16_t r);
+
+/* nactive: get number of active blocks */
+int rc_nactive(uint32_t *mem, uint16_t r);
 
 /* buddy slot allocator */
 int allocator_init(uint32_t *mem, uint16_t ctx, uint16_t *out);

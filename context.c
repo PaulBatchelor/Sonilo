@@ -133,7 +133,7 @@ int context_mktemp(uint32_t *mem, uint16_t ctx, uint16_t *addr)
     uint16_t blk;
 
     blist = mem[ctx] & 0xFFFF;
-    bst = (mem[ctx + 1] >> 16) & 0xFF;
+    bst = (mem[ctx + 1] >> 16) & 0xFFFF;
 
     blk = blocklist_pop(mem, blist);
     if (blk == 0) return 1;
@@ -154,7 +154,7 @@ int context_mkblock(uint32_t *mem, uint16_t ctx, uint16_t *addr)
     uint16_t blk;
 
     blist = mem[ctx] & 0xFFFF;
-    bsm = (mem[ctx + 1] >> 16) & 0xFF;
+    bsm = (mem[ctx + 1] >> 16) & 0xFFFF;
 
     blk = blocklist_pop(mem, blist);
     if (blk == 0) return 1;

@@ -271,17 +271,22 @@ static int new_block_port(uint32_t *mem, uint16_t ctx, uint32_t *w)
 
     if (w == NULL) return 2;
 
-    /* TODO: attempt to re-use a block via rc_get? I
-     * think that's how to use it */
-    /* allocate block to main */
-    rc = context_mkblock(mem, ctx, &b);
-    if (rc) return 1;
-
     /* ref counter: sorted at beginning of pstack */
     refcnt = CTX_PARAM_STACK(mem, ctx);
-    /* add new block to RC list */
-    rc = rc_add(mem, refcnt, b);
-    if (rc) return 3;
+
+    /* first, attempt to re-use an existing block
+     * from the reference counter list */
+    b = rc_get(mem, refcnt);
+
+    /* if not block found, allocate block to main, add to RC */
+    if (b == 0) {
+        rc = context_mkblock(mem, ctx, &b);
+        if (rc) return 1;
+
+        /* add new block to RC list */
+        rc = rc_add(mem, refcnt, b);
+        if (rc) return 3;
+    }
 
     /* decrease count to zero. it will be set to 0 when
      * pushed to stack */

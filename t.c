@@ -933,7 +933,7 @@ void parse_memwrite(memwrite *mw, char c)
             sonilo_vm_rw_set(vm, rw);
             return;
         } else if (mode == 3) {
-            rw = rc_get_active(sonilo_vm_mem(vm), cur);
+            rw = rc_nactive(sonilo_vm_mem(vm), cur);
             sonilo_vm_rw_set(vm, rw);
             return;
         }
