@@ -271,6 +271,8 @@ static int new_block_port(uint32_t *mem, uint16_t ctx, uint32_t *w)
 
     if (w == NULL) return 2;
 
+    /* TODO: attempt to re-use a block via rc_get? I
+     * think that's how to use it */
     /* allocate block to main */
     rc = context_mkblock(mem, ctx, &b);
     if (rc) return 1;

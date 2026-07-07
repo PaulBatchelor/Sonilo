@@ -12,6 +12,7 @@ int ugen_mtof(sonilo *s);
 int ugen_smoother(sonilo *s);
 int ugen_bigverb(sonilo *s);
 int ugen_env(sonilo *s);
+int ugen_rephasor(sonilo *s);
 
 /* top-level loader for ugen subroutines */
 int sonilo_load_ugens(sonilo *s)
@@ -33,6 +34,7 @@ int sonilo_load_ugens(sonilo *s)
     rc = ugen_smoother(s); if (rc) return err; err++;
     rc = ugen_bigverb(s); if (rc) return err; err++;
     rc = ugen_env(s); if (rc) return err; err++;
+    rc = ugen_rephasor(s); if (rc) return err; err++;
 
     return 0;
 }

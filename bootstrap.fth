@@ -93,6 +93,7 @@ new #9 set
 11 :seq son:iter sequence ;
 12 :bigverb #3426 ugen ;
 13 :env #9066 ugen ;
+14 :rephasor #35790 ugen ;
 save
 
 bye
