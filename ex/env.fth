@@ -4,11 +4,13 @@ son:patch-setup
 
 bdup #3 #8 arr %0 %2 %4 %7 %11 %12 %11 %7 seq
 #57 const add
-#0.003 constf smoother mtof saw #300 const lpf #0.300 constf mul
+#0.003 constf smoother mtof saw #300 const lpf #0.700 constf mul
 
 bswap
 
 #0.005 constf #0.001 constf #0.030 constf env mul
+
+bdup bdup #0.800 constf #8000 const bigverb bdrop #0.100 constf mul add
 
 sink #0 tout #0 topen #10 render #0 tclose
 
