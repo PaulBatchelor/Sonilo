@@ -1457,6 +1457,7 @@ int allocator_alloc(uint32_t *mem, uint16_t a, uint8_t sz)
     barray_append(mem, stk, slt & 0xFFFF);
 
     /* update buddy data address (it could have been changed) */
+    mem[a] &= 0xFFFF;
     mem[a] |= bd << 16;
 
     return 0;
