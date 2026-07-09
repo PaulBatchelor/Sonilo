@@ -1279,3 +1279,67 @@ void sonilo_cksum(sonilo_vm *vm)
 
     sonilo_vm_rw_set(vm, rw);
 }
+
+/* aux: iter test utility */
+void iter_block_aux(sonilo_vm *vm)
+{
+    uint32_t rw;
+    uint16_t ctx;
+    uint16_t stk;
+    uint8_t mode;
+    uint8_t pos;
+
+    rw = sonilo_vm_rw_get(vm);
+    ctx = sonilo_vm_cursor_get(vm);
+
+    mode = rw & 0xF;
+    rw >>= 4;
+
+    switch (mode) {
+        case 0: /* 0: create */
+            /* TODO: implement */
+            break;
+        case 1: /* 1: compute */
+            /* TODO: implement */
+            break;
+        case 2: /* 2: get trigger */
+            pos = rw & 0xFF;
+            rw >>= 8;
+            /* TODO: implement */
+            break;
+        case 3: /* 3: get value */
+            pos = rw & 0xFF;
+            rw >>= 8;
+            /* TODO: implement */
+            break;
+        default:
+            break;
+    }
+
+    sonilo_vm_rw_set(vm, rw);
+}
+
+/* sigx: test signal utility */
+void sonilo_sigx(sonilo_vm *vm)
+{
+    uint32_t rw;
+    uint8_t mode;
+    /* TODO: implement */
+
+    rw = sonilo_vm_rw_get(vm);
+    mode = rw & 0xF;
+    rw >>= 4;
+
+    switch (mode) {
+        case 0: /* 0: create port */
+            /* TODO */
+            break;
+        case 1: /* 1: create trigger block signal */
+            /* TODO */
+            break;
+        default:
+            break;
+    }
+
+    sonilo_vm_rw_set(vm, rw);
+}

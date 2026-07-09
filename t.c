@@ -13,6 +13,8 @@
 
 void sonilo_mem_aux(sonilo_vm *vm, int mode);
 uint32_t cksum_range(uint32_t *mem, uint16_t w, uint16_t sz);
+void iter_block_aux(sonilo_vm *vm);
+void sonilo_sigx(sonilo_vm *vm);
 
 static volatile int running = 0;
 
@@ -1488,6 +1490,20 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "cs")) {
         mw->prev = 0;
         sonilo_cksum(mw->vm);
+        return;
+    }
+
+    /* sx: signal utility */
+    if (iscmd(mw, c, "sx")) {
+        mw->prev = 0;
+        sonilo_sigx(mw->vm);
+        return;
+    }
+
+    /* ib: iterator block */
+    if (iscmd(mw, c, "ib")) {
+        mw->prev = 0;
+        iter_block_aux(mw->vm);
         return;
     }
 

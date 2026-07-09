@@ -89,3 +89,7 @@ test_wm_block:
 12344321
 88888888
 8100cc02
+test_iter_block:
+1 1 1 1
+0 0 0 0
+a b c d

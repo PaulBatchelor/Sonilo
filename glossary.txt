@@ -38,7 +38,7 @@ sc:swap cursor.
 pa:pack address. the LSB of rw and cursor get turned into (MSB,LSB)=(W,C)
 bb:allocate and mark. RW should be SSSS.BBBB where S is bitset and B is blockstack.
 sm:TODO. make slot from block. args: block addr, blocklist addr
-sx:TODO. extend slots. pushes slot id onto stack
+sx:signal utility. various tools related to ugens and test signal generators.
 ss:TODO. select slot.
 ex:execute command. DDDD.CCCC where D is data, C is command code.
 bx:execute a block of commands, stored as an array of words.
@@ -73,3 +73,4 @@ wi:initialize word machine.
 ws:wordslice to value.
 ww:send word to word machine.
 cs:perform checksum starting at address w with size sz: s.wwww
+ib:iterator block commands.
