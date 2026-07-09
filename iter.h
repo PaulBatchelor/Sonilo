@@ -23,6 +23,9 @@ uint32_t iter_next(uint32_t *mem, uint16_t i);
 /* iter_real: next, but resolve to a real (float) value */
 float iter_real(uint32_t *mem, uint16_t i);
 
+/* iter_get: get current value of iterator */
+uint32_t iter_get(uint32_t *mem, uint16_t i);
+
 /* iterator block */
 
 /* new: allocates and initializes an iterator block */
@@ -40,4 +43,8 @@ int iter_block_tick(uint32_t *mem,
         uint16_t ib,
         uint16_t it,
         float in,
-        uint8_t n);
+        int n);
+
+/* trig/slice: get trigger slice values at position */
+int iter_block_trig(uint32_t *mem, uint16_t ib, int pos, uint32_t *trig);
+int iter_block_slice(uint32_t *mem, uint16_t ib, int pos, uint32_t *slice);

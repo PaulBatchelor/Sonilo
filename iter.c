@@ -119,16 +119,22 @@ float iter_real(uint32_t *mem, uint16_t i)
     return (float)array_value(mem, slice);
 } 
 
-int iter_block_new(uint32_t *mem, uint32_t ctx, uint16_t *ib)
+uint32_t iter_get(uint32_t *mem, uint16_t i)
 {
-    /* TODO: implement */
-    return 1;
+    uint16_t idx, a;
+    uint32_t slice;
+    idx = mem[i] >> 16;
+    a = mem[i + 1] & 0xFFFF;
+
+    slice = 0;
+    array_read_direct(mem,
+            a,
+            idx,
+            &slice);
+    return slice;
 }
 
-int iter_block_compute(uint32_t *mem,
-        uint16_t ib,
-        uint16_t it,
-        uint16_t in)
+int iter_block_new(uint32_t *mem, uint32_t ctx, uint16_t *ib)
 {
     /* TODO: implement */
     return 1;
@@ -139,8 +145,26 @@ int iter_block_tick(uint32_t *mem,
         uint16_t ib,
         uint16_t it,
         float in,
-        uint8_t n)
+        int n)
+{
+    if (in > 0) {
+        /* TODO: compute next value of iterator */
+    }
+
+    /* TODO: retrieve current iterator value
+     * store in slice buffer.
+     */
+
+    /* TODO: store trigger in trigger buffer */
+    return 1;
+}
+
+int iter_block_trig(uint32_t *mem, uint16_t ib, int pos, uint32_t *trig)
 {
     /* TODO: implement */
-    return 1;
+}
+
+int iter_block_slice(uint32_t *mem, uint16_t ib, int pos, uint32_t *slice)
+{
+    /* TODO: implement */
 }

@@ -8,6 +8,7 @@
 #include "wm.h"
 #include "dr_wav.h"
 #include "tape.h"
+#include "iter.h"
 
 /* NOTE: encoded in LE, the bytes are 8101 and 8102 */
 #define HALFWORD_MSB 0x0181
@@ -1288,29 +1289,45 @@ void iter_block_aux(sonilo_vm *vm)
     uint16_t stk;
     uint8_t mode;
     uint8_t pos;
+    uint16_t ib, it, in;
+    uint32_t x;
+    uint32_t *mem;
 
     rw = sonilo_vm_rw_get(vm);
+    mem = sonilo_vm_mem(vm);
     ctx = sonilo_vm_cursor_get(vm);
+    stk = CTX_STACK(mem, ctx);
 
     mode = rw & 0xF;
     rw >>= 4;
 
     switch (mode) {
         case 0: /* 0: create */
-            /* TODO: implement */
+            ib = 0;
+            iter_block_new(mem, ctx, &ib);
+            barray_append(mem, stk, ib);
             break;
         case 1: /* 1: compute */
-            /* TODO: implement */
+            x = 0;
+            barray_pop(mem, stk, &x);
+            ib = x;
+            barray_pop(mem, stk, &x);
+            it = x;
+            barray_pop(mem, stk, &x);
+            in = x;
+            iter_block_compute(mem, ib, it, in);
             break;
         case 2: /* 2: get trigger */
             pos = rw & 0xFF;
             rw >>= 8;
-            /* TODO: implement */
+            rw = 0;
+            iter_block_trig(mem, ib, pos, &rw);
             break;
         case 3: /* 3: get value */
             pos = rw & 0xFF;
             rw >>= 8;
-            /* TODO: implement */
+            rw = 0;
+            iter_block_slice(mem, ib, pos, &rw);
             break;
         default:
             break;
@@ -1319,27 +1336,79 @@ void iter_block_aux(sonilo_vm *vm)
     sonilo_vm_rw_set(vm, rw);
 }
 
+
+static uint32_t sigx_port(uint32_t *mem, uint16_t ctx)
+{
+    uint16_t blk;
+    sonilo_port pblk;
+    blk = 0;
+    context_mkblock(mem, ctx, &blk);
+    pblk = sonilo_port_block(mem, blk);
+    return sonilo_port_to_word(mem, &pblk);
+}
+
+static void sigx_trigs(uint32_t *mem, uint16_t p)
+{
+    sonilo_port pblk;
+    int n;
+    pblk = sonilo_port_from_word(mem, p);
+
+    for (n = 0; n < 64; n++) {
+        float sig;
+        sig = 0;
+        if (n % 16 == 0) sig = 1.0;
+        sonilo_port_write(&pblk, n, sig);
+    }
+}
+
 /* sigx: test signal utility */
 void sonilo_sigx(sonilo_vm *vm)
 {
     uint32_t rw;
     uint8_t mode;
+    uint32_t x, *mem;
+    uint16_t ctx, stk;
     /* TODO: implement */
 
+    mem = sonilo_vm_mem(vm);
     rw = sonilo_vm_rw_get(vm);
     mode = rw & 0xF;
     rw >>= 4;
 
+    ctx = sonilo_vm_cursor_get(vm);
+    stk = CTX_STACK(mem, ctx);
+
     switch (mode) {
         case 0: /* 0: create port */
-            /* TODO */
+            x = sigx_port(mem, ctx);
+            barray_append(mem, stk, x);
             break;
         case 1: /* 1: create trigger block signal */
-            /* TODO */
+            barray_pop(mem, stk, &x);
+            sigx_trigs(mem, x);
+            barray_append(mem, stk, x);
             break;
         default:
             break;
     }
 
     sonilo_vm_rw_set(vm, rw);
+}
+
+int iter_block_compute(uint32_t *mem,
+        uint16_t ib,
+        uint16_t it,
+        uint16_t in)
+{
+    int i;
+    sonilo_port pin;
+
+    pin = sonilo_port_from_word(mem, in);
+    for (i = 0; i < 64; i++) {
+        float in;
+        in = sonilo_port_read(&pin, i);
+        iter_block_tick(mem, ib, it, in, i);
+    }
+
+    return 0;
 }
