@@ -22,3 +22,22 @@ uint32_t iter_next(uint32_t *mem, uint16_t i);
 
 /* iter_real: next, but resolve to a real (float) value */
 float iter_real(uint32_t *mem, uint16_t i);
+
+/* iterator block */
+
+/* new: allocates and initializes an iterator block */
+int iter_block_new(uint32_t *mem, uint32_t ctx, uint16_t *ib);
+
+/* compute: fill iterator block (ib) using iterator (it) and 
+ * input signal (in) containing trigger */
+int iter_block_compute(uint32_t *mem,
+        uint16_t ib,
+        uint16_t it,
+        uint16_t in);
+
+/* tick: compute a single sample of audio at position n */
+int iter_block_tick(uint32_t *mem,
+        uint16_t ib,
+        uint16_t it,
+        float in,
+        uint8_t n);

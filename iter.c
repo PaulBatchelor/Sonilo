@@ -4,6 +4,25 @@
 #include "mem.h"
 #include "array.h"
 
+/* iterator memory layout (TODO)
+ */
+
+/* iterator block memory layout
+ *
+ * Top (1 word) Top-level struct is a tuple containing two
+ * buffer addresses: (slices, triggers)
+ *
+ * Slices (1 block): The "slice" buffer is a 64-word block,
+ * with each word containing an array slice, the result of
+ * the array iterator.
+ *
+ * Triggers (2 words): The "trigger" buffer is 1-bit buffer
+ * of size 64 (2 words * 32 bits/word = 64 bits). A value of
+ * 1 indicates that a trigger happened at that particular sample.
+ * Triggers signals are needed in the interpolate GSG component
+ * to properly update interpolation values.
+ */
+
 int iter_alloc(uint32_t *mem, uint16_t ctx, uint16_t *i)
 {
     uint16_t p;
@@ -99,3 +118,29 @@ float iter_real(uint32_t *mem, uint16_t i)
     slice = iter_next(mem, i);
     return (float)array_value(mem, slice);
 } 
+
+int iter_block_new(uint32_t *mem, uint32_t ctx, uint16_t *ib)
+{
+    /* TODO: implement */
+    return 1;
+}
+
+int iter_block_compute(uint32_t *mem,
+        uint16_t ib,
+        uint16_t it,
+        uint16_t in)
+{
+    /* TODO: implement */
+    return 1;
+}
+
+/* tick: compute a single sample of audio at position n */
+int iter_block_tick(uint32_t *mem,
+        uint16_t ib,
+        uint16_t it,
+        float in,
+        uint8_t n)
+{
+    /* TODO: implement */
+    return 1;
+}
