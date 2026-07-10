@@ -29,7 +29,7 @@ uint32_t iter_get(uint32_t *mem, uint16_t i);
 /* iterator block */
 
 /* new: allocates and initializes an iterator block */
-int iter_block_new(uint32_t *mem, uint32_t ctx, uint16_t *ib);
+int iter_block_new(uint32_t *mem, uint16_t ctx, uint16_t *ib);
 
 /* compute: fill iterator block (ib) using iterator (it) and 
  * input signal (in) containing trigger */

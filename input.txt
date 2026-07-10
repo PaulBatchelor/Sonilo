@@ -939,3 +939,59 @@ to parse and evaluate the buffer.
 @c print the current value of the RW register. It should be
 the end-block command we wrote using the instructions previously.
 @m pr
+@l test_iter_block:
+@c An iterator block is a data structure used to store computations
+of an iterator, so that they can be re-used multiple times during
+the course of a patch.
+The primary use for an iterator block is in the context of a
+gesture signal generator, where one iterator holds the data for
+a rephasor, curve generator, and interpolator.
+@c Creation of an iterator block requires a context for memory allocation.
+So, create a context, then create a new iterator block.
+@m
+0cu #0gobicigo
+1rb 1cugo
+@c To compute an iterator block, both an instance of an iterator and a trigger
+signal are required. For this test, a simple array iterator will be created,
+and a block signal simulating multiple triggers will be used.
+@c Create a trigger signal. This is done by creating a block port and
+then writing some trigger signals to that port.
+A port is made using {\tt sx.0}, and the signal generator is made using
+{\tt sx.1}.
+Note that these expect the cursor to be on the context cursor (0),
+and implicitly use the stack. The result of these two operations
+is a block port value, whose data fits inside a single word.
+@m 0cu 0 sx 1 sx
+@c Create an array for the iterator.
+This will be an 8-bit array of 4 values.
+@m 1cu #4.3aa 0curcscaa ac
+@c Store in slot 8 of the context zero page.
+@m 0cu 08jf scapscwr 08jb
+@c Push values for the array {\tt AA}, {\tt BB}, {\tt CC}, {\tt DD}
+@m 1cu #AAaa #BBaa #CCaa #DDaa
+@c Read array address from slot 8.
+@m 0cu 08jf rdscaasc 08jb
+@c assign values to array indices in reverse order.
+At the end, the address of the array will be left onto the stack.
+Do not drop, as it will be used as an argument for the iterator.
+@m 1cu #3aaswaw #2aaswaw #1aaswaw #0aaswaw
+@c Create the iterator using the array address argument left on
+the stack.
+@m 0cu rcscaasc 1cu ia
+@c Create an iterator block using {\tt ib.0}.
+@m 0cu 0 ib
+@c Compute the iterator block using {\tt ib.1}.
+@m 1 ib
+@c Check the contents of the iterator block. The block contains a trigger
+signal and results of the iterator, represented as array slices.
+@c Check the triggers. The trigger signal produces 4 triggers spaced 16
+samples apart. The {\tt ib.2} is used to get a trigger signal at a particular
+position. The sample position argument uses 2 RW nibbles, with the mode
+nibble in the LSB (using similar notation above {\tt ib.2.PP} is the command
+format, with {\tt PP} being used for the position nibbles.
+@m nl 0cu 00.2 ib pwsp 10.2 ib pwsp 20.2 ib pwsp 30.2 ib pw nl
+@c Check for some non-triggers too. These values are chosen arbitrarily, but should be zero.
+@m 01.2 ib pwsp 15.2 ib pwsp 2F.2 ib pwsp 38.2 ib pw nl
+@c Check for values. The values should print {\tt AA}, {\tt BB}, {\tt CC}, {\tt DD}.
+This uses the {\tt ib.3} command.
+@m 00.3 ib pwsp 13.3 ib pwsp 24.3 ib pwsp 35.3 ib pw nl

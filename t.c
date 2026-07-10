@@ -1299,7 +1299,6 @@ void parse_memwrite(memwrite *mw, char c)
         mem = sonilo_vm_mem(vm);
 
         /* get stack */
-        /* TODO: GET cursor */
         stk = sonilo_vm_cursor_get(vm);
 
         /* stack args: context, array */
@@ -1327,7 +1326,6 @@ void parse_memwrite(memwrite *mw, char c)
             sonilo_vm_err_set(vm, 6);
             return;
         }
-
 
         /* iter_init */
 

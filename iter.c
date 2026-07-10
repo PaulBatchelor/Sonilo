@@ -3,14 +3,16 @@
 #include "iter.h"
 #include "mem.h"
 #include "array.h"
+#include "context.h"
 
 /* iterator memory layout (TODO)
  */
 
 /* iterator block memory layout
  *
- * Top (1 word) Top-level struct is a tuple containing two
- * buffer addresses: (slices, triggers)
+ * Top (2 word) Top-level struct is a tuple containing two
+ * buffer addresses (slices, triggers), with the second
+ * word used to store the current slice.
  *
  * Slices (1 block): The "slice" buffer is a 64-word block,
  * with each word containing an array slice, the result of
@@ -22,6 +24,10 @@
  * Triggers signals are needed in the interpolate GSG component
  * to properly update interpolation values.
  */
+
+#define ITBLK_VALS(M, I) (M[I] & 0xFFFF);
+#define ITBLK_TRIGS(M, I) ((M[I] >> 16) & 0xFFFF);
+
 
 int iter_alloc(uint32_t *mem, uint16_t ctx, uint16_t *i)
 {
@@ -123,6 +129,7 @@ uint32_t iter_get(uint32_t *mem, uint16_t i)
 {
     uint16_t idx, a;
     uint32_t slice;
+
     idx = mem[i] >> 16;
     a = mem[i + 1] & 0xFFFF;
 
@@ -134,10 +141,43 @@ uint32_t iter_get(uint32_t *mem, uint16_t i)
     return slice;
 }
 
-int iter_block_new(uint32_t *mem, uint32_t ctx, uint16_t *ib)
+int iter_block_new(uint32_t *mem, uint16_t ctx, uint16_t *ib)
 {
-    /* TODO: implement */
-    return 1;
+    int rc;
+    uint16_t top, trigs, vals;
+    int i;
+
+    /* allocate top-level struct */
+
+    top = 0;
+    rc = sonilo_alloc(mem, ctx, 2, &top);
+    if (rc) return 1;
+
+    /* allocate a block for values */
+    vals = 0;
+    rc = context_mkblock(mem, ctx, &vals);
+    if (rc) return 2;
+
+    /* allocate trigs (2 words) */
+    trigs = 0;
+    rc = sonilo_alloc(mem, ctx, 2, &trigs);
+    if (rc) return 3;
+
+    mem[trigs] = mem[trigs + 1] = 0;
+    for (i = 0; i < 64; i++) mem[vals + i] = 0;
+
+    if (ib == NULL) return 4;
+
+    /* first word stores (vals, trigs) tuple */
+    mem[top] = vals | (trigs << 16);
+    /* second word caches the first slice of the iterator,
+     * zeroed out for now
+     */
+    mem[top + 1] = 0;
+
+    *ib = top;
+
+    return 0;
 }
 
 /* tick: compute a single sample of audio at position n */
@@ -147,24 +187,69 @@ int iter_block_tick(uint32_t *mem,
         float in,
         int n)
 {
-    if (in > 0) {
-        /* TODO: compute next value of iterator */
+    uint32_t slice;
+    uint8_t t;
+    uint16_t vals, trigs;
+
+    t = in > 0;
+    t &= 1; /* extra precaution. Just the first bit */
+    if (t) {
+        mem[ib + 1] = iter_next(mem, it);
     }
 
-    /* TODO: retrieve current iterator value
+    /* retrieve current iterator value
      * store in slice buffer.
      */
 
-    /* TODO: store trigger in trigger buffer */
-    return 1;
+    slice = mem[ib + 1];
+    vals = ITBLK_VALS(mem, ib);
+    mem[vals + n] = slice;
+
+    trigs = ITBLK_TRIGS(mem, ib);
+
+    /* handle upper bits */
+    if (n >= 32) {
+        trigs += 1;
+        n -= 32;
+    }
+
+    mem[trigs] &= ~(1 << n);
+    mem[trigs] |= (t << n);
+
+    return 0;
 }
 
 int iter_block_trig(uint32_t *mem, uint16_t ib, int pos, uint32_t *trig)
 {
-    /* TODO: implement */
+    uint16_t trigs;
+
+    trigs = ITBLK_TRIGS(mem, ib);
+
+    if (pos >= 32) {
+        trigs += 1;
+        pos -= 32;
+    }
+
+    if (trig == NULL) return 1;
+
+    if (pos < 0 || pos >= 64) return 2;
+
+    *trig = (mem[trigs] & (1 << pos)) >> pos;
+
+    return 0;
 }
 
 int iter_block_slice(uint32_t *mem, uint16_t ib, int pos, uint32_t *slice)
 {
-    /* TODO: implement */
+    uint16_t vals;
+
+    vals = ITBLK_VALS(mem, ib);
+
+    if (slice == NULL) return 1;
+
+    if (pos < 0 || pos >= 64) return 2;
+
+    *slice = mem[vals + pos];
+
+    return 0;
 }

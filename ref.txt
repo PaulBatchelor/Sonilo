@@ -92,4 +92,4 @@ test_wm_block:
 test_iter_block:
 1 1 1 1
 0 0 0 0
-a b c d
+aa bb cc dd

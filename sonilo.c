@@ -9,6 +9,7 @@
 #include "dr_wav.h"
 #include "tape.h"
 #include "iter.h"
+#include "array.h"
 
 /* NOTE: encoded in LE, the bytes are 8101 and 8102 */
 #define HALFWORD_MSB 0x0181
@@ -1316,18 +1317,28 @@ void iter_block_aux(sonilo_vm *vm)
             barray_pop(mem, stk, &x);
             in = x;
             iter_block_compute(mem, ib, it, in);
+            barray_append(mem, stk, ib);
             break;
         case 2: /* 2: get trigger */
+            x = 0;
+            barray_pop(mem, stk, &x);
+            ib = x;
             pos = rw & 0xFF;
             rw >>= 8;
             rw = 0;
             iter_block_trig(mem, ib, pos, &rw);
+            barray_append(mem, stk, ib);
             break;
         case 3: /* 3: get value */
+            x = 0;
+            barray_pop(mem, stk, &x);
+            ib = x;
             pos = rw & 0xFF;
             rw >>= 8;
             rw = 0;
             iter_block_slice(mem, ib, pos, &rw);
+            rw = array_value(mem, rw);
+            barray_append(mem, stk, ib);
             break;
         default:
             break;
@@ -1335,7 +1346,6 @@ void iter_block_aux(sonilo_vm *vm)
 
     sonilo_vm_rw_set(vm, rw);
 }
-
 
 static uint32_t sigx_port(uint32_t *mem, uint16_t ctx)
 {
@@ -1368,7 +1378,6 @@ void sonilo_sigx(sonilo_vm *vm)
     uint8_t mode;
     uint32_t x, *mem;
     uint16_t ctx, stk;
-    /* TODO: implement */
 
     mem = sonilo_vm_mem(vm);
     rw = sonilo_vm_rw_get(vm);
