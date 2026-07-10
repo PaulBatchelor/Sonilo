@@ -344,7 +344,15 @@ static uint16_t allot(uint32_t *mem, uint16_t ctx, uint16_t sz)
     uint16_t f;
 
     f = mem[ctx + SLOT_UNIVERSE_FREE] & 0xFFFF;
-    mem[ctx + SLOT_UNIVERSE_FREE] += sz;
+
+    /* update free position P (LSB only) */
+
+    /* P += sz -> sz += P  (sz + P) -> (P + sz) */
+    sz += mem[ctx + SLOT_UNIVERSE_FREE] & 0xFFFF;
+
+    /* clear LSB bits, and set new size */
+    mem[ctx + SLOT_UNIVERSE_FREE] &= ~0xFFFF;
+    mem[ctx + SLOT_UNIVERSE_FREE] |= sz;
 
     return f;
 }
