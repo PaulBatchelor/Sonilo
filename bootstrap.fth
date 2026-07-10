@@ -66,9 +66,9 @@ new #6 set
 0 (sonilo-core)
 1 #0 'AA var-n
 2 #0 'AI var-n
-3 :sigil:% s:to-n @AA @AI rot
-4 son:push son:push son:push
-5 son:begin #1 $a son:opa son:end @AI n:inc !AI ;
+3 :arr-append @AA @AI rot son:push son:push son:push
+4 son:begin #1 $a son:opa son:end @AI n:inc !AI ;
+5 :sigil:% s:to-n arr-append ;
 6 &sigil:% $% sigil:set
 7 :arr #4 shift-left or son:array-create 
 8 son:pop son:rw-get dup !AA #0 !AI ;

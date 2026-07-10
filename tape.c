@@ -45,7 +45,7 @@ int tape_track_process(tape_track *trk, uint32_t *mem)
     float *out;
     int rc;
 
-    rc = sonilo_ugen_block(mem, trk->sink, 0, &out);
+    rc = sonilo_ugen_block(mem, trk->sink, 1, &out);
     if (rc) return 1;
     sk_drwav_write_pcm_frames(&trk->wav, 64, out);
     return 0;

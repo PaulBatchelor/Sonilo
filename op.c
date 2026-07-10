@@ -73,6 +73,16 @@ static int a_iter(sonilo_vm *vm, uint8_t data)
             rc = barray_append(mem, stk, iter);
             if (rc) { rc = 5; break; }
             break;
+         case 1: {
+            rc = 0;
+            /* TODO: create iter block */
+            rc = iter_block_new(mem, ctx, &iter);
+            if (rc) { rc = 1; break; }
+            rc = barray_append(mem, stk, iter);
+            if (rc) { rc = 2; break; }
+
+            break;
+         }
          default:
             rc = -1;
     }
