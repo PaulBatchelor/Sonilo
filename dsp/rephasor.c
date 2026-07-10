@@ -16,6 +16,10 @@ struct sk_rephasor {
     float si;
     float ir;
     float ic;
+
+    /* TODO: some place to cache num/den */
+    /* TODO: some place to store IB/ITER addresses */
+    /* TODO: some place to store mode */
 };
 
 static void sk_rephasor_init(sk_rephasor *rp)
@@ -102,6 +106,10 @@ static uint32_t init(uint32_t *mem, uint16_t ctx)
     uint32_t cmd;
     sk_rephasor *rphs;
 
+    /* TODO: get upper bits */
+    /* TODO: split this into two different functions
+     * based on upper bit configuration? */
+
     /* command */
     stk = CTX_STACK(mem, ctx);
     cmd = 0;
@@ -117,6 +125,8 @@ static uint32_t init(uint32_t *mem, uint16_t ctx)
     if (rc) return 2;
 
     /* ports */
+    /* TODO: only create 1 iport if using iterator block,
+     * get addresses from stack */
     rc = ugen_iport(mem, ctx, ugen, 2);
     if (rc) return 3;
     rc = ugen_iport(mem, ctx, ugen, 1);
@@ -133,6 +143,7 @@ static uint32_t init(uint32_t *mem, uint16_t ctx)
     if (rphs == NULL) return 5;
 
     sk_rephasor_init(rphs);
+    /* TODO: initialize num/den value peaking at iterator */
 
     /* push ugen address */
     rc = barray_append(mem, stk, ugen);
@@ -147,6 +158,8 @@ static uint32_t render(uint32_t *mem, uint16_t ugen)
     uint32_t *ports;
     sonilo_port p_in, p_num, p_den, p_out;
     int n;
+
+    /* TODO: set this top level function as a router based on mode */
 
     rphs = (sk_rephasor *)ugen_state(mem, ugen);
     ports = ugen_ports(mem, ugen);
