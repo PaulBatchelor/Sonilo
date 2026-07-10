@@ -2,7 +2,9 @@
 #define SLOT_PSTACK 2
 #define SLOT_ALLOC 2
 #define SLOT_UGEN_BLOCK 3
-#define SLOT_UNIVERSE_FREE 4
+#define SLOT_UNIVERSE_FREE 4 /* LSB */
+#define SLOT_UGEN_BITS 4 /* MSB */
+
 #define CTX_STACK(M,C) (M[C + 1] & 0xFFFF)
 #define CTX_PARAM_STACK(M,C) (M[C + SLOT_PSTACK] >> 16)
 #define CTX_ALLOC(M,C) (M[C + SLOT_ALLOC] & 0xFFFF)

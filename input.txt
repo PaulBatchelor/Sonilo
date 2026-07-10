@@ -995,3 +995,22 @@ format, with {\tt PP} being used for the position nibbles.
 @c Check for values. The values should print {\tt AA}, {\tt BB}, {\tt CC}, {\tt DD}.
 This uses the {\tt ib.3} command.
 @m 00.3 ib pwsp 13.3 ib pwsp 24.3 ib pwsp 35.3 ib pw nl
+@l test_ugen_upperbits:
+@c The ugen opcode command uses 16 bits for the ugen key lookup.
+Because it is inside a type B opcode, there are 16 extra bits that are
+currently being unused (until now). This test works to confirm the
+new functionality that would allow ugens to utilize these upper bits
+when they are initialized.
+@c internally, when a new ugen is set, the upper bits will be placed in
+the zero page slot. When the init function is called, these bits will
+be available for use.
+@c A context and a word machine must be set up for this to work.
+The word machine should be set up with a new context, but for good
+measure, be explicit about it.
+@m 0cu #0gobicigo 0wx
+@c Send a single opcode B command for a ugen ('u', or {\tt 0x75}),
+with a data consisting of a special dummy key ({\tt 0x8888}),
+and a magic constant in the upper bits ({\tt 0xBEAD}).
+@m #8100CC01ww #81A175CEww #8101BEADww #81028888ww #8100CC02ww
+@c Read the upper bits in slot 4 of the zero page.
+@m sp 4 3.cx pr

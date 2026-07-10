@@ -206,6 +206,29 @@ static void context_aux(sonilo_vm *vm, int mode)
         stk = CTX_STACK(sonilo_vm_mem(vm), ctx);
         sonilo_vm_rw_set(vm, stk);
         rc = 0;
+    } else if (mode == 1) { /* READ slot from zero page */
+
+    } else if (mode == 2) { /* READ LSB from zero page */
+        uint32_t rw;
+        uint8_t slot;
+        uint32_t *mem;
+
+        mem = sonilo_vm_mem(vm);
+        rw = sonilo_vm_rw_get(vm);
+        slot = rw & 0xF;
+        rw = mem[ctx + slot] & 0xFFFF;
+        sonilo_vm_rw_set(vm, rw);
+    } else if (mode == 3) { /* READ MSB from zero page */
+        uint32_t rw;
+        uint8_t slot;
+        uint32_t *mem;
+
+        mem = sonilo_vm_mem(vm);
+
+        rw = sonilo_vm_rw_get(vm);
+        slot = rw & 0xF;
+        rw = mem[ctx + slot] >> 16;
+        sonilo_vm_rw_set(vm, rw);
     }
 
     sonilo_vm_err_set(vm, rc);

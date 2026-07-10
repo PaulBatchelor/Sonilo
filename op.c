@@ -141,7 +141,7 @@ static int a_ugen(sonilo_vm *vm, uint32_t data)
     return rc;
 }
 
-static int mkugen(sonilo *s, uint16_t ac, uint32_t key)
+static int mkugen(sonilo *s, uint16_t ac, uint32_t data)
 {
     int render;
     uint32_t rw;
@@ -149,12 +149,24 @@ static int mkugen(sonilo *s, uint16_t ac, uint32_t key)
     sonilo_host *host;
     uint16_t stk;
     uint32_t *mem;
+    uint16_t key;
+
     sonilo_vm *vm;
 
     host = sonilo_get_host(s);
     vm = sonilo_get_vm(s);
     mem = sonilo_vm_mem(vm);
     stk = CTX_STACK(mem, ac);
+    key = data & 0xFFFF;
+
+    /* set upper bits in zero page */
+    mem[ac + SLOT_UGEN_BITS] &= 0xFFFF;
+    mem[ac + SLOT_UGEN_BITS] |= (data >> 16) << 16;
+
+    /* special key used for testing. bypasses bulk of ugen */
+    if (key == 0x8888) {
+        return 0;
+    }
 
     /* look up entry for DSP callback (alt key) */
     render = sonilo_host_index(host, sonilo_alt(key));
