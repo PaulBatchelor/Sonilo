@@ -48,6 +48,7 @@ build dsp/smoother.o: c89 dsp/smoother.c
 build dsp/bigverb.o: c89 dsp/bigverb.c
 build dsp/env.o: c89 dsp/env.c
 build dsp/rephasor.o: c89 dsp/rephasor.c
+build dsp/curve.o: c89 dsp/curve.c
 build cmp/cmp.o: c89 cmp/cmp.c
 build konilo/ilo.o: c89 konilo/ilo.c
 build konilo/unu.o: c89 konilo/unu.c
@@ -80,6 +81,7 @@ build libsonilo.a: ar $
     dsp/bigverb.o $
     dsp/env.o $
     dsp/rephasor.o $
+    dsp/curve.o $
     sonilo.o
 
 build ex/hello_ugen.o: c89 ex/hello_ugen.c
