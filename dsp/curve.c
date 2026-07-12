@@ -156,6 +156,23 @@ static uint32_t init(uint32_t *mem, uint16_t ctx)
     return init_sig(mem, ctx);
 }
 
+static float gliss_it(float phs, float pos)
+{
+    float a;
+
+    if (phs < pos) {
+        a = 0.0;
+    } else {
+        a = phs - pos;
+        if (a < 0.0) {
+            a = 0.0;
+        }
+        a /= 1.0 - pos;
+        a = a * a * a;
+    }
+    return a;
+}
+
 static float curve_tick(float x, uint8_t type)
 {
     switch (type) {
@@ -164,24 +181,20 @@ static float curve_tick(float x, uint8_t type)
         case CURVE_STEP:
             return 0;
         case CURVE_GLISS_0:
-            /* TODO */
-            return 0;
+            return gliss_it(x, 0.9);
         case CURVE_GLISS_1:
-            /* TODO */
-            return 0;
+            return gliss_it(x, 0.85);
         case CURVE_GLISS_2:
-            /* TODO */
-            return 0;
+            return gliss_it(x, 0.75);
         case CURVE_GLISS_3:
-            /* TODO */
-            return 0;
+            return gliss_it(x, 0.5);
         case CURVE_QUAD_DOWN:
             x = 1 - x;
             return -(x * x) + 1;
         case CURVE_QUAD_UP:
             return x * x;
         case CURVE_TRI:
-            if (x > 0.5) return (x - 0.5) * 2.0;
+            if (x > 0.5) return 1.0 - ((x - 0.5) * 2.0);
             else return 2.0 * x;
         case CURVE_SMOOTHSTEP:
             return 3*x*x - 2*x*x*x;
@@ -192,12 +205,10 @@ static float curve_tick(float x, uint8_t type)
 
 static uint32_t render_sig(uint32_t *mem, uint16_t ugen)
 {
-    dsp_curve *crv;
     uint32_t *ports;
     sonilo_port p_in, p_type, p_out;
     int n;
 
-    crv = (dsp_curve *)ugen_state(mem, ugen);
     ports = ugen_ports(mem, ugen);
     p_in = sonilo_port_from_word(mem, ports[0]);
     p_type = sonilo_port_from_word(mem, ports[1]);
