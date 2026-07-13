@@ -14,6 +14,7 @@ int ugen_bigverb(sonilo *s);
 int ugen_env(sonilo *s);
 int ugen_rephasor(sonilo *s);
 int ugen_curve(sonilo *s);
+int ugen_terp(sonilo *s);
 
 /* top-level loader for ugen subroutines */
 int sonilo_load_ugens(sonilo *s)
@@ -37,6 +38,7 @@ int sonilo_load_ugens(sonilo *s)
     rc = ugen_env(s); if (rc) return err; err++;
     rc = ugen_rephasor(s); if (rc) return err; err++;
     rc = ugen_curve(s); if (rc) return err; err++;
+    rc = ugen_terp(s); if (rc) return err; err++;
 
     return 0;
 }
