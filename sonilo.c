@@ -1340,6 +1340,17 @@ void iter_block_aux(sonilo_vm *vm)
             rw = array_value(mem, rw);
             barray_append(mem, stk, ib);
             break;
+        case 4: /* 4: get next value */
+            x = 0;
+            barray_pop(mem, stk, &x);
+            ib = x;
+            pos = rw & 0xFF;
+            rw >>= 8;
+            rw = 0;
+            iter_block_next(mem, ib, pos, &rw);
+            rw = array_value(mem, rw);
+            barray_append(mem, stk, ib);
+            break;
         default:
             break;
     }

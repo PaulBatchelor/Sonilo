@@ -995,6 +995,10 @@ format, with {\tt PP} being used for the position nibbles.
 @c Check for values. The values should print {\tt AA}, {\tt BB}, {\tt CC}, {\tt DD}.
 This uses the {\tt ib.3} command.
 @m 00.3 ib pwsp 13.3 ib pwsp 24.3 ib pwsp 35.3 ib pw nl
+@c Check and make sure the corresponding next values are working
+as expected.
+This is done using the {\tt ib.4.PP} command.
+@m 00.4 ib pwsp 13.4 ib pwsp 24.4 ib pwsp 35.4 ib pw nl
 @l test_ugen_upperbits:
 @c The ugen opcode command uses 16 bits for the ugen key lookup.
 Because it is inside a type B opcode, there are 16 extra bits that are

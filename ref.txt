@@ -93,4 +93,5 @@ test_iter_block:
 1 1 1 1
 0 0 0 0
 aa bb cc dd
+bb cc dd aa
 test_ugen_upperbits: bead
