@@ -4,6 +4,7 @@
 :gl3 #5 ;
 :smo #9 ;
 :qup #7 ;
+:tri #8 ;
 :vx #16 shift-left or swap #8 shift-left or
 swap #24 shift-left or arr-append ;
 :iter son:iter ;
@@ -25,7 +26,9 @@ son:patch-setup
 
 ibnew son:pop son:rw-get 'ib var-n
 
-#89 const clock
+#3 const clock tri const curve smo const curve
+#5 const mul #1 const add
+#89 const mul clock
 
 #5 #4 arr
 
@@ -47,7 +50,7 @@ iter
 sink #0 tout
 
 #0 topen
-#10 render
+#30 render
 #0 tclose
 
 son:ctx-destroy
