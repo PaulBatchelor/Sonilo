@@ -1,7 +1,6 @@
 :dur swap #8 shift-left or arr-append ;
 :iter son:iter ;
 :ibnew son:begin #1 $i son:opa son:end ;
-:rephasori #1 #16 shift-left #35790 or ugen ;
 
 son:patch-setup
 

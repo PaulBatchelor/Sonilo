@@ -94,6 +94,12 @@ new #9 set
 12 :bigverb #3426 ugen ;
 13 :env #9066 ugen ;
 14 :rephasor #35790 ugen ;
+15 :rephasori #1 #16 shift-left #35790 or ugen ;
+save
+
+new #10 set
+0 (sonilo-core) (ugens)
+1 :curve #5226 ugen ;
 save
 
 bye

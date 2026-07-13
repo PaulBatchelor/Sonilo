@@ -7,7 +7,7 @@
 #include "iter.h"
 #include "array.h"
 
-#define GV_CURV(X) ((X >> 16) & 0xFF)
+#define GV_CURVE(X) ((X >> 16) & 0xFF)
 
 typedef struct dsp_curve dsp_curve;
 
@@ -119,6 +119,7 @@ static uint32_t init_iter(uint32_t *mem, uint16_t ctx)
 
     /* ports */
     rc = ugen_iport(mem, ctx, ugen, 0);
+    if (rc) return 3;
     rc = ugen_oport(mem, ctx, ugen, 1);
     if (rc) return 4;
 
@@ -227,7 +228,6 @@ static uint32_t render_sig(uint32_t *mem, uint16_t ugen)
 
 static uint32_t render_iter(uint32_t *mem, uint16_t ugen)
 {
-#if 0
     dsp_curve *crv;
     uint32_t *ports;
     sonilo_port p_in, p_out;
@@ -239,39 +239,20 @@ static uint32_t render_iter(uint32_t *mem, uint16_t ugen)
     p_out = sonilo_port_from_word(mem, ports[1]);
 
     for (n = 0; n < UGEN_BLKSZ; n++) {
-        float in, out, prv, trig;
-        uint16_t ib, it;
+        float in, out;
+        uint8_t type;
+        uint32_t slice;
+
         in = sonilo_port_read(&p_in, n);
 
-        ib = crv->ibit >> 16;
-        it = crv->ibit & 0xFFFF;
+        slice = 0;
+        iter_block_slice(mem, crv->ib, n, &slice);
+        type = GV_CURVE(array_value(mem, slice));
 
-        prv = crv->prv;
-        out = dsp_curve_tick(crv, in);
-
-        /* check if there is a new period, and run iterator */
-        trig = (out < prv) || (prv < 0) ? 1.0 : 0.0;
-
-        iter_block_tick(mem, ib, it, trig, n);
-
-        /* update curve value on new period */
-        if (trig > 0) {
-            uint32_t slice, val;
-            slice = 0;
-            iter_block_slice(mem, ib, n, &slice);
-            val = array_value(mem, slice);
-
-            /* assume value is gesture vertex, extract duration */
-            val = GV_DUR(val);
-            dsp_curve_scale(crv,
-                (float)GV_DUR_DEN(val) / (float)GV_DUR_NUM(val)
-            );
-        }
+        out = curve_tick(in, type);
 
         sonilo_port_write(&p_out, n, out);
-        crv->prv = out;
     }
-#endif
     return 0;
 }
 
