@@ -1,5 +1,3 @@
-:bez 'BEZ ugens ;
-:phasor 'PHS ugens ;
 son:patch-setup
 
 #50 const mtof phasor

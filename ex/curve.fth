@@ -1,6 +1,3 @@
-:curve #5226 ugen ;
-:crv:tri #8 ;
-:crv:smo #9 ;
 son:patch-setup
 
 #60 const 

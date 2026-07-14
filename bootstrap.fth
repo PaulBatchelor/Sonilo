@@ -28,7 +28,6 @@ new #4 set
 0 (sonilo-core)
 1 :son:opb #206 swap son:opa son:word ;
 2 :setw son:begin #33 son:opb son:end ;
-3 :ugen son:begin #117 son:opb son:end ;
 4 :constf
 5 dup #0 lteq? n:abs #29 shift-left
 6 swap n:abs dup #1000 n:mod #8192 n:mul #1000 n:div
@@ -50,7 +49,7 @@ new #5 set
 3 (anv)
 4 swap son:push son:push son:push
 5 son:begin #1 $a son:opa son:end ;
-6 :son:iter son:push son:begin #0 $i son:opa son:end ;
+6 :iter son:push son:begin #0 $i son:opa son:end ;
 7 :last-ugen son:begin #0 #117 son:opa son:end ;
 8 :tape #116 son:opa ;
 9 :bind #16 shift-left or son:rw-set son:begin #2 tape son:end ;
@@ -82,31 +81,40 @@ save
 
 new #7 set
 0 (sonilo-core)
-1 :ugens s:to-short ugen ;
+1 :ugen s:to-short son:begin $u son:opb son:end ;
+3 :ibnew son:begin #1 $i son:opa son:end ;
+4 :ugen-bits s:to-short swap #16 shift-left or
+5 son:begin $u son:opb son:end ;
 save
 
 new #9 set
 0 (sonilo-core) (ugens)
-1 :metro #24870 ugen ;
-2 :clock #4820 ugen ;
-3 :mtof #25802 ugen ;
-4 :saw #36908 ugen ;
-5 :lpf #23498 ugen ;
-6 :mul #25878 ugen ;
-7 :sequence #37152 ugen ;
-8 :sink #37716 ugen ;
-9 :smoother #37660 ugen ;
-10 :add #198 ugen ;
-11 :seq son:iter sequence ;
-12 :bigverb #3426 ugen ;
-13 :env #9066 ugen ;
-14 :rephasor #35790 ugen ;
-15 :rephasori #1 #16 shift-left #35790 or ugen ;
+1 :metro 'MET ugen ;
+2 :clock 'CLK ugen ;
+3 :mtof 'MTF ugen ;
+4 :saw 'SAW ugen ;
+5 :lpf 'LPF ugen ;
+6 :mul 'MUL ugen ;
+7 :sequence 'SEQ ugen ;
+8 :sink 'SNK ugen ;
+9 :smoother 'SMO ugen ;
+10 :add 'ADD ugen ;
+11 :seq iter sequence ;
+12 :bigverb 'BVR ugen ;
+13 :env 'ENV ugen ;
+14 :rephasor 'RPH ugen ;
+15 :rephasori #1 'RPH ugen-bits ;
 save
 
 new #10 set
 0 (sonilo-core) (ugens)
-1 :curve #5226 ugen ;
+1 :curve 'CRV ugen ;
+2 :crv:lin #00 ; :crv:stp #01 ; :crv:gl0 #02 ; :crv:gl1 #03 ;
+3 :crv:gl2 #04 ; :crv:gl3 #05 ; :crv:qup #06 ; :crv:qdn #07 ;
+4 :crv:tri #08 ; :crv:smo #09 ; 
+5 :curvi #1 'CRV ugen-bits ;
+6 :phasor 'PHS ugen ;
+7 :bez 'BEZ ugen ;
 save
 
 bye
