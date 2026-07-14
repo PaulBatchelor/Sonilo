@@ -1,46 +1,79 @@
 #include <stdint.h>
-#include "util.h"
+#include "sonilo.h"
+#include "mem.h"
+#include "context.h"
+#include "ugen.h"
 
-struct dsp_phasor {
-    uint32_t freq;
-    uint32_t out;
+typedef struct dsp_phasor {
     float phs;
     float onedsr;
-};
+} dsp_phasor;
 
-void dsp_phasor_init(uint32_t *mem, uint32_t p, uint32_t out)
+static uint32_t init(uint32_t *mem, uint16_t ctx)
 {
-    uint32_t sr;
-    struct dsp_phasor *ph;
+    int rc;
+    uint16_t stk, ugen;
+    uint32_t cmd;
+    dsp_phasor *ph;
 
-    ph = (struct dsp_phasor *)&mem[p];
-    sr = sonilo_sr(mem);
+    /* command */
+    stk = CTX_STACK(mem, ctx);
+    cmd = 0;
+    rc = barray_pop(mem, stk, &cmd);
+    if (rc) return 1;
+
+    /* intialize ugen */
+    rc = ugen_create(mem,
+        ctx,
+        (uint16_t) cmd,
+        2, sizeof(dsp_phasor) >> 2,
+        &ugen);
+    if (rc) return 2;
+
+    /* ports */
+    rc = ugen_iport(mem, ctx, ugen, 0);
+    if (rc) return 3;
+    rc = ugen_oport(mem, ctx, ugen, 1);
+    if (rc) return 4;
+
+    context_pstack_sweep(mem, ctx);
+
+    /* state */
+    ph = (dsp_phasor *)ugen_state(mem, ugen);
+    if (ph == NULL) return 5;
+
     ph->phs = 0;
-    ph->onedsr = 1.0 / sr;
-    ph->out = out;
+    ph->onedsr = 1.0 / sonilo_srate(mem);
+
+    /* push ugen address */
+    rc = barray_append(mem, stk, ugen);
+    if (rc) return 6;
+
+    return 0;
 }
 
-void dsp_phasor_compute(uint32_t *mem, uint32_t p)
+static uint32_t render(uint32_t *mem, uint16_t ugen)
 {
+    dsp_phasor *ph;
+    uint32_t *ports;
+    sonilo_port p_frq, p_out;
+    float phs;
     int n;
-    int blksz;
-    struct dsp_phasor *ph;
 
-    blksz = sonilo_blksz(mem);
+    ph = (dsp_phasor *)ugen_state(mem, ugen);
+    ports = ugen_ports(mem, ugen);
+    p_frq = sonilo_port_from_word(mem, ports[0]);
+    p_out = sonilo_port_from_word(mem, ports[1]);
 
-    ph = (struct dsp_phasor *)&mem[p];
+    phs = ph->phs;
 
-    for (n = 0; n < blksz; n++) {
-        float out;
-        float phs;
-        float incr;
-        float freq;
+    for (n = 0; n < UGEN_BLKSZ; n++) {
+        float frq, o, incr;
 
-        phs = ph->phs;
-        freq = sonilo_port_readf(mem, ph->freq, n);
-        incr = freq * ph->onedsr;
+        frq = sonilo_port_read(&p_frq, n);
+        incr = frq * ph->onedsr;
 
-        out = phs;
+        o = phs;
 
         phs += incr;
 
@@ -50,71 +83,24 @@ void dsp_phasor_compute(uint32_t *mem, uint32_t p)
             phs += 1.0;
         }
 
-        ph->phs = phs;
-
-        sonilo_port_writef(mem, ph->out, n, out);
-    }
-}
-
-int ugen_phasor_init(uint32_t *mem, uint32_t pstk)
-{
-    uint32_t *stk;
-    uint32_t out;
-    uint32_t ph;
-    int rc;
-
-    stk = &mem[pstk];
-
-    rc = stack_pop(stk, &ph);
-
-    if (rc) {
-        return 1;
+        sonilo_port_write(&p_out, n, o);
     }
 
-    rc = stack_pop(stk, &out);
+    ph->phs = phs;
 
-    if (rc) {
-        return 1;
-    }
-
-    dsp_phasor_init(mem, ph, out);
     return 0;
 }
 
-int ugen_phasor(uint32_t *mem, uint32_t pstk)
+int ugen_phasor(sonilo *s)
 {
-    uint32_t *stk;
-    uint32_t pfreq;
-    uint32_t p;
-    struct dsp_phasor *ph;
+    uint16_t key;
     int rc;
 
-    stk = &mem[pstk];
-    pfreq = p = 0;
-
-    rc = stack_pop(stk, &p);
-
-    if (rc) {
-        return 1;
-    }
-
-    rc = stack_pop(stk, &pfreq);
-
-    if (rc) {
-        return 1;
-    }
-
-    ph = (struct dsp_phasor *) &mem[p];
-
-    ph->freq = pfreq;
-
-    dsp_phasor_compute(mem, p);
-
-    rc = stack_push(stk, ph->out);
-
-    if (rc) {
-        return 1;
-    }
+    key = sonilo_key("PHS");
+    rc = sonilo_command(s, key, init);
+    if (rc) return 1;
+    rc = sonilo_command(s, sonilo_alt(key), render);
+    if (rc) return 2;
 
     return 0;
 }

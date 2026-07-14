@@ -76,6 +76,13 @@ new #6 set
 10 :err son:begin #1 $! son:opa son:end son:rw-get 
 11 #0 -eq? [ 'error s:put nl bye ] if ;
 12 :son:patch-setup son:ctx-create #0 son:cur son:go ;
+13 :s:to-short #0 swap [ $A n:sub swap #5 shift-left or ]
+14 s:for-each #1 shift-left ;
+save
+
+new #7 set
+0 (sonilo-core)
+1 :ugens s:to-short ugen ;
 save
 
 new #9 set
