@@ -3,15 +3,15 @@ son:patch-setup
 
 ibnew son:pop son:rw-get 'ib var-n
 
-#60 const clock
+#60 c clock
 #5 #4 arr
 #1 #1 crv:lin vx #1 #1 crv:smo vx
 #2 #1 crv:lin vx #2 #1 crv:qdn vx iter
 @ib son:push rephasori
-crv:tri const curve
+crv:tri c curve
 @ib son:push curvi
-#12 const mul #60 const add mtof saw #300 const lpf
-#0.800 constf mul
+#12 c mul #60 c add mtof saw #300 c lpf
+#0.800 cf mul
 
 sink #0 tout
 

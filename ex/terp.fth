@@ -8,10 +8,6 @@
 :tri #8 ;
 :vx #16 shift-left or swap #8 shift-left or
 swap #24 shift-left or arr-append ;
-:iter son:iter ;
-:ibnew son:begin #1 $i son:opa son:end ;
-:curvi #65536 #5226 or ugen ;
-:terp #40030 ugen ;
 :qn #1 #1 ;
 :hn #2 #1 ;
 :en #1 #2 ;
@@ -30,9 +26,9 @@ son:patch-setup
 
 ibnew son:pop son:rw-get 'ib var-n
 
-#1 const clock tri const curve qup const curve
-#8 const mul #1 const add
-#89 const mul clock
+#1 c clock tri c curve qup c curve
+#8 c mul #1 c add
+#89 c mul clock
 
 #5 #13 arr
 
@@ -58,9 +54,8 @@ iter
 @ib son:push curvi
 
 @ib son:push terp
-
-#53 const add mtof saw #300 const lpf
-#0.800 constf mul
+#53 c add mtof saw #300 c lpf
+#0.800 cf mul
 
 sink #0 tout
 

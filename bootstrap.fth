@@ -28,12 +28,12 @@ new #4 set
 0 (sonilo-core)
 1 :son:opb #206 swap son:opa son:word ;
 2 :setw son:begin #33 son:opb son:end ;
-4 :constf
+4 :cf
 5 dup #0 lteq? n:abs #29 shift-left
 6 swap n:abs dup #1000 n:mod #8192 n:mul #1000 n:div
 7 swap #1000 n:div #13 shift-left or or
 8 son:begin #99 son:opb son:end ;
-9 :const #1000 n:mul constf ;
+9 :c #1000 n:mul cf ;
 10 :son:ctx-destroy son:begin #1 #67 son:opa son:end ;
 11 :son:ctx-create son:begin #0 #67 son:opa son:end ;
 12 :son:go son:begin #0 #107 son:opa son:end ;
@@ -117,6 +117,7 @@ new #10 set
 7 :bez 'BEZ ugen ;
 8 :scale 'SCL ugen ;
 9 :warp 'WRP ugen ;
+10 :terp 'TRP ugen ;
 save
 
 bye

@@ -1,38 +1,38 @@
 son:patch-setup
 
-#50 const mtof phasor
-#1.000 constf
-#0.500 constf
-#0.300 constf
-#2 const clock #8 const curve #9 const curve
-#0.700 constf mul add
+#50 c mtof phasor
+#1.000 cf
+#0.500 cf
+#0.300 cf
+#2 c clock #8 c curve #9 c curve
+#0.700 cf mul add
 bez
 
-#50 #7 n:sub const mtof phasor
-#0.000 constf
-#0.900 constf
-#0.800 constf
-#3 const clock #8 const curve #9 const curve
-#0.200 constf mul add
+#50 #7 n:sub c mtof phasor
+#0.000 cf
+#0.900 cf
+#0.800 cf
+#3 c clock #8 c curve #9 c curve
+#0.200 cf mul add
 bez
 
-#50 #9 n:add const mtof phasor
-#1.000 constf
-#0.900 constf
-#1 const clock #8 const curve #9 const curve
-#0.100 constf mul add
-#0.990 constf
+#50 #9 n:add c mtof phasor
+#1.000 cf
+#0.900 cf
+#1 c clock #8 c curve #9 c curve
+#0.100 cf mul add
+#0.990 cf
 bez
 
 add
 
 add
 
-#8000 const lpf
+#8000 c lpf
 
-bdup bdup #0.900 constf #8000 const bigverb bdrop #0.100 constf mul add
+bdup bdup #0.900 cf #8000 c bigverb bdrop #0.100 cf mul add
 
-#0.200 constf mul sink
+#0.200 cf mul sink
 
 #0 tout
 
