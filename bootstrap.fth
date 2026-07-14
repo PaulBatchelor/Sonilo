@@ -115,6 +115,8 @@ new #10 set
 5 :curvi #1 'CRV ugen-bits ;
 6 :phasor 'PHS ugen ;
 7 :bez 'BEZ ugen ;
+8 :scale 'SCL ugen ;
+9 :warp 'WRP ugen ;
 save
 
 bye
