@@ -4,6 +4,13 @@
 #include "mem.h"
 #include "context.h"
 
+/* array memory layout:
+ * Header(1 word):
+ *    - MSB: word size (3 bits, 2^k, 0 <= k <= 5).
+ *    - LSB: length of array (16 bits, but really only 11 needed)
+ * Data (n words): Packed values.
+ */
+
 int array_create(uint32_t *mem, uint16_t ctx)
 {
     /* the old version required pushing the context address

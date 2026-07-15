@@ -95,3 +95,4 @@ test_iter_block:
 aa bb cc dd
 bb cc dd aa
 test_ugen_upperbits: bead
+test_ji: 45 3 2 294 226 6e dc 1b8

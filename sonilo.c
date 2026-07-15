@@ -10,6 +10,7 @@
 #include "tape.h"
 #include "iter.h"
 #include "array.h"
+#include "ji.h"
 
 /* NOTE: encoded in LE, the bytes are 8101 and 8102 */
 #define HALFWORD_MSB 0x0181
@@ -1431,4 +1432,36 @@ int iter_block_compute(uint32_t *mem,
     }
 
     return 0;
+}
+
+void ji_aux(sonilo_vm *vm)
+{
+    uint32_t rw;
+    int mode;
+
+    rw = sonilo_vm_rw_get(vm);
+    mode = rw & 0xF;
+    rw >>= 4;
+
+    switch (mode) {
+        case 0: /* get base */
+            rw = ji_base(rw);
+            break;
+        case 1: /* get num */
+            rw = ji_num(rw);
+            break;
+        case 2: /* get den */
+            rw = ji_den(rw);
+            break;
+        case 3: /* convert to freq */
+            rw = (uint32_t)ji_real(rw);
+            break;
+        case 4: /* make note from RW: NN.DD.BB */
+            rw = ji_new(rw & 0xFF,
+                    (rw >> 16) & 0xFF,
+                    (rw >> 8) & 0xFF);
+            break;
+    }
+
+    sonilo_vm_rw_set(vm, rw);
 }
