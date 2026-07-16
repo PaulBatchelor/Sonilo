@@ -127,13 +127,16 @@ uint32_t iter_next(uint32_t *mem, uint16_t i)
 float iter_real(uint32_t *mem, uint16_t i)
 {
     uint32_t slice;
+    uint8_t type;
 
     /* Note: eventually, this could be extended to include
      * differerent ways of converting to real depending on
      * the iterator type (TBD). For now, this is just recasting
      * the results of array_value() */
     slice = iter_next(mem, i);
-    return (float)array_value(mem, slice);
+    /* TODO: get array, then array type from array */
+    type = 0;
+    return array_real(mem, slice, type);
 } 
 
 uint32_t iter_get(uint32_t *mem, uint16_t i)
@@ -239,6 +242,8 @@ int iter_block_tick(uint32_t *mem,
 
     mem[trigs] &= ~(1 << n);
     mem[trigs] |= (t << n);
+
+    /* TODO: store iter in MSB of word 3 */
 
     return 0;
 }

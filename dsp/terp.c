@@ -17,10 +17,15 @@ struct dsp_terp {
     uint16_t ib;
     /* A/B values for interpolation A -> B */
     uint8_t A, B;
+    /* TODO: make A/B floats */
+    /* TODO: add mode */
+    /* TODO: add address for indexed */
+    /* TODO: maybe make a dsp_terp_indexed struct? */
 };
 
 static uint32_t init(uint32_t *mem, uint16_t ctx)
 {
+    /* TODO: split into modes. one for indexed mode. one for regular mode */
     int rc;
     uint16_t stk, ugen;
     uint32_t cmd, x;
@@ -67,6 +72,8 @@ static uint32_t init(uint32_t *mem, uint16_t ctx)
 
 static uint32_t render(uint32_t *mem, uint16_t ugen)
 {
+    /* TODO: make two render modes. one for regular, one
+     * for index */
     dsp_terp *trp;
     uint32_t *ports;
     sonilo_port p_in, p_out;

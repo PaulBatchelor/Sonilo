@@ -214,6 +214,8 @@ int array_read(uint32_t *mem, uint16_t stk)
     return 0;
 }
 
+/* NOTE: only use this for reading integer values. For
+ * extended types, use array_real() */
 uint32_t array_value(uint32_t *mem, uint32_t ws)
 {
     uint16_t addr;
@@ -276,4 +278,38 @@ int array_read_direct(uint32_t *mem, uint16_t a, uint16_t idx, uint32_t *slice)
 uint16_t array_length(uint32_t *mem, uint16_t a)
 {
     return mem[a] & 0xFFFF;
+}
+
+/* TODO: add type parameter */
+float array_real(uint32_t *mem, uint32_t ws, uint8_t type)
+{
+    uint16_t addr;
+    uint8_t start, end;
+    uint32_t mask;
+    float out;
+
+    addr = ws & 0xFFFF;
+    ws >>= 16;
+
+    start = ws & 0x1F;
+    ws >>= 5;
+
+    end = ws & 0x1F;
+    ws >>= 5;
+
+    if (start > end) {
+        uint16_t tmp;
+        tmp = start;
+        start = end;
+        end = tmp;
+    }
+
+    mask = 0xFFFFFFFF;
+    if ((end - start) < 31) {
+        mask = ((1 << (end - start + 1)) - 1) << start;
+    }
+
+    out = (mem[addr] & mask) >> start;
+    
+    return out;
 }

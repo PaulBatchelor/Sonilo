@@ -1024,7 +1024,7 @@ The format consists of a base note (a midi note number using equal temperament),
 and a frequency multiplier, represented as a fractional value with a numerator
 and denominator.
 @c Test the getters. A value of ${3 \over 2} 69$ would be represented as
-$3:2:69$, or $0xC0245$.
+$3:2:69$, or {\tt 0xC0245}.
 @m sp #C0245 0.ji pwsp #C0245 1.ji pwsp #C0245 2.ji pwsp
 @c Print a floored version of the value converted to frequency,
 which in this case happens to be 660 even, or {\tt 0x294} in hex.
@@ -1032,7 +1032,7 @@ which in this case happens to be 660 even, or {\tt 0x294} in hex.
 @c Test the ability to make a note. Because of the constraints of the
 32-bit RW register, this utility restricts the ratio to 8 bit numbers
 instead of 10 bit numbers. Create the note ${5 \over 4}69$, which should
-yield the frequency 550, or {0x226}.
+yield the frequency 550, or {\tt 0x226}.
 @m #05.04.45 4.ji 3.ji pwsp
 @c Finally: 0 in either the numerator or denominator will ignore
 the multiplier entirely. Throw in the various combinations and make

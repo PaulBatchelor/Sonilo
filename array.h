@@ -14,5 +14,9 @@ int array_read_direct(uint32_t *mem, uint16_t a, uint16_t idx, uint32_t *slice);
 /* extracts value from a word slice */
 uint32_t array_value(uint32_t *mem, uint32_t ws);
 
+/* extracts word slice value as floating point number, and
+ * also has support for extended types */
+float array_real(uint32_t *mem, uint32_t ws, uint8_t type);
+
 /* get length of array */
 uint16_t array_length(uint32_t *mem, uint16_t a);
