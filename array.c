@@ -95,7 +95,7 @@ int array_create_old(uint32_t *mem, uint16_t stk)
     return 0;
 }
 
-/* write value of an array a[p] = x */
+/* write value of an array a[p] = x. args: x p a */
 int array_write(uint32_t *mem, uint16_t stk)
 {
     uint16_t a, p;

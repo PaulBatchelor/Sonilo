@@ -208,7 +208,7 @@ static void context_aux(sonilo_vm *vm, int mode)
         sonilo_vm_rw_set(vm, stk);
         rc = 0;
     } else if (mode == 1) { /* READ slot from zero page */
-
+        /* TODO: implement */
     } else if (mode == 2) { /* READ LSB from zero page */
         uint32_t rw;
         uint8_t slot;
@@ -230,6 +230,11 @@ static void context_aux(sonilo_vm *vm, int mode)
         slot = rw & 0xF;
         rw = mem[ctx + slot] >> 16;
         sonilo_vm_rw_set(vm, rw);
+    } else if (mode == 4) { /* pop item, WRITE slot to zero page */
+        /* TODO: implement */
+
+    } else if (mode == 5) { /* READ slot from zero page, push */
+
     }
 
     sonilo_vm_err_set(vm, rc);
