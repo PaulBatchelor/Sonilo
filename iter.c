@@ -36,8 +36,13 @@
 #define ITBLK_VALS(M, I) (M[I] & 0xFFFF);
 #define ITBLK_TRIGS(M, I) ((M[I] >> 16) & 0xFFFF);
 #define ITBLK_CURSLICE(M, I) M[I + 1]
-#define ITBLK_NXTBLK(M, I) M[I + 2]
+#define ITBLK_NXTBLK_LOC(I) (I + 2)
+#define ITBLK_NXTBLK(M, I) (M[ITBLK_NXTBLK_LOC(I)] & 0xFFFF)
 #define ITBLK_NXTSLICE(M, I) M[I + 3]
+#define ITBLK_ITER_LOC(I) (I + 2)
+#define ITBLK_ITER(M, I) M[ITBLK_ITER_LOC(I)] >> 16;
+
+#define ITER_ARRAY(M, I) M[I + 1]
 
 
 int iter_alloc(uint32_t *mem, uint16_t ctx, uint16_t *i)
@@ -128,14 +133,19 @@ float iter_real(uint32_t *mem, uint16_t i)
 {
     uint32_t slice;
     uint8_t type;
+    uint16_t a;
+    int rc;
 
-    /* Note: eventually, this could be extended to include
-     * differerent ways of converting to real depending on
-     * the iterator type (TBD). For now, this is just recasting
-     * the results of array_value() */
     slice = iter_next(mem, i);
-    /* TODO: get array, then array type from array */
+
+    /* determine array type so it knows how to convert to real */
     type = 0;
+    a = ITER_ARRAY(mem, i);
+    rc = array_type_get(mem, a, &type);
+
+    if (rc) return -1;
+
+
     return array_real(mem, slice, type);
 } 
 
@@ -192,7 +202,7 @@ int iter_block_new(uint32_t *mem, uint16_t ctx, uint16_t *ib)
     mem[top] = vals | (trigs << 16);
 
     /* store the location of the next block */
-    ITBLK_NXTBLK(mem, top) = nxt;
+    mem[ITBLK_NXTBLK_LOC(top)] = nxt;
 
     /* zero out cur/nxt caches */
     ITBLK_CURSLICE(mem, top) = 0;
@@ -243,7 +253,9 @@ int iter_block_tick(uint32_t *mem,
     mem[trigs] &= ~(1 << n);
     mem[trigs] |= (t << n);
 
-    /* TODO: store iter in MSB of word 3 */
+    /* store iter in MSB */
+    mem[ITBLK_ITER_LOC(ib)] &= 0xFFFF;
+    mem[ITBLK_ITER_LOC(ib)] |= it << 16;
 
     return 0;
 }
@@ -295,5 +307,11 @@ int iter_block_next(uint32_t *mem, uint16_t ib, int pos, uint32_t *slice)
 
     *slice = mem[vals + pos];
 
+    return 0;
+}
+
+int iter_block_iter(uint32_t *mem, uint16_t ib, int pos, uint32_t *iter)
+{
+    /* TODO: implement */
     return 0;
 }

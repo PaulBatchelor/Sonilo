@@ -13,15 +13,17 @@ typedef struct dsp_terp dsp_terp;
 
 
 struct dsp_terp {
-    /* iterator block address */
-    uint16_t ib;
-    /* A/B values for interpolation A -> B */
-    uint8_t A, B;
-    /* TODO: make A/B floats */
-    /* TODO: add mode */
-    /* TODO: add address for indexed */
-    /* TODO: maybe make a dsp_terp_indexed struct? */
+    /* mode, iterator block (1 word) */
+    uint16_t ib, mode;
+    /* A/B values for interpolation A -> B (2 words) */
+    float A, B;
+    /* lookup table (halfword) */
+    uint16_t lookup;
+
+    /* padding to make the struct evenly 4 words */
+    uint16_t padding;
 };
+
 
 static uint32_t init(uint32_t *mem, uint16_t ctx)
 {

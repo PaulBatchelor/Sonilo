@@ -50,3 +50,6 @@ int iter_block_trig(uint32_t *mem, uint16_t ib, int pos, uint32_t *trig);
 int iter_block_slice(uint32_t *mem, uint16_t ib, int pos, uint32_t *slice);
 /* next: similar to trig/slice, but for next entry */
 int iter_block_next(uint32_t *mem, uint16_t ib, int pos, uint32_t *slice);
+
+/* iter: get iterator address */
+int iter_block_iter(uint32_t *mem, uint16_t ib, int pos, uint32_t *iter);

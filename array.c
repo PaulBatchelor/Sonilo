@@ -288,28 +288,55 @@ float array_real(uint32_t *mem, uint32_t ws, uint8_t type)
     uint32_t mask;
     float out;
 
-    addr = ws & 0xFFFF;
-    ws >>= 16;
+    out = 0;
 
-    start = ws & 0x1F;
-    ws >>= 5;
+    switch (type) {
+        case ARRAY_TYPE_JI:
+            /* TODO: implement */
+            break;
+        case ARRAY_TYPE_GVERT:
+            /* TODO: implement */
+            break;
+        case ARRAY_TYPE_INT:
+        default:
+            addr = ws & 0xFFFF;
+            ws >>= 16;
 
-    end = ws & 0x1F;
-    ws >>= 5;
+            start = ws & 0x1F;
+            ws >>= 5;
 
-    if (start > end) {
-        uint16_t tmp;
-        tmp = start;
-        start = end;
-        end = tmp;
+            end = ws & 0x1F;
+            ws >>= 5;
+
+            if (start > end) {
+                uint16_t tmp;
+                tmp = start;
+                start = end;
+                end = tmp;
+            }
+
+            mask = 0xFFFFFFFF;
+            if ((end - start) < 31) {
+                mask = ((1 << (end - start + 1)) - 1) << start;
+            }
+
+            out = (mem[addr] & mask) >> start;
+            break;
+
     }
 
-    mask = 0xFFFFFFFF;
-    if ((end - start) < 31) {
-        mask = ((1 << (end - start + 1)) - 1) << start;
-    }
-
-    out = (mem[addr] & mask) >> start;
     
     return out;
+}
+
+int array_type_set(uint32_t *mem, uint16_t a, uint8_t type)
+{
+    /* TODO: implement */
+    return 1;
+}
+
+int array_type_get(uint32_t *mem, uint16_t a, uint8_t *type)
+{
+    /* TODO: implement */
+    return 1;
 }

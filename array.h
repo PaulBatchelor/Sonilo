@@ -1,3 +1,7 @@
+#define ARRAY_TYPE_INT 0
+#define ARRAY_TYPE_GVERT 1
+#define ARRAY_TYPE_JI 2
+
 /* allocate array with current context */
 int array_create_old(uint32_t *mem, uint16_t stk);
 int array_create(uint32_t *mem, uint16_t ctx);
@@ -20,3 +24,7 @@ float array_real(uint32_t *mem, uint32_t ws, uint8_t type);
 
 /* get length of array */
 uint16_t array_length(uint32_t *mem, uint16_t a);
+
+/* type flags for array */
+int array_type_set(uint32_t *mem, uint16_t a, uint8_t type);
+int array_type_get(uint32_t *mem, uint16_t a, uint8_t *type);
