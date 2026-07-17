@@ -96,3 +96,4 @@ aa bb cc dd
 bb cc dd aa
 test_ugen_upperbits: bead
 test_ji: 45 3 2 294 226 6e dc 1b8
+test_ji_array: 294 226 1b8 dc

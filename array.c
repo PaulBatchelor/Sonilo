@@ -3,6 +3,7 @@
 #include "array.h"
 #include "mem.h"
 #include "context.h"
+#include "ji.h"
 
 /* array memory layout:
  * Header(1 word):
@@ -179,7 +180,7 @@ int array_read(uint32_t *mem, uint16_t stk)
     uint16_t ob, ow;
 
     v = 0;
-    /* pop args: a, p */
+    /* pop args: p, a */
     rc = barray_pop(mem, stk, &v);
     if (rc) return 1;
     a = v & 0xFFFF;
@@ -280,47 +281,25 @@ uint16_t array_length(uint32_t *mem, uint16_t a)
     return mem[a] & 0xFFFF;
 }
 
-/* TODO: add type parameter */
 float array_real(uint32_t *mem, uint32_t ws, uint8_t type)
 {
-    uint16_t addr;
-    uint8_t start, end;
-    uint32_t mask;
     float out;
+    uint32_t ival;
 
     out = 0;
 
     switch (type) {
         case ARRAY_TYPE_JI:
-            /* TODO: implement */
+            ival = array_value(mem, ws);
+            out = ji_real(ival);
             break;
         case ARRAY_TYPE_GVERT:
             /* TODO: implement */
             break;
         case ARRAY_TYPE_INT:
         default:
-            addr = ws & 0xFFFF;
-            ws >>= 16;
-
-            start = ws & 0x1F;
-            ws >>= 5;
-
-            end = ws & 0x1F;
-            ws >>= 5;
-
-            if (start > end) {
-                uint16_t tmp;
-                tmp = start;
-                start = end;
-                end = tmp;
-            }
-
-            mask = 0xFFFFFFFF;
-            if ((end - start) < 31) {
-                mask = ((1 << (end - start + 1)) - 1) << start;
-            }
-
-            out = (mem[addr] & mask) >> start;
+            ival = array_value(mem, ws);
+            out = (float)ival;
             break;
 
     }
@@ -331,12 +310,15 @@ float array_real(uint32_t *mem, uint32_t ws, uint8_t type)
 
 int array_type_set(uint32_t *mem, uint16_t a, uint8_t type)
 {
-    /* TODO: implement */
-    return 1;
+    /* 5 bits for type, after 3-bit k-len */
+    mem[a] &= ~(31 << (3 + 16));
+    mem[a] |= (type & 31) << (3 + 16);
+    return 0;
 }
 
 int array_type_get(uint32_t *mem, uint16_t a, uint8_t *type)
 {
-    /* TODO: implement */
-    return 1;
+    if (type == NULL) return 1;
+    *type = (mem[a] >> (16 + 3)) & 31;
+    return 0;
 }

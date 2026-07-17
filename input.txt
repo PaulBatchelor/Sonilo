@@ -1038,3 +1038,28 @@ yield the frequency 550, or {\tt 0x226}.
 the multiplier entirely. Throw in the various combinations and make
 sure it works as expected.
 @m #00.00.2D 4.ji 3.ji pwsp #01.00.39 4.ji 3.ji pwsp #00.01.45 4.ji 3.ji pwnl
+@l test_ji_array:
+@c create the context, select cursor 0 and go, switch
+cursors, get the stack address with {\tt cx.0}, and go.
+@m 0cu #0gobicigo 0.cxscgo
+@c make an array (32-bit, 4 values),
+set the type to be JI (2), stash in slot 8
+@c The command {\tt cx.4} is the ocntext slot setter.
+@m 0cu #4.5 am 2 at 8.4.cx
+@c Set some values: ${3 \over 2}69$, ${5 \over 4}69$,
+${1 \over 1}69$, and ${1 \over 2}69$.
+@c The command {\tt cx.5} is the context slot getter.
+@m 1cu
+#03.02.45 4.jiaa #0aa sc8.5.cxsc aw dr
+#05.04.45 4.jiaa #1aa sc8.5.cxsc aw dr
+#01.01.45 4.jiaa #2aa sc8.5.cxsc aw dr
+#01.02.45 4.jiaa #3aa sc8.5.cxsc aw dr
+@c Get the array values as truncated floats.
+The expected values should be {\tt 0x294},
+{\tt 0x226}, {\tt 0x1B8} (440hz), and  {\tt 0xDC}
+(220Hz).
+@m 1cu sp
+#0aa sc8.5.cxsc af appwsp
+#1aa sc8.5.cxsc af appwsp
+#2aa sc8.5.cxsc af appwsp
+#3aa sc8.5.cxsc af appwnl

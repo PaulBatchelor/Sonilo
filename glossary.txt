@@ -75,5 +75,8 @@ ww:send word to word machine.
 cs:perform checksum starting at address w with size sz: s.wwww
 ib:iterator block commands.
 ji:just intonation commands.
-wx: word machine utilities
-cx: context aux functions
+wx:word machine utilities
+cx:context aux functions
+am:make array
+at:set array type
+af:get array value as truncated float

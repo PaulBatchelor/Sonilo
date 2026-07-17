@@ -231,10 +231,36 @@ static void context_aux(sonilo_vm *vm, int mode)
         rw = mem[ctx + slot] >> 16;
         sonilo_vm_rw_set(vm, rw);
     } else if (mode == 4) { /* pop item, WRITE slot to zero page */
-        /* TODO: implement */
+        uint32_t rw;
+        uint8_t slot;
+        uint32_t *mem;
+        uint16_t stk;
+
+        mem = sonilo_vm_mem(vm);
+        stk = CTX_STACK(mem, ctx);
+
+        rw = sonilo_vm_rw_get(vm);
+        slot = rw & 0xF;
+        rw >>= 4;
+        sonilo_vm_rw_set(vm, rw);
+        barray_pop(mem, stk, &rw);
+        mem[ctx + slot] = rw;
 
     } else if (mode == 5) { /* READ slot from zero page, push */
+        uint32_t rw;
+        uint8_t slot;
+        uint32_t *mem;
+        uint16_t stk;
 
+        mem = sonilo_vm_mem(vm);
+        stk = CTX_STACK(mem, ctx);
+
+        rw = sonilo_vm_rw_get(vm);
+        slot = rw & 0xF;
+        rw >>= 4;
+        sonilo_vm_rw_set(vm, rw);
+        rw = mem[ctx + slot];
+        barray_append(mem, stk, rw);
     }
 
     sonilo_vm_err_set(vm, rc);
@@ -1538,6 +1564,72 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "ji")) {
         mw->prev = 0;
         ji_aux(mw->vm);
+        return;
+    }
+    
+    /* am: make array */
+    if (iscmd(mw, c, "am")) {
+        uint32_t rw;
+        uint16_t ctx;
+        uint16_t stk;
+        uint32_t *mem;
+        mw->prev = 0;
+
+        mem = sonilo_vm_mem(mw->vm);
+        ctx = sonilo_vm_cursor_get(mw->vm);
+        stk = CTX_STACK(mem, ctx);
+        rw = sonilo_vm_rw_get(mw->vm);
+        barray_append(mem, stk, rw);
+        array_create(mem, ctx);
+        return;
+    }
+
+    /* at: set array type */
+    if (iscmd(mw, c, "at")) {
+        uint32_t rw;
+        uint16_t ctx;
+        uint16_t stk;
+        uint32_t *mem;
+        uint8_t type;
+        mw->prev = 0;
+
+        mem = sonilo_vm_mem(mw->vm);
+        ctx = sonilo_vm_cursor_get(mw->vm);
+        stk = CTX_STACK(mem, ctx);
+        rw = sonilo_vm_rw_get(mw->vm);
+        type = rw & 0xF;
+        rw >>= 4;
+        sonilo_vm_rw_set(mw->vm, rw);
+
+        barray_pop(mem, stk, &rw);
+        array_type_set(mem, rw, type);
+        barray_append(mem, stk, rw);
+        return;
+    }
+    
+    /* af: get array value as (truncated) float */
+    if (iscmd(mw, c, "af")) {
+        uint16_t stk;
+        uint32_t slice;
+        float f;
+        uint32_t a;
+        uint8_t type;
+        uint32_t *mem;
+
+        mw->prev = 0;
+        mem = sonilo_vm_mem(vm);
+        stk = sonilo_vm_cursor_get(vm);
+        array_read(mem, stk);
+        slice = 0;
+        barray_pop(mem, stk, &slice);
+        barray_pop(mem, stk, &a);
+        a &= 0xFFFF;
+        type = 0;
+        array_type_get(mem, a, &type);
+        f = array_real(mem, slice, type);
+        barray_append(mem, stk, (uint32_t) f);
+
+
         return;
     }
 
