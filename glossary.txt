@@ -80,3 +80,5 @@ cx:context aux functions
 am:make array
 at:set array type
 af:get array value as truncated float
+ir:iter real
+il:append lookup table to iterator

@@ -5,7 +5,9 @@
 #include "array.h"
 #include "context.h"
 
-/* iterator memory layout (TODO)
+/* iterator memory layout
+ * Word 1: state/current index (MSB), type (type + subtype) (LSB)
+ * Word 2: Array address (LSB), Lookup table address (MSB)
  */
 
 /* iterator block memory layout
@@ -311,6 +313,12 @@ int iter_block_next(uint32_t *mem, uint16_t ib, int pos, uint32_t *slice)
 }
 
 int iter_block_iter(uint32_t *mem, uint16_t ib, int pos, uint32_t *iter)
+{
+    /* TODO: implement */
+    return 0;
+}
+
+int iter_lookup(uint32_t *mem, uint16_t i, uint16_t lu)
 {
     /* TODO: implement */
     return 0;

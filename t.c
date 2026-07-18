@@ -1633,6 +1633,20 @@ void parse_memwrite(memwrite *mw, char c)
         return;
     }
 
+    /* ir: get iterator real value */
+    if (iscmd(mw, c, "ir")) {
+        mw->prev = 0;
+        /* TODO: implement */
+        return;
+    }
+    
+    /* il: append lookup table to iterator */
+    if (iscmd(mw, c, "ir")) {
+        mw->prev = 0;
+        /* TODO: implement */
+        return;
+    }
+
     mw->prev = c;
 }
 

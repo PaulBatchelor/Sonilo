@@ -1,6 +1,7 @@
 enum {
     ITER_NONE = 0,
-    ITER_ARRAY
+    ITER_ARRAY = 1,
+    ITER_LOOKUP = 2
 };
 
 enum {
@@ -53,3 +54,6 @@ int iter_block_next(uint32_t *mem, uint16_t ib, int pos, uint32_t *slice);
 
 /* iter: get iterator address */
 int iter_block_iter(uint32_t *mem, uint16_t ib, int pos, uint32_t *iter);
+
+/* lookup: set up an array iterator to have a lookup table */
+int iter_lookup(uint32_t *mem, uint16_t i, uint16_t lu);
