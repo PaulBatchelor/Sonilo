@@ -1167,6 +1167,9 @@ int barray_append(uint32_t *mem, uint16_t a, uint32_t x)
     /* no room left in array */
     if (pos >= 64) return 1;
 
+    /* invalid range */
+    if (pos < 0) return 2;
+
     /* first word in block stores length */
     mem[a + pos + 1] = x;
     mem[a] = pos + 1;
