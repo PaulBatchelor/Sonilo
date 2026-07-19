@@ -147,7 +147,6 @@ float iter_real(uint32_t *mem, uint16_t i)
 
     if (rc) return -1;
 
-
     return array_real(mem, slice, type);
 } 
 

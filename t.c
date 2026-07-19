@@ -245,7 +245,7 @@ static void context_aux(sonilo_vm *vm, int mode)
         sonilo_vm_rw_set(vm, rw);
         barray_pop(mem, stk, &rw);
         mem[ctx + slot] = rw;
-
+        rc = 0;
     } else if (mode == 5) { /* READ slot from zero page, push */
         uint32_t rw;
         uint8_t slot;
@@ -261,6 +261,7 @@ static void context_aux(sonilo_vm *vm, int mode)
         sonilo_vm_rw_set(vm, rw);
         rw = mem[ctx + slot];
         barray_append(mem, stk, rw);
+        rc = 0;
     }
 
     sonilo_vm_err_set(vm, rc);
@@ -351,7 +352,7 @@ void parse_memwrite(memwrite *mw, char c)
         return;
     }
 
-    /* read word from memory to word register */
+    /* rd: read word from memory to word register */
     if (iscmd(mw, c, "rd")) {
         sonilo_vm_read(vm);
         mw->prev = 0;
@@ -1537,6 +1538,7 @@ void parse_memwrite(memwrite *mw, char c)
         rw >>= 4;
         sonilo_vm_rw_set(mw->vm, rw);
         context_aux(mw->vm, mode);
+        return;
     }
 
     /* cs: perform block checksum */
@@ -1633,20 +1635,58 @@ void parse_memwrite(memwrite *mw, char c)
         return;
     }
 
-    /* ir: get iterator real value */
-    if (iscmd(mw, c, "ir")) {
-        mw->prev = 0;
-        /* TODO: implement */
-        return;
-    }
-    
     /* il: append lookup table to iterator */
-    if (iscmd(mw, c, "ir")) {
+    if (iscmd(mw, c, "il")) {
+        uint16_t stk;
+        uint32_t x;
+        uint16_t lookup, iter;
+        int rc;
+        uint32_t *mem;
         mw->prev = 0;
-        /* TODO: implement */
+        stk = sonilo_vm_cursor_get(vm);
+        mem = sonilo_vm_mem(vm);
+
+        /* pop args: (lookup, iter) */
+        rc = barray_pop(mem, stk, &x);
+        if (rc) return;
+        iter = x;
+
+        rc = barray_pop(mem, stk, &x);
+        if (rc) return;
+        lookup = x;
+
+        iter_lookup(mem, iter, lookup);
+
+        rc = barray_append(mem, stk, iter);
+        if (rc) return;
         return;
     }
 
+    /* ir: get iterator real value */
+    if (iscmd(mw, c, "ir")) {
+        uint32_t x;
+        uint16_t iter, stk;
+        int rc;
+        float f;
+        uint32_t *mem;
+
+        mw->prev = 0;
+        stk = sonilo_vm_cursor_get(vm);
+        mem = sonilo_vm_mem(vm);
+
+        /* pop args: (iter) */
+        x = 0;
+        rc = barray_pop(mem, stk, &x);
+        iter = x;
+        if (rc) return;
+
+        f = iter_real(mem, iter);
+
+        rc = barray_append(mem, stk, (uint32_t)f);
+
+        return;
+    }
+    
     mw->prev = c;
 }
 
