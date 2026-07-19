@@ -1,6 +1,7 @@
 use std::io;
 use std::fs;
 use std::collections::BTreeMap;
+use std::env;
 
 #[derive(PartialEq)]
 enum ParserMode {
@@ -18,7 +19,12 @@ enum Object {
 }
 
 fn main() -> io::Result<()> {
-    let filename = "input.txt";
+    let args = env::args();
+    let filename = if args.len() > 1 {
+        args.skip(1).next().expect("OOPS").to_string()
+    } else {
+        "input.txt".to_string()
+    };
     let data = fs::read(filename)?;
     let mut mode;
     let mut buf: Vec<_> = vec![];
