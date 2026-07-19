@@ -1593,3 +1593,19 @@ uint32_t block_cksum(uint32_t *mem, uint16_t w)
 {
     return cksum_range(mem, w, 64);
 }
+
+int barray_dup(uint32_t *mem, uint16_t a)
+{
+    int rc;
+    uint32_t x;
+
+    x = 0;
+    rc = barray_pop(mem, a, &x);
+    if (rc) return 1;
+    rc = barray_append(mem, a, x);
+    if (rc) return 2;
+    rc = barray_append(mem, a, x);
+    if (rc) return 3;
+
+    return 0;
+}

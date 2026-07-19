@@ -4,11 +4,17 @@
 #include "mem.h"
 #include "array.h"
 #include "context.h"
+#include "gv.h"
 
 /* iterator memory layout
  * Word 1: state/current index (MSB), type (type + subtype) (LSB)
  * Word 2: Array address (LSB), Lookup table address (MSB)
  */
+
+#define ITER_TYPE(M, I) (M[I] & 0xFF)
+#define ITER_ARRAY_LOC(I) (I + 1)
+#define ITER_LOOKUP_LOC(I) (I + 1)
+#define ITER_GET_ARRAY(M, I) M[ITER_ARRAY_LOC(I)]
 
 /* iterator block memory layout
  *
@@ -43,8 +49,6 @@
 #define ITBLK_NXTSLICE(M, I) M[I + 3]
 #define ITBLK_ITER_LOC(I) (I + 2)
 #define ITBLK_ITER(M, I) M[ITBLK_ITER_LOC(I)] >> 16;
-
-#define ITER_ARRAY(M, I) M[I + 1]
 
 
 int iter_alloc(uint32_t *mem, uint16_t ctx, uint16_t *i)
@@ -86,6 +90,39 @@ int iter_array(uint32_t *mem, uint16_t i, uint16_t a)
     return 0;
 }
 
+
+static uint32_t array_next(uint32_t *mem, uint16_t i, uint16_t type)
+{
+    if (((type >> 8) & 0xFF) == ITER_ARRAY_LOOP) {
+        uint16_t idx;
+        uint32_t slice;
+        int rc;
+        uint16_t a;
+
+        /* get slice of current index */
+        idx = mem[i] >> 16;
+        a = mem[i + 1] & 0xFFFF;
+
+        slice = 0;
+        rc = array_read_direct(mem,
+                a,
+                idx,
+                &slice);
+
+        if (rc) return 0;
+
+        /* update index, wraparound if needed */
+        idx++;
+        idx %= array_length(mem, a);
+        mem[i] &= 0xFFFF;
+        mem[i] |= (idx << 16);
+
+        return slice;
+    }
+
+    return 0;
+}
+
 /* next: get the next value, returned as a slice
  * dereference it with array_value() */
 uint32_t iter_next(uint32_t *mem, uint16_t i)
@@ -100,6 +137,7 @@ uint32_t iter_next(uint32_t *mem, uint16_t i)
 
     /* handle ARRAY/LOOP */
     if ((type & 0xFF) == ITER_ARRAY) {
+#if 0
         if (((type >> 8) & 0xFF) == ITER_ARRAY_LOOP) {
             uint16_t idx;
             uint32_t slice;
@@ -126,6 +164,37 @@ uint32_t iter_next(uint32_t *mem, uint16_t i)
 
             return slice;
         }
+#endif
+        return array_next(mem, i, type);
+    } else if ((type & 0xFF) == ITER_LOOKUP) {
+        uint32_t slice, idx;
+        uint16_t lu;
+        int rc;
+        uint8_t at;
+        /* iterate through array and get index */
+        slice = array_next(mem, i, type);
+        idx = array_value(mem, slice);
+
+        /* use index with lookup table */
+        /* special case: if array is gesture vertex, only
+         * use value portion */
+        at = 0;
+        rc = array_type_get(mem, mem[ITER_ARRAY_LOC(i)] & 0xFFFF, &at);
+        if (rc) return 0;
+
+        if (at == ARRAY_TYPE_GVERT) {
+            idx = GV_VAL(idx);
+        }
+
+        lu = mem[ITER_LOOKUP_LOC(i)] >> 16;
+        rc = array_read_direct(mem,
+                lu,
+                idx,
+                &slice);
+
+
+        if (rc) return 0;
+        return slice;
     }
 
     return 0;
@@ -140,9 +209,19 @@ float iter_real(uint32_t *mem, uint16_t i)
 
     slice = iter_next(mem, i);
 
+    /* determine which array to use based on iterator type */
+    type = ITER_TYPE(mem, i);
+
+    if (type == ITER_LOOKUP) {
+        /* use lookup array (MSB) */
+        a = ITER_GET_ARRAY(mem, i) >> 16;
+    } else {
+        /* use main array (LSB) */
+        a = ITER_GET_ARRAY(mem, i) & 0xFFFF;
+    }
+
     /* determine array type so it knows how to convert to real */
     type = 0;
-    a = ITER_ARRAY(mem, i);
     rc = array_type_get(mem, a, &type);
 
     if (rc) return -1;
@@ -319,6 +398,12 @@ int iter_block_iter(uint32_t *mem, uint16_t ib, int pos, uint32_t *iter)
 
 int iter_lookup(uint32_t *mem, uint16_t i, uint16_t lu)
 {
-    /* TODO: implement */
+    /* set the iterator type to be a lookup */
+    mem[i] &= ~0xFF;
+    mem[i] |= ITER_LOOKUP;
+
+    /* store the lookup table (MSB)*/
+    mem[ITER_LOOKUP_LOC(i)] &= 0xFFFF;
+    mem[ITER_LOOKUP_LOC(i)] |= lu << 16;
     return 0;
 }

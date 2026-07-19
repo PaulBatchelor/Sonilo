@@ -4,6 +4,7 @@
 #include "mem.h"
 #include "context.h"
 #include "ji.h"
+#include "gv.h"
 
 /* array memory layout:
  * Header(1 word):
@@ -294,14 +295,14 @@ float array_real(uint32_t *mem, uint32_t ws, uint8_t type)
             out = ji_real(ival);
             break;
         case ARRAY_TYPE_GVERT:
-            /* TODO: implement */
+            ival = array_value(mem, ws);
+            out = GV_VAL(ival);
             break;
         case ARRAY_TYPE_INT:
         default:
             ival = array_value(mem, ws);
             out = (float)ival;
             break;
-
     }
 
     

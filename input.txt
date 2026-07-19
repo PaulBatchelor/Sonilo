@@ -1063,3 +1063,36 @@ The expected values should be {\tt 0x294},
 #1aa sc8.5.cxsc af appwsp
 #2aa sc8.5.cxsc af appwsp
 #3aa sc8.5.cxsc af appwnl
+@l test_ji_iter:
+@c This test creates an indexed iterator from a Gesture path
+and a lookup table containing JI values.
+@c Similar to before. Set up the context and cursors.
+@m 0cu #0gobicigo 0.cxscgo
+@c Create the look-up table: an JI array of 3 values.
+@c The look-up table will be stored in slot 8.
+@m 0cu #3.5 am 2 at #8.4.cx
+@c Set the values: ${3 \over 2}69$, ${5 \over 4}69$, ${1 \over 2}69$.
+@m 1cu
+#03.02.45 4.jiaa #05.04.45 4.jiaa #01.02.45 4.jiaa
+sc8.5.cxsc
+#2aaswaw #1aaswaw #0aaswawdr
+@c Create the gesture path: an array of 4 32-bit values.
+@c The path will be stored in slot 9.
+@m 0cu #4.5.am 1 at #9.4.cx
+@c Set the sequence to be 2,0,1,0, which refer to
+the indices of the lookup table.
+@c Note: the packed format of a gesture vertex is VV.NN.DD.CC for (V)alue,
+(N)umerator, (D)enominator, and (C)urve.
+@m 1cu
+#02.01.01.00aa #00.01.01.00aa #01.01.01.00aa #00.01.01.00aa
+sc9.5.cxsc
+#3aaswaw #2aaswaw #1aaswaw #0aaswawdr
+@c Create an array iterator from the path, and then
+attach a lookup table to it.
+@m 0cu #8.5.cx #9.5.cx rcscaa ia il 0cu #A.4.cx
+@c Call next on the iterator 4 times, and use the iter real
+command to write a truncated version of the value to RW.
+Print the words.
+@c The expected values should be {\tt 0xDC}, {\tt 0x294},
+{\tt 0x226}, {\tt 0x294}.
+@m 0cu #A.5.cx 1cu sp dpirappwsp dpirappwsp dpirappwsp irappwnl

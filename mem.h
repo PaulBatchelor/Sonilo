@@ -24,6 +24,7 @@ int barray_pop(uint32_t *mem, uint16_t a, uint32_t *x);
 int barray_peak(uint32_t *mem, uint16_t a, uint32_t *x);
 int barray_swap(uint32_t *mem, uint16_t a);
 int barray_drop(uint32_t *mem, uint16_t a);
+int barray_dup(uint32_t *mem, uint16_t a);
 
 /* buddy memory allocator */
 void mem_init(uint32_t *mem,

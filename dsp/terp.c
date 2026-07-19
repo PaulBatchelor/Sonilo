@@ -6,8 +6,7 @@
 #include "ugen.h"
 #include "iter.h"
 #include "array.h"
-
-#define GV_VAL(X) ((X >> 24) & 0xFF)
+#include "gv.h"
 
 typedef struct dsp_terp dsp_terp;
 

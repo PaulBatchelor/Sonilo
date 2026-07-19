@@ -230,6 +230,7 @@ static void context_aux(sonilo_vm *vm, int mode)
         slot = rw & 0xF;
         rw = mem[ctx + slot] >> 16;
         sonilo_vm_rw_set(vm, rw);
+        rc = 0;
     } else if (mode == 4) { /* pop item, WRITE slot to zero page */
         uint32_t rw;
         uint8_t slot;
@@ -1525,6 +1526,7 @@ void parse_memwrite(memwrite *mw, char c)
         rw >>= 4;
         sonilo_vm_rw_set(mw->vm, rw);
         sonilo_mem_aux(mw->vm, mode);
+        return;
     }
 
     /* cx: context aux functions */
@@ -1631,7 +1633,6 @@ void parse_memwrite(memwrite *mw, char c)
         f = array_real(mem, slice, type);
         barray_append(mem, stk, (uint32_t) f);
 
-
         return;
     }
 
@@ -1677,13 +1678,24 @@ void parse_memwrite(memwrite *mw, char c)
         /* pop args: (iter) */
         x = 0;
         rc = barray_pop(mem, stk, &x);
-        iter = x;
         if (rc) return;
+        iter = x;
 
         f = iter_real(mem, iter);
 
         rc = barray_append(mem, stk, (uint32_t)f);
 
+        return;
+    }
+
+    /* dp: dup stack operation */
+    if (iscmd(mw, c, "dp")) {
+        uint16_t cur;
+        uint32_t err;
+        mw->prev = 0;
+        cur = sonilo_vm_cursor_get(vm);
+        err = barray_dup(sonilo_vm_mem(vm), cur);
+        sonilo_vm_err_set(vm, err);
         return;
     }
     

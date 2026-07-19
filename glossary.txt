@@ -82,3 +82,4 @@ at:set array type
 af:get array value as truncated float
 ir:iter real
 il:append lookup table to iterator
+dp:dup stack operation
