@@ -174,6 +174,31 @@ static uint32_t lpf_render(uint32_t *mem, uint16_t ugen)
     return 0;
 }
 
+static uint32_t hpf_render(uint32_t *mem, uint16_t ugen)
+{
+    butterworth *bw;
+    uint32_t *ports;
+    sonilo_port in, freq, out;
+    int n;
+
+    bw = (butterworth *)ugen_state(mem, ugen);
+    ports = ugen_ports(mem, ugen);
+    in = sonilo_port_from_word(mem, ports[0]);
+    freq = sonilo_port_from_word(mem, ports[1]);
+    out = sonilo_port_from_word(mem, ports[2]);
+    
+    for (n = 0; n < UGEN_BLKSZ; n++) {
+        float f, i, o;
+        i = sonilo_port_read(&in, n);
+        f = sonilo_port_read(&freq, n);
+        bw->freq = f;
+        o = buthp_tick(bw, i);
+        sonilo_port_write(&out, n, o);
+    }
+
+    return 0;
+}
+
 int ugen_butterworth(sonilo *s)
 {
     uint16_t key;
@@ -184,6 +209,13 @@ int ugen_butterworth(sonilo *s)
     rc = sonilo_command(s, key, lpf_init);
     if (rc) return 1;
     rc = sonilo_command(s, sonilo_alt(key), lpf_render);
+    if (rc) return 2;
+    
+    key = sonilo_key("HPF");
+
+    rc = sonilo_command(s, key, lpf_init);
+    if (rc) return 1;
+    rc = sonilo_command(s, sonilo_alt(key), hpf_render);
     if (rc) return 2;
 
     return 0;

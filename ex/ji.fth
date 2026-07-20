@@ -1,4 +1,4 @@
-#65 'base var-n
+#64 'base var-n
 :ji #8 shift-left swap #18 shift-left or @base or arr-append ;
 :gl1 #3 ;
 :gl0 #2 ;
@@ -29,6 +29,7 @@ swap #24 shift-left or arr-append ;
 :arr-gv dup son:push #1 arr-type son:pop ;
 :arr-ji dup son:push #2 arr-type son:pop ;
 :terpx #1 'TRP ugen-bits ;
+:hpf 'HPF ugen ;
 
 son:patch-setup
 (1:1)
@@ -66,28 +67,33 @@ re qn gl3 vx
 
 ibnew son:pop son:rw-get 'ib var-n
 
-#23 c clock @ji-seq iter @ib son:push rephasori
+#19 c clock @ji-seq iter @ib son:push rephasori
 
 @ib son:push curvi
 @ji-scl son:push @ib son:push terpx
 
+bdup
 saw
+bswap #2 c mul saw #0.300 cf mul add #0.700 cf mul
 
-#500 c lpf
+#800 c lpf
+#300 c hpf
 
-#53 #12 n:sub c mtof saw
-#53 #24 n:sub c mtof saw
-add
-#300 c lpf
+@base #24 n:sub c mtof saw
+@base #36 n:sub c mtof saw
+add #0.800 cf mul
+#400 c lpf
 add
 #0.350 cf mul
 
-bdup bdup #0.950 cf #8000 c bigverb bdrop #0.200 cf mul
+bdup
+#400 c hpf
+bdup #0.970 cf #9000 c bigverb bdrop #100 c hpf #0.200 cf mul
 bswap #0.600 cf mul add
 
 sink #0 tout
 
-#0 topen #40 render #0 tclose
+#0 topen #65 render #0 tclose
 
 son:ctx-destroy
 bye
