@@ -234,7 +234,7 @@ uint32_t iter_get(uint32_t *mem, uint16_t i)
             idx = GV_VAL(idx);
         }
         /* set array to be look-up */
-        a  = ITER_GET_ARRAY(mem, i) >> 16;
+        a = ITER_GET_ARRAY(mem, i) >> 16;
     }
 
     slice = 0;
@@ -407,4 +407,9 @@ int iter_lookup(uint32_t *mem, uint16_t i, uint16_t lu)
     mem[ITER_LOOKUP_LOC(i)] &= 0xFFFF;
     mem[ITER_LOOKUP_LOC(i)] |= lu << 16;
     return 0;
+}
+
+uint16_t iter_get_array(uint32_t *mem, uint16_t i)
+{
+    return ITER_GET_ARRAY(mem, i) & 0xFFFF;
 }

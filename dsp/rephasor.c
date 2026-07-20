@@ -56,12 +56,6 @@ static void sk_rephasor_init(sk_rephasor *rp)
 
 static void sk_rephasor_scale(sk_rephasor *rp, float scale)
 {
-#if 0
-    if (scale != rp->s) {
-        rp->s = scale;
-        rp->si = 1.0 / scale;
-    }
-#endif
     rp->s = scale;
     rp->si = 1.0 / scale;
 }

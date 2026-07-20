@@ -59,3 +59,5 @@ int iter_block_iter(uint32_t *mem, uint16_t ib, uint16_t *iter);
 int iter_lookup(uint32_t *mem, uint16_t i, uint16_t lu);
 
 float iter_real_slice(uint32_t *mem, uint16_t i, uint32_t slice);
+
+uint16_t iter_get_array(uint32_t *mem, uint16_t i);
