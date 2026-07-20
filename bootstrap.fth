@@ -118,6 +118,7 @@ new #10 set
 8 :scale 'SCL ugen ;
 9 :warp 'WRP ugen ;
 10 :terp 'TRP ugen ;
+11 :div 'DIV ugen ;
 save
 
 bye

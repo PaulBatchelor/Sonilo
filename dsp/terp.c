@@ -95,10 +95,16 @@ static uint32_t render(uint32_t *mem, uint16_t ugen)
         iter_block_trig(mem, trp->ib, n, &slice);
 
         if (slice) {
+            uint16_t it;
+            it = 0;
+            iter_block_iter(mem, trp->ib, &it);
             iter_block_slice(mem, trp->ib, n, &slice);
-            trp->A = GV_VAL(array_value(mem, slice));
+            /* trp->A = GV_VAL(array_value(mem, slice)); */
+            trp->A = iter_real_slice(mem, it, slice);
             iter_block_next(mem, trp->ib, n, &slice);
-            trp->B = GV_VAL(array_value(mem, slice));
+            /* trp->B = GV_VAL(array_value(mem, slice)); */
+            trp->B = iter_real_slice(mem, it, slice);
+            printf("A: %g, B: %g\n", trp->A, trp->B);
         }
 
         out = ((1.0 - in)*trp->A) + in*trp->B;

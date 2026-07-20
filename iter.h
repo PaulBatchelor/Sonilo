@@ -53,7 +53,9 @@ int iter_block_slice(uint32_t *mem, uint16_t ib, int pos, uint32_t *slice);
 int iter_block_next(uint32_t *mem, uint16_t ib, int pos, uint32_t *slice);
 
 /* iter: get iterator address */
-int iter_block_iter(uint32_t *mem, uint16_t ib, int pos, uint32_t *iter);
+int iter_block_iter(uint32_t *mem, uint16_t ib, uint16_t *iter);
 
 /* lookup: set up an array iterator to have a lookup table */
 int iter_lookup(uint32_t *mem, uint16_t i, uint16_t lu);
+
+float iter_real_slice(uint32_t *mem, uint16_t i, uint32_t slice);

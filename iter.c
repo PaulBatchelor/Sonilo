@@ -137,34 +137,6 @@ uint32_t iter_next(uint32_t *mem, uint16_t i)
 
     /* handle ARRAY/LOOP */
     if ((type & 0xFF) == ITER_ARRAY) {
-#if 0
-        if (((type >> 8) & 0xFF) == ITER_ARRAY_LOOP) {
-            uint16_t idx;
-            uint32_t slice;
-            int rc;
-            uint16_t a;
-
-            /* get slice of current index */
-            idx = mem[i] >> 16;
-            a = mem[i + 1] & 0xFFFF;
-
-            slice = 0;
-            rc = array_read_direct(mem,
-                    a,
-                    idx,
-                    &slice);
-
-            if (rc) return 0;
-
-            /* update index, wraparound if needed */
-            idx++;
-            idx %= array_length(mem, a);
-            mem[i] &= 0xFFFF;
-            mem[i] |= (idx << 16);
-
-            return slice;
-        }
-#endif
         return array_next(mem, i, type);
     } else if ((type & 0xFF) == ITER_LOOKUP) {
         uint32_t slice, idx;
@@ -192,7 +164,6 @@ uint32_t iter_next(uint32_t *mem, uint16_t i)
                 idx,
                 &slice);
 
-
         if (rc) return 0;
         return slice;
     }
@@ -200,14 +171,11 @@ uint32_t iter_next(uint32_t *mem, uint16_t i)
     return 0;
 }
 
-float iter_real(uint32_t *mem, uint16_t i)
+float iter_real_slice(uint32_t *mem, uint16_t i, uint32_t slice)
 {
-    uint32_t slice;
     uint8_t type;
     uint16_t a;
     int rc;
-
-    slice = iter_next(mem, i);
 
     /* determine which array to use based on iterator type */
     type = ITER_TYPE(mem, i);
@@ -227,15 +195,47 @@ float iter_real(uint32_t *mem, uint16_t i)
     if (rc) return -1;
 
     return array_real(mem, slice, type);
+}
+
+float iter_real(uint32_t *mem, uint16_t i)
+{
+    uint32_t slice;
+
+    slice = iter_next(mem, i);
+
+    /* TODO: consolide functions */
+    return iter_real_slice(mem, i, slice);
 } 
 
 uint32_t iter_get(uint32_t *mem, uint16_t i)
 {
-    uint16_t idx, a;
+    uint32_t idx, a;
     uint32_t slice;
+    uint8_t type;
 
     idx = mem[i] >> 16;
     a = mem[i + 1] & 0xFFFF;
+    /* determine which array to use based on iterator type */
+    type = ITER_TYPE(mem, i);
+
+    if (type == ITER_LOOKUP) {
+        uint8_t at;
+        /* first, retrieve the index from the main array */
+        slice = 0;
+        array_read_direct(mem,
+                a,
+                idx,
+                &slice);
+        idx = array_value(mem, slice);
+        at = 0;
+        array_type_get(mem, a, &at);
+        /* if vertext, only extract value component */
+        if (at == ARRAY_TYPE_GVERT) {
+            idx = GV_VAL(idx);
+        }
+        /* set array to be look-up */
+        a  = ITER_GET_ARRAY(mem, i) >> 16;
+    }
 
     slice = 0;
     array_read_direct(mem,
@@ -390,9 +390,10 @@ int iter_block_next(uint32_t *mem, uint16_t ib, int pos, uint32_t *slice)
     return 0;
 }
 
-int iter_block_iter(uint32_t *mem, uint16_t ib, int pos, uint32_t *iter)
+int iter_block_iter(uint32_t *mem, uint16_t ib, uint16_t *iter)
 {
-    /* TODO: implement */
+    if (iter == NULL) return 1;
+    *iter = mem[ITBLK_ITER_LOC(ib)] >> 16;
     return 0;
 }
 

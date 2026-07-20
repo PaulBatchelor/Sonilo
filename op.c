@@ -40,6 +40,18 @@ static int a_array(sonilo_vm *vm, uint8_t data)
         case 1:
             rc = array_write(mem, stk);
             break;
+        case 2: { /* set array type */ 
+            uint32_t rw;
+            uint32_t a;
+            rw = sonilo_vm_rw_get(vm);
+            a = 0;
+            rc = barray_pop(mem, stk, &a);
+            if (rc) { rc = 1;  break; }
+            array_type_set(mem, a, rw);
+            rc = barray_append(mem, stk, a);
+            if (rc) { rc = 2; break; }
+            break;
+        }
         default:
             rc = -1;
     }
@@ -73,16 +85,28 @@ static int a_iter(sonilo_vm *vm, uint8_t data)
             rc = barray_append(mem, stk, iter);
             if (rc) { rc = 5; break; }
             break;
-         case 1: {
+         case 1:
             rc = 0;
-            /* TODO: create iter block */
             rc = iter_block_new(mem, ctx, &iter);
             if (rc) { rc = 1; break; }
             rc = barray_append(mem, stk, iter);
             if (rc) { rc = 2; break; }
 
             break;
-         }
+         case 2: /* add lookup to array iterator */
+            rc = barray_pop(mem, stk, &val);
+            if (rc) { rc = 1; break; }
+            arr = val;
+            rc = barray_pop(mem, stk, &val);
+            if (rc) { rc = 2; break; }
+            iter = val;
+            if (rc) { rc = 3; break; }
+            rc = iter_lookup(mem, iter, arr);
+            if (rc) { rc = 4; break; }
+            rc = barray_append(mem, stk, iter);
+            if (rc) { rc = 5; break; }
+
+            break;
          default:
             rc = -1;
     }
