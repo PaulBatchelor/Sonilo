@@ -4,6 +4,7 @@
 #define SLOT_UGEN_BLOCK 3
 #define SLOT_UNIVERSE_FREE 4 /* LSB */
 #define SLOT_UGEN_BITS 4 /* MSB */
+#define SLOT_STAGING_BLOCK 5 /* LSB */
 
 #define CTX_STACK(M,C) (M[C + 1] & 0xFFFF)
 #define CTX_PARAM_STACK(M,C) (M[C + SLOT_PSTACK] >> 16)
@@ -30,3 +31,20 @@ int context_ublock_head_get(uint32_t *mem,
 int context_ublock_head_set(uint32_t *mem,
     uint16_t ctx,
     uint16_t head);
+
+/* staging block context functions */
+
+/* init: initialize sblock array of size 2^k */
+int context_sblock_init(uint32_t *mem,
+    uint16_t ctx,
+    uint16_t k);
+
+/* append: append value x to sblock */
+int context_sblock_append(uint32_t *mem,
+    uint16_t ctx,
+    uint32_t x);
+
+/* copy: copy contents to newly allocated array */
+int context_sblock_copy(uint32_t *mem,
+    uint16_t ctx,
+    uint32_t x);

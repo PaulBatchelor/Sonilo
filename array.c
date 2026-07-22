@@ -323,3 +323,21 @@ int array_type_get(uint32_t *mem, uint16_t a, uint8_t *type)
     *type = (mem[a] >> (16 + 3)) & 31;
     return 0;
 }
+
+int staging_block_init(uint32_t *mem, uint16_t b, uint8_t k)
+{
+    /* TODO: implement */
+    return 1;
+}
+
+int staging_block_append(uint32_t *mem, uint16_t b, uint32_t x)
+{
+    /* TODO: implement */
+    return 1;
+}
+
+int staging_block_copy(uint32_t *mem, uint16_t b, uint16_t ctx, uint16_t *a)
+{
+    /* TODO: implement */
+    return 1;
+}

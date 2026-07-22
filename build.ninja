@@ -24,6 +24,7 @@ rule sh
 
 build sonilo.o: c89 sonilo.c
 build t.o: c89 t.c
+build mw.o: c89 mw.c
 build mem.o: c89 mem.c
 build ins.o: c89 ins.c
 build ugen.o: c89 ugen.c
@@ -101,7 +102,7 @@ build ex/sines.o: c89 ex/sines.c
 build ex/seq.o: c89 ex/seq.c
 build ex/opseq.o: c89 ex/opseq.c
 
-build t: link t.o | libsonilo.a
+build t: link t.o mw.o | libsonilo.a
 build ex/hello_ugen: link ex/hello_ugen.o | libsonilo.a
 build ex/sines: link ex/sines.o | libsonilo.a
 build ex/seq: link ex/seq.o | libsonilo.a

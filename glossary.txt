@@ -37,9 +37,7 @@ jb:jump backward. read last 2 nibbles, subtract it from cursor.
 sc:swap cursor.
 pa:pack address. the LSB of rw and cursor get turned into (MSB,LSB)=(W,C)
 bb:allocate and mark. RW should be SSSS.BBBB where S is bitset and B is blockstack.
-sm:TODO. make slot from block. args: block addr, blocklist addr
 sx:signal utility. various tools related to ugens and test signal generators.
-ss:TODO. select slot.
 ex:execute command. DDDD.CCCC where D is data, C is command code.
 bx:execute a block of commands, stored as an array of words.
 ri:refcount init.
@@ -83,3 +81,6 @@ af:get array value as truncated float
 ir:iter real
 il:append lookup table to iterator
 dp:dup stack operation
+sb.0:staging block init
+sb.1:staging block append
+sb.2:staging block copy

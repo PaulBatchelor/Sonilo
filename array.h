@@ -28,3 +28,12 @@ uint16_t array_length(uint32_t *mem, uint16_t a);
 /* type flags for array */
 int array_type_set(uint32_t *mem, uint16_t a, uint8_t type);
 int array_type_get(uint32_t *mem, uint16_t a, uint8_t *type);
+
+/* staging block */
+
+/* init(b, k): initialize staging block b as array with word size 2^k */
+int staging_block_init(uint32_t *mem, uint16_t b, uint8_t k);
+/* append(b, x): append value x to array */
+int staging_block_append(uint32_t *mem, uint16_t b, uint32_t x);
+/* copy(b, ctx): copy contents of staging block to an allocated array a */
+int staging_block_copy(uint32_t *mem, uint16_t b, uint16_t ctx, uint16_t *a);
