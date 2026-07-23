@@ -119,6 +119,7 @@ new #10 set
 9 :warp 'WRP ugen ;
 10 :terp 'TRP ugen ;
 11 :div 'DIV ugen ;
+12 :hpf 'HPF ugen ;
 save
 
 bye

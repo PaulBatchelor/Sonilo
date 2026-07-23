@@ -356,6 +356,7 @@ int staging_block_copy(uint32_t *mem, uint16_t b, uint16_t ctx, uint16_t *pa)
     uint16_t len, i;
     int rc;
     uint16_t a;
+    uint8_t at;
     uint16_t stk;
     uint8_t wsz;
     uint32_t x;
@@ -379,6 +380,12 @@ int staging_block_copy(uint32_t *mem, uint16_t b, uint16_t ctx, uint16_t *pa)
     rc = barray_pop(mem, stk, &x);
     if (rc) return 3;
     a = x;
+
+    at = 0;
+    rc = array_type_get(mem, b, &at);
+    if (rc) return 4;
+    rc = array_type_set(mem, a, at);
+    if (rc) return 5;
 
     for (i = 0; i < len; i++) {
         uint32_t x;

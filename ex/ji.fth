@@ -29,7 +29,6 @@ swap #24 shift-left or arr-append ;
 :arr-gv dup son:push #1 arr-type son:pop ;
 :arr-ji dup son:push #2 arr-type son:pop ;
 :terpx #1 'TRP ugen-bits ;
-:hpf 'HPF ugen ;
 
 son:patch-setup
 (1:1)
