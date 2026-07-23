@@ -1,2 +1,2 @@
 > ilo.blocks
-./sonilo ilo.blocks < bootstrap.fth
+./sonilo ilo.blocks < core.fth

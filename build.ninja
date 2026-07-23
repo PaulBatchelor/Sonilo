@@ -110,7 +110,7 @@ build ex/opseq: link ex/opseq.o | libsonilo.a
 build sonilo: link konilo/ilo.o | libsonilo.a
 build ex/seq.fth: unu ex/seq.unu | konilo/unu
 build ilo.rom: pali konilo/konilo.pali | konilo/pali
-build ilo.blocks: sh mkblocks.sh | sonilo bootstrap.fth
+build ilo.blocks: sh mkblocks.sh | sonilo core.fth
 
 build konilo/unu: link konilo/unu.o
     libs=
