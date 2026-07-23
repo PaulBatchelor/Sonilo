@@ -24,6 +24,8 @@ float array_real(uint32_t *mem, uint32_t ws, uint8_t type);
 
 /* get length of array */
 uint16_t array_length(uint32_t *mem, uint16_t a);
+/* array wordsize */
+uint8_t array_wordsize(uint32_t *mem, uint16_t a);
 
 /* type flags for array */
 int array_type_set(uint32_t *mem, uint16_t a, uint8_t type);

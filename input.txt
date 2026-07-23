@@ -1096,3 +1096,32 @@ Print the words.
 @c The expected values should be {\tt 0xDC}, {\tt 0x294},
 {\tt 0x226}, {\tt 0x294}.
 @m 0cu #A.5.cx 1cu sp dpirappwsp dpirappwsp dpirappwsp irappwnl
+@l test_sblock:
+@c A {\bf staging block} is an intermediate chunk of memory used to
+populate array data structures. It makes it possible to construct
+arrays without knowing the size ahead of time.
+@c There are three main commands to be tested here: init, append,
+and copy. Init will configure the staging block to be an array of
+a particular word size. Append will add values to that array. Copy
+will copy the contents of that array to a freshly allocated array.
+@c To begin, set up a context.
+@m 0cu #0gobicigo 0.cxscgo
+@c Initalize the staging block to hold 8-bit words $k = 3$.
+@c This is done using the staging block {\tt sb} utility, mode 0,
+or {\tt sb.0}.
+Store the address to slot 8.
+@m 0cu 3.0.sb 8.4.cx
+@c Confirm the length of the array is 0 using {\tt az}. This
+command needs the array to be at the cursor, which will be set
+using cursor 1.
+@m 0cu 8.5.cx scapgo az sppw 0cu 0.cxscgo
+@c Append three values using {\tt sb.1}. Then,
+confirm the length of the array.
+@c To make ergonomics easier, this will utilize a new command {\tt ca}
+to append a value to the stack in the context address.
+@m 0cu #Aca 1.sb #Bca 1.sb #Cca 1.sb 8.5.cx sc apgo az sppw sc 0.cxscgo
+@c Test the copy command using {\tt sb.2}, and store it in slot 9.
+Confirm the length and contents of the new array.
+@m 0cu 2.sb 9.4.cx
+9.5.cx sc apgo az sppw sc 0.cxscgo
+0cu 9.5.cx sc #0aa sw arapav sppw #1aa sw arapav sppw #2aa sw arapav dr sppwnl

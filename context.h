@@ -35,16 +35,13 @@ int context_ublock_head_set(uint32_t *mem,
 /* staging block context functions */
 
 /* init: initialize sblock array of size 2^k */
-int context_sblock_init(uint32_t *mem,
-    uint16_t ctx,
-    uint16_t k);
+int context_sblock_init(uint32_t *mem, uint16_t ctx, uint8_t k);
 
-/* append: append value x to sblock */
-int context_sblock_append(uint32_t *mem,
-    uint16_t ctx,
-    uint32_t x);
+/* append: append value sblock */
+int context_sblock_append(uint32_t *mem, uint16_t ctx);
 
 /* copy: copy contents to newly allocated array */
-int context_sblock_copy(uint32_t *mem,
-    uint16_t ctx,
-    uint32_t x);
+int context_sblock_copy(uint32_t *mem, uint16_t ctx);
+
+/* setup: configure and allocate the sblock */
+int context_sblock_setup(uint32_t *mem, uint16_t ctx);

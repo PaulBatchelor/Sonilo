@@ -231,7 +231,30 @@ static void context_aux(sonilo_vm *vm, int mode)
 
 static void staging_block_aux(sonilo_vm *vm)
 {
-    /* TODO: implement */
+    uint8_t mode;
+    uint32_t rw, *mem;
+    uint16_t ctx;
+
+    rw = sonilo_vm_rw_get(vm);
+    ctx = sonilo_vm_cursor_get(vm);
+    mem = sonilo_vm_mem(vm);
+
+    mode = rw & 0xF;
+    rw >>= 4;
+
+    switch (mode) {
+        case 0: /* init */
+            context_sblock_init(mem, ctx, rw & 0xF);
+            break;
+        case 1: /* append */
+            context_sblock_append(mem, ctx);
+            break;
+        case 2: /* copy */
+            context_sblock_copy(mem, ctx);
+            break;
+    }
+
+    sonilo_vm_rw_set(vm, rw);
 }
 
 void parse_memwrite(memwrite *mw, char c)
@@ -719,7 +742,7 @@ void parse_memwrite(memwrite *mw, char c)
         return;
     }
 
-    /* xr: */
+    /* xr: read bits */
 
     if (iscmd(mw, c, "xr")) {
         uint32_t rw;
@@ -1198,6 +1221,8 @@ void parse_memwrite(memwrite *mw, char c)
         int rc;
         uint16_t cur;
 
+        /* TODO: use sonilo_ctx_init instead of this ad-hoc setup */
+
         mw->prev = 0;
         cur = sonilo_vm_cursor_get(vm);
         ctx = context_init(sonilo_vm_mem(vm), cur);
@@ -1212,6 +1237,13 @@ void parse_memwrite(memwrite *mw, char c)
 
         rc = context_pstack_setup(sonilo_vm_mem(vm), ctx);
 
+        if (rc) {
+            sonilo_vm_err_set(vm, 2);
+            return;
+        }
+
+        /* set up staging block */
+        rc = context_sblock_setup(sonilo_vm_mem(vm), ctx);
         if (rc) {
             sonilo_vm_err_set(vm, 2);
             return;
@@ -1665,7 +1697,33 @@ void parse_memwrite(memwrite *mw, char c)
     if (iscmd(mw, c, "sb")) {
         mw->prev = 0;
         staging_block_aux(mw->vm);
-        /* TODO: implement */
+        return;
+    }
+
+    /* ca: append RW value to context stack */
+    if (iscmd(mw, c, "ca")) {
+        uint16_t ctx, stk;
+        uint32_t *mem;
+        uint32_t rw;
+
+        ctx = sonilo_vm_cursor_get(mw->vm);
+        rw = sonilo_vm_rw_get(mw->vm);
+        mem = sonilo_vm_mem(mw->vm);
+        stk = CTX_STACK(mem, ctx);
+        barray_append(mem, stk, rw);
+        mw->prev = 0;
+        return;
+    }
+
+    /* az: get array size */
+    if (iscmd(mw, c, "az")) {
+        uint16_t a;
+        uint32_t rw;
+
+        mw->prev = 0;
+        a = sonilo_vm_cursor_get(mw->vm);
+        rw = array_length(sonilo_vm_mem(mw->vm), a);
+        sonilo_vm_rw_set(mw->vm, rw);
         return;
     }
     

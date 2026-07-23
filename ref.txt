@@ -98,3 +98,4 @@ test_ugen_upperbits: bead
 test_ji: 45 3 2 294 226 6e dc 1b8
 test_ji_array: 294 226 1b8 dc
 test_ji_iter: dc 294 226 294
+test_sblock: 0 3 3 a b c

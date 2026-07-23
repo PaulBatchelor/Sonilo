@@ -18,7 +18,7 @@ mf:frees memory starting a word address. if word does not belong to block, nothi
 gb:go to block. given a block address, sets the cursor to the corresponding word address
 pw:print word
 ai:initialize array
-al:get array length
+al:get block array length
 sp:print space
 aa:append word to array
 ap:pop word from array
@@ -84,3 +84,5 @@ dp:dup stack operation
 sb.0:staging block init
 sb.1:staging block append
 sb.2:staging block copy
+ca:append RW value to context stack
+az:get array size

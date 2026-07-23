@@ -146,6 +146,10 @@ int sonilo_ctx_init(sonilo_ctx *ctx, sonilo *s)
     rc = context_ublock_setup(ctx->s->mem, ctx->context);
     if (rc) return 3;
 
+    /* set up staging block */
+    rc = context_sblock_setup(ctx->s->mem, ctx->context);
+    if (rc) return 4;
+
     return 0;
 }
 

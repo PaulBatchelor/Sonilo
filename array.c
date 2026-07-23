@@ -97,33 +97,14 @@ int array_create_old(uint32_t *mem, uint16_t stk)
     return 0;
 }
 
-/* write value of an array a[p] = x. args: x p a */
-int array_write(uint32_t *mem, uint16_t stk)
+static int awrite(uint32_t *mem,
+        uint16_t a,
+        uint16_t p,
+        uint32_t x)
 {
-    uint16_t a, p;
-    uint32_t x;
-    int rc;
-    uint32_t v;
     uint16_t len, wsz;
     uint16_t ow, ob;
     uint32_t m;
-
-    if (mem[stk] < 3) return 1;
-
-    /* args: x p a */
-    v = 0;
-    rc = barray_pop(mem, stk, &v);
-    if (rc) return 1;
-    a = v & 0xFFFF;
-
-    rc = barray_pop(mem, stk, &v);
-    if (rc) return 2;
-    p = v & 0xFFFF;
-
-    rc = barray_pop(mem, stk, &v);
-    if (rc) return 3;
-    x = v;
-
     /* extract length and word size from header */
 
     len = mem[a] & 0xFFFF;
@@ -157,6 +138,36 @@ int array_write(uint32_t *mem, uint16_t stk)
 
     /* write bits */
     mem[ow] |= (x << ob) & m;
+    return 0;
+}
+
+/* write value of an array a[p] = x. args: x p a */
+int array_write(uint32_t *mem, uint16_t stk)
+{
+    uint16_t a, p;
+    uint32_t x;
+    int rc;
+    uint32_t v;
+
+    if (mem[stk] < 3) return 1;
+
+    /* args: x p a */
+    v = 0;
+    rc = barray_pop(mem, stk, &v);
+    if (rc) return 1;
+    a = v & 0xFFFF;
+
+    rc = barray_pop(mem, stk, &v);
+    if (rc) return 2;
+    p = v & 0xFFFF;
+
+    rc = barray_pop(mem, stk, &v);
+    if (rc) return 3;
+    x = v;
+
+    rc = awrite(mem, a, p, x);
+
+    if (rc) return rc;
 
     /* push address onto stack again */
 
@@ -171,26 +182,10 @@ static uint32_t wordslice(uint16_t addr, uint16_t start, uint16_t end)
     return addr | start << 16 | end << 21;
 }
 
-/* read value of an array x = a[p] */
-int array_read(uint32_t *mem, uint16_t stk)
+static int aread(uint32_t *mem, uint16_t a, uint16_t p, uint32_t *slice)
 {
-    int rc;
-    uint32_t v;
-    uint16_t a, p;
     uint16_t len, k;
     uint16_t ob, ow;
-
-    v = 0;
-    /* pop args: p, a */
-    rc = barray_pop(mem, stk, &v);
-    if (rc) return 1;
-    a = v & 0xFFFF;
-
-    rc = barray_pop(mem, stk, &v);
-    if (rc) return 2;
-    p = v & 0xFFFF;
-
-    /* TODO: refactor to use array_read_direct */
 
     /* extract length and word size from header */
     len = mem[a] & 0xFFFF;
@@ -203,14 +198,40 @@ int array_read(uint32_t *mem, uint16_t stk)
     ow = p >> (5 - k);
     ob = p * (1 << k) - (ow << 5);
 
-    /* push array value back onto stack */
-    rc = barray_append(mem, stk, a);
-    if (rc) return 5;
-
     /* generate word slice, push to stack */
 
     ow += a + 1;
-    rc = barray_append(mem, stk, wordslice(ow, ob, ob + (1 << k) - 1));
+    if (slice == NULL) return 5;
+
+    *slice = wordslice(ow, ob, ob + (1 << k) - 1);
+    return 0;
+}
+
+/* read value of an array x = a[p] */
+int array_read(uint32_t *mem, uint16_t stk)
+{
+    int rc;
+    uint32_t v;
+    uint16_t a, p;
+    uint32_t slice;
+
+    v = 0;
+    /* pop args: p, a */
+    rc = barray_pop(mem, stk, &v);
+    if (rc) return 1;
+    a = v & 0xFFFF;
+
+    rc = barray_pop(mem, stk, &v);
+    if (rc) return 2;
+    p = v & 0xFFFF;
+
+    rc = aread(mem, a, p, &slice);
+    if (rc) return rc;
+    /* push array address back onto stack */
+    rc = barray_append(mem, stk, a);
+    if (rc) return 5;
+
+    rc = barray_append(mem, stk, slice);
     if (rc) return 4;
 
     return 0;
@@ -249,37 +270,19 @@ uint32_t array_value(uint32_t *mem, uint32_t ws)
     return (mem[addr] & mask) >> start;
 }
 
-/* TODO: consolidate with array_read */
 int array_read_direct(uint32_t *mem, uint16_t a, uint16_t idx, uint32_t *slice)
 {
-    uint16_t len, k;
-    uint16_t ob, ow;
-
-    /* extract length and word size from header */
-    len = mem[a] & 0xFFFF;
-    k = (mem[a] >> 16) & 0x7;
-
-    /* bounds checking */
-    if (idx >= len) return 3;
-
-    /* calculate word and bit offsets */
-    ow = idx >> (5 - k);
-    ob = idx * (1 << k) - (ow << 5);
-
-    /* generate word slice, push to stack */
-
-    ow += a + 1;
-
-    if (slice == NULL) return 6;
-
-    *slice = wordslice(ow, ob, ob + (1 << k) - 1);
-
-    return 0;
+    return aread(mem, a, idx, slice);
 }
 
 uint16_t array_length(uint32_t *mem, uint16_t a)
 {
     return mem[a] & 0xFFFF;
+}
+
+uint8_t array_wordsize(uint32_t *mem, uint16_t a)
+{
+    return (mem[a] >> 16) & 0x7;
 }
 
 float array_real(uint32_t *mem, uint32_t ws, uint8_t type)
@@ -326,18 +329,69 @@ int array_type_get(uint32_t *mem, uint16_t a, uint8_t *type)
 
 int staging_block_init(uint32_t *mem, uint16_t b, uint8_t k)
 {
-    /* TODO: implement */
-    return 1;
+    uint8_t i;
+    mem[b] = (k & 0x7) << 16;
+    for (i = 1; i < 64; i++) mem[b + i] = 0;
+    return 0;
 }
 
 int staging_block_append(uint32_t *mem, uint16_t b, uint32_t x)
 {
-    /* TODO: implement */
-    return 1;
+    uint16_t len;
+    int rc;
+    /* increment size */
+    len = mem[b] & 0xFFFF;
+    mem[b] &= ~0xFFFF;
+    mem[b] |= len + 1;
+
+    /* write to last index item */
+    rc = awrite(mem, b, len, x);
+    if (rc) return 1;
+
+    return 0;
 }
 
-int staging_block_copy(uint32_t *mem, uint16_t b, uint16_t ctx, uint16_t *a)
+int staging_block_copy(uint32_t *mem, uint16_t b, uint16_t ctx, uint16_t *pa)
 {
-    /* TODO: implement */
-    return 1;
+    uint16_t len, i;
+    int rc;
+    uint16_t a;
+    uint16_t stk;
+    uint8_t wsz;
+    uint32_t x;
+
+    if (pa == NULL) return 1;
+
+    stk = CTX_STACK(mem, ctx);
+
+    len = array_length(mem, b);
+    wsz = array_wordsize(mem, b);
+
+    a = 0;
+
+    /* push array args on to stack */
+    rc = barray_append(mem, stk, (len << 4) | wsz);
+    if (rc) return 1;
+
+    rc = array_create(mem, ctx);
+    if (rc) return 2;
+
+    rc = barray_pop(mem, stk, &x);
+    if (rc) return 3;
+    a = x;
+
+    for (i = 0; i < len; i++) {
+        uint32_t x;
+        x = 0;
+        rc = aread(mem, b, i, &x);
+        if (rc) return 3;
+        /* output is a slice, decode it into a value */
+        x = array_value(mem, x);
+        rc = awrite(mem, a, i, x);
+        if (rc) return 4;
+    }
+
+    *pa = a;
+
+    return 0;
 }

@@ -3,6 +3,7 @@
 #include "mem.h"
 #include "context.h"
 #include "ugen.h"
+#include "array.h"
 
 /* context: a set of components used together to form
  * a baseline setup for higher-level sonilo functionality,
@@ -249,3 +250,55 @@ int context_ublock_head_set(uint32_t *mem,
     return 0;
 }
 
+int context_sblock_init(uint32_t *mem, uint16_t ctx, uint8_t k)
+{
+    uint16_t b, stk;
+    int rc;
+    stk = CTX_STACK(mem, ctx);
+    b = mem[ctx + SLOT_STAGING_BLOCK] & 0xFFFF;
+    rc = staging_block_init(mem, b, k);
+    if (rc) return 1;
+    return barray_append(mem, stk, b);
+}
+
+int context_sblock_append(uint32_t *mem, uint16_t ctx)
+{
+    uint16_t b, stk;
+    int rc;
+    uint32_t x;
+    b = mem[ctx + SLOT_STAGING_BLOCK] & 0xFFFF;
+    stk = CTX_STACK(mem, ctx);
+    rc = barray_pop(mem, stk, &x);
+    if (rc) return 1;
+
+    return staging_block_append(mem, b, x);
+}
+
+int context_sblock_copy(uint32_t *mem, uint16_t ctx)
+{
+    uint16_t a, b;
+    int rc;
+    uint16_t stk;
+
+    b = mem[ctx + SLOT_STAGING_BLOCK] & 0xFFFF;
+    stk = CTX_STACK(mem, ctx);
+    a = 0;
+    rc = staging_block_copy(mem, b, ctx, &a);
+    if (rc) return 1;
+
+    rc = barray_append(mem, stk, a);
+    if (rc) return 2;
+
+    return 0;
+}
+
+int context_sblock_setup(uint32_t *mem, uint16_t ctx)
+{
+    int rc;
+    uint16_t b;
+    b = 0;
+    rc = context_mktemp(mem, ctx, &b);
+    if (rc) return 1;
+    mem[ctx + SLOT_STAGING_BLOCK] = b;
+    return 0;
+}
