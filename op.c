@@ -7,21 +7,6 @@
 #include "array.h"
 #include "iter.h"
 
-#if 0
-/* populate a context struct from an existing context address */
-static void hydrate_context(sonilo *s, sonilo_ctx *ctx, uint16_t ac)
-{
-    uint32_t *mem;
-    sonilo_vm *vm;
-    vm = sonilo_get_vm(s);
-    mem = sonilo_vm_mem(vm);
-    ctx->s = s;
-    ctx->context = ac;
-    ctx->allocator = CTX_ALLOC(mem, ac);
-    ctx->pstack = CTX_PARAM_STACK(mem, ac);
-}
-#endif
-
 static int a_array(sonilo_vm *vm, uint8_t data)
 {
     int rc;
@@ -515,6 +500,57 @@ static int a_sys(sonilo_vm *vm, uint8_t data)
     return rc;
 }
 
+static int a_sblock(sonilo_vm *vm, uint8_t data)
+{
+    int rc;
+    uint16_t ctx;
+    uint32_t *mem;
+
+    rc = -1;
+    ctx = sonilo_vm_cursor_get(vm);
+    mem = sonilo_vm_mem(vm);
+
+    switch (data) {
+        case 0: /* init */ {
+            uint8_t k;
+            uint16_t stk;
+            uint32_t x;
+            stk = CTX_STACK(mem, ctx);
+            x = 0;
+            rc = barray_pop(mem, stk, &x);
+            if (rc) return 2;
+            k = x & 0x7;
+            rc = context_sblock_init(mem, ctx, k);
+            break;
+        }
+        case 1: /* copy */
+            rc = context_sblock_copy(mem, ctx);
+            break;
+
+        default:
+            rc = -1;
+            break;
+    }
+
+    return rc;
+}
+
+static int b_sblock(sonilo_vm *vm, uint32_t data)
+{
+    int rc;
+    uint16_t ctx, stk;
+    uint32_t *mem;
+    rc = -1;
+
+    ctx = sonilo_vm_cursor_get(vm);
+    mem = sonilo_vm_mem(vm);
+    stk = CTX_STACK(mem, ctx);
+    rc = barray_append(mem, stk, data);
+    if (rc) return 1;
+
+    return context_sblock_append(mem, ctx);
+}
+
 int sonilo_op_a(sonilo *s, char type, uint8_t data)
 {
     int rc;
@@ -551,6 +587,9 @@ int sonilo_op_a(sonilo *s, char type, uint8_t data)
         case 'p': /* parameters */
             rc = a_param(vm, data);
             break;
+        case 's': /* staging block */
+            rc = a_sblock(vm, data);
+            break;
         default:
             rc = 0 | 0xFF;
             type = '?';
@@ -583,6 +622,9 @@ int sonilo_op_b(sonilo *s, char type, uint32_t data)
             break;
         case 'r':
             rc = b_render(s, data);
+            break;
+        case 's':
+            rc = b_sblock(vm, data);
             break;
         default:
             rc = 1;
