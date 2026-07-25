@@ -467,8 +467,22 @@ static int a_param(sonilo_vm *vm, uint8_t data)
             rc = pstack_hold(mem, ps);
             break;
         case 4: /* unhold */
-            rc = pstack_hold(mem, ps);
+            rc = pstack_unhold(mem, ps);
             break;
+        case 5: /* pop */ {
+            uint32_t rw;
+            rw = 0;
+            rc = pstack_pop(mem, ps, &rw);
+            if (rc) break;
+            sonilo_vm_rw_set(vm, rw);
+            break;
+        }
+        case 6: /* push */ {
+            uint32_t rw;
+            rw = sonilo_vm_rw_get(vm);
+            rc = pstack_push(mem, ps, rw);
+            break;
+        }
         default:
             rc = -1;
             break;
