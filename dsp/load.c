@@ -20,6 +20,7 @@ int ugen_phasor(sonilo *s);
 int ugen_warp(sonilo *s);
 int ugen_scale(sonilo *s);
 int ugen_vib(sonilo *s);
+int ugen_powerwave(sonilo *s);
 
 /* top-level loader for ugen subroutines */
 int sonilo_load_ugens(sonilo *s)
@@ -49,6 +50,7 @@ int sonilo_load_ugens(sonilo *s)
     rc = ugen_warp(s); if (rc) return err; err++;
     rc = ugen_scale(s); if (rc) return err; err++;
     rc = ugen_vib(s); if (rc) return err; err++;
+    rc = ugen_powerwave(s); if (rc) return err; err++;
 
     return 0;
 }
