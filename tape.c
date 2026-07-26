@@ -3,6 +3,7 @@
 #define DR_WAV_IMPLEMENTATION
 #include "dr_wav.h"
 #include "tape.h"
+#include "ugen.h"
 
 void tape_track_init(tape_track *trk, int id)
 {
@@ -43,10 +44,10 @@ int tape_track_close(tape_track *trk)
 int tape_track_process(tape_track *trk, uint32_t *mem)
 {
     float *out;
-    int rc;
+    uint16_t *blk;
 
-    rc = sonilo_ugen_block(mem, trk->sink, 1, &out);
-    if (rc) return 1;
+    blk = (uint16_t *)ugen_state(mem, trk->sink);
+    out = (float *)&mem[*blk];
     sk_drwav_write_pcm_frames(&trk->wav, 64, out);
     return 0;
 }

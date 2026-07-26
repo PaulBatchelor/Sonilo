@@ -10,13 +10,14 @@ static uint32_t init(uint32_t *mem, uint16_t ctx)
     uint16_t pstk;
     uint32_t cmd;
     uint16_t ugen;
+    uint16_t *blk;
 
     stk = CTX_STACK(mem, ctx);
     rc = barray_pop(mem, stk, &cmd);
     if (rc) return 1;
 
     ugen = 0;
-    rc = ugen_create(mem, ctx, (uint16_t) cmd, 2, 0, &ugen);
+    rc = ugen_create(mem, ctx, (uint16_t) cmd, 2, 1, &ugen);
     if (rc) return 2;
     
     /* set up ports */
@@ -29,6 +30,10 @@ static uint32_t init(uint32_t *mem, uint16_t ctx)
     pstk = CTX_PARAM_STACK(mem, ctx);
     pstack_sweep(mem, pstk);
 
+    blk = (uint16_t *)ugen_state(mem, ugen);
+    rc = context_mkblock(mem, ctx, blk);
+    if (rc) return 7;
+
     rc = barray_append(mem, stk, ugen);
     if (rc) return 6;
 
@@ -40,8 +45,12 @@ static uint32_t render(uint32_t *mem, uint16_t ugen)
     uint32_t *ports;
     sonilo_port in, out;
     int n;
+    uint16_t *pblk;
+    float *blk;
 
     /* get ports */
+    pblk = (uint16_t *)ugen_state(mem, ugen);
+    blk = (float *)&mem[*pblk];
     ports = ugen_ports(mem, ugen);
     in = sonilo_port_from_word(mem, ports[0]);
     out = sonilo_port_from_word(mem, ports[1]);
@@ -50,6 +59,7 @@ static uint32_t render(uint32_t *mem, uint16_t ugen)
         float x;
         x = sonilo_port_read(&in, n);
         sonilo_port_write(&out, n, x);
+        blk[n] = x;
     }
 
     return 0;
