@@ -5,8 +5,10 @@
 son:patch-setup
 
 #60 c mtof
-#5.800 cf phasor crv:tri c curve #150 c 
-#0.200 cf phasor crv:tri c curve #1.000 #0.300 cf cf scale mul vib
+#5.800 cf phasor #1 #1 #1 c c c bez #80 c 
+
+#0.200 cf phasor crv:tri c curve
+#1.000 #0.400 cf cf scale mul vib
 mul
 phasor #0.100 cf #0.100 cf warp #1.000 cf #1.000 cf #1.000 cf bez
 
