@@ -43,9 +43,10 @@ struct sk_glot {
     float omega;
 
     float T;
+    float phs;
 
-    /* 4 words padding for 16 words */
-    uint32_t padding[4];
+    /* 3 words padding for 16 words */
+    uint32_t padding[3];
 #if 0
     unsigned long rng;
     /* pulsed noise */
@@ -254,27 +255,23 @@ static unsigned long glot_lcg(sk_glot *glot)
 }
 #endif
 
-float sk_glot_tick(sk_glot *glot)
+float sk_glot_tick(sk_glot *glot, float t)
 {
     float out;
-    float t;
 
     out = 0;
 
-    /* TODO: refactor and replace with phasor */
-    glot->time_in_waveform += glot->T;
-    if (glot->time_in_waveform > glot->waveform_length) {
-        glot->time_in_waveform -= glot->waveform_length;
+    if (glot->phs < 0 || t < glot->phs) {
         setup_waveform(glot);
     }
-
-    t = (glot->time_in_waveform / glot->waveform_length);
 
     if (t > glot->Te) {
         out = (-exp(-glot->epsilon * (t-glot->Te)) + glot->shift) / glot->delta;
     } else {
         out = glot->E0 * exp(glot->alpha * t) * sin(glot->omega * t);
     }
+
+    glot->phs = t;
 
 #if 0
     /* TODO: break out aspiration noise into separate component */
@@ -368,6 +365,7 @@ void sk_glot_init(sk_glot *glot, float sr)
     glot->freq = 140; /* 140Hz frequency by default */
     glot->T = 1.0/sr; /* big T */
     glot->time_in_waveform = 0;
+    glot->phs = -1;
     sk_glot_shape(glot, 0.5);
 
     setup_waveform(glot);
@@ -444,12 +442,11 @@ static uint32_t render(uint32_t *mem, uint16_t ugen)
     p_out = sonilo_port_from_word(mem, ports[2]);
 
     for (n = 0; n < UGEN_BLKSZ; n++) {
-        float frq, shp, o;
-        frq = sonilo_port_read(&p_frq, n);
+        float phs, shp, o;
+        phs = sonilo_port_read(&p_frq, n);
         shp = sonilo_port_read(&p_shp, n);
         sk_glot_shape(glt, shp);
-        sk_glot_freq(glt, frq);
-        o = sk_glot_tick(glt);
+        o = sk_glot_tick(glt, phs);
         sonilo_port_write(&p_out, n, o);
     }
 
