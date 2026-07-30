@@ -1,5 +1,10 @@
 #include <math.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include "sonilo.h"
+#include "mem.h"
+#include "context.h"
+#include "ugen.h"
 
 typedef struct sk_glot sk_glot;
 
@@ -10,7 +15,6 @@ typedef struct sk_glot sk_glot;
 #define LCG_MAX 2147483648
 
 static void setup_waveform(sk_glot *glot);
-static unsigned long glot_lcg(sk_glot *glot);
 
 #define ROOT2 1.4142135623730950488
 
@@ -18,7 +22,6 @@ static unsigned long glot_lcg(sk_glot *glot);
 #define M_PI 3.14159265358979323846
 #endif
 
-#define SK_GLOT_ENV_SIZE 512
 struct sk_glot_butfilt {
     float freq, lfreq;
     float a[7];
@@ -40,8 +43,11 @@ struct sk_glot {
     float omega;
 
     float T;
-    unsigned long rng;
 
+    /* 4 words padding for 16 words */
+    uint32_t padding[4];
+#if 0
+    unsigned long rng;
     /* pulsed noise */
     float hanning[SK_GLOT_ENV_SIZE];
 
@@ -59,9 +65,11 @@ struct sk_glot {
 
     struct sk_glot_butfilt asp_hpfilt;
     struct sk_glot_butfilt asp_lpfilt;
-    /* sk_butterworth asp_lpfilt; */
+#endif
 };
 
+/* NOTE: aspiration */
+#if 0
 static void butfilt_init(struct sk_glot_butfilt *but, int sr)
 {
     int i;
@@ -101,7 +109,10 @@ static float butlp_tick(struct sk_glot_butfilt *but, float in)
 
     return filter(in, but->a);
 }
+#endif
 
+/* NOTE: aspiration */
+#if 0
 static float buthp_tick(struct sk_glot_butfilt *but, float in)
 {
     if (but->freq != but->lfreq) {
@@ -121,7 +132,9 @@ static float buthp_tick(struct sk_glot_butfilt *but, float in)
 
     return filter(in, but->a);
 }
+#endif
 
+#if 0
 static void hanning_table(float *tab, int m)
 {
     int n;
@@ -139,6 +152,7 @@ static void hanning_table(float *tab, int m)
         tab[n] = out;
     }
 }
+#endif
 
 void sk_glot_freq(sk_glot *glot, float freq)
 {
@@ -205,7 +219,7 @@ static void setup_waveform(sk_glot *glot)
     glot->delta = delta;
     glot->Te = Te;
     glot->omega = omega;
-
+#if 0
     /* calculate envelope start from lag
      * and glottal closure (Te) (note that Te is normalized)
      * make sure to factor in delay to make it centered
@@ -221,26 +235,29 @@ static void setup_waveform(sk_glot *glot)
     /* how much to increment the envelope by */
     /* 1/sz is a ramp sz samples long, scaled by env_size */
     glot->env_delta = 1.0 / (SK_GLOT_ENV_SIZE * glot->env_size);
+#endif
 }
 
+#if 0
 void sk_glot_srand(sk_glot *glot, unsigned long s)
 {
     glot->rng = s;
 }
+#endif
 
+/* NOTE: aspiration */
+#if 0
 static unsigned long glot_lcg(sk_glot *glot)
 {
     glot->rng = (1103515245 * glot->rng + 12345) % LCG_MAX;
     return glot->rng;
 }
+#endif
 
 float sk_glot_tick(sk_glot *glot)
 {
     float out;
-    float noise;
     float t;
-    float env;
-    float nf;
 
     out = 0;
 
@@ -259,6 +276,7 @@ float sk_glot_tick(sk_glot *glot)
         out = glot->E0 * exp(glot->alpha * t) * sin(glot->omega * t);
     }
 
+#if 0
     /* TODO: break out aspiration noise into separate component */
 
     /* generate gaussian noise, essentially white noise.
@@ -288,7 +306,7 @@ float sk_glot_tick(sk_glot *glot)
      * The envelope "sits on top of the noise floor". That
      * is to say, it doesn't close all the way, letting
      * some noise out at the lower level. This is also
-     * a parameter.
+     * a paraglter.
      *
      */
 
@@ -320,6 +338,7 @@ float sk_glot_tick(sk_glot *glot)
     env *= glot->aspiration;
 
     out += env;
+#endif
     return out;
 }
 
@@ -328,37 +347,125 @@ void sk_glot_shape(sk_glot *glot, float shape)
     glot->Rd = 3 * (1 - shape);
 }
 
+/* NOTE: aspiration */
+#if 0
 void sk_glot_aspiration(sk_glot *glot, float aspiration)
 {
     glot->aspiration = aspiration;
 }
+#endif
 
+/* NOTE: aspiration */
+#if 0
 void sk_glot_noise_floor(sk_glot *glot, float nf)
 {
     glot->noise_floor = nf;
 }
+#endif
 
 void sk_glot_init(sk_glot *glot, float sr)
 {
     glot->freq = 140; /* 140Hz frequency by default */
     glot->T = 1.0/sr; /* big T */
     glot->time_in_waveform = 0;
+    sk_glot_shape(glot, 0.5);
+
+    setup_waveform(glot);
+#if 0
     glot->lag = 0.07; /* 7% of period (max 15) */
     glot->noise_floor = 0.005;
     glot->env_size = 0.6; /* 40-80 percent */
     glot->aspiration = 0.3;
-    sk_glot_shape(glot, 0.5);
-    setup_waveform(glot);
     sk_glot_srand(glot, 0);
     hanning_table(glot->hanning, SK_GLOT_ENV_SIZE);
-    /*
-    sk_butterworth_init(&glot->asp_hpfilt, sr);
-    sk_butterworth_freq(&glot->asp_hpfilt, 4500);
-    */
     butfilt_init(&glot->asp_hpfilt, sr);
     glot->asp_hpfilt.freq = 4500;
 
     /* I decided to add this to make noise less grating */
     butfilt_init(&glot->asp_lpfilt, sr);
     glot->asp_lpfilt.freq = 6000;
+#endif
+}
+
+static uint32_t init(uint32_t *mem, uint16_t ctx)
+{
+    int rc;
+    uint16_t stk, ugen;
+    uint32_t cmd;
+    sk_glot *glt;
+
+    /* command */
+    stk = CTX_STACK(mem, ctx);
+    cmd = 0;
+    rc = barray_pop(mem, stk, &cmd);
+    if (rc) return 1;
+
+    /* intialize ugen */
+    rc = ugen_create(mem,
+        ctx,
+        (uint16_t) cmd,
+        3, sizeof(sk_glot) >> 2,
+        &ugen);
+    if (rc) return 2;
+
+    /* ports */
+    rc = ugen_iport(mem, ctx, ugen, 1);
+    if (rc) return 3;
+    rc = ugen_iport(mem, ctx, ugen, 0);
+    if (rc) return 3;
+    rc = ugen_oport(mem, ctx, ugen, 2);
+    if (rc) return 4;
+
+    context_pstack_sweep(mem, ctx);
+
+    /* state */
+    glt = (sk_glot *)ugen_state(mem, ugen);
+    if (glt == NULL) return 5;
+    sk_glot_init(glt, sonilo_srate(mem));
+
+    /* push ugen address */
+    rc = barray_append(mem, stk, ugen);
+    if (rc) return 6;
+
+    return 0;
+}
+
+static uint32_t render(uint32_t *mem, uint16_t ugen)
+{
+    sk_glot *glt;
+    uint32_t *ports;
+    sonilo_port p_frq, p_shp, p_out;
+    int n;
+
+    glt = (sk_glot *)ugen_state(mem, ugen);
+    ports = ugen_ports(mem, ugen);
+    p_frq = sonilo_port_from_word(mem, ports[0]);
+    p_shp = sonilo_port_from_word(mem, ports[1]);
+    p_out = sonilo_port_from_word(mem, ports[2]);
+
+    for (n = 0; n < UGEN_BLKSZ; n++) {
+        float frq, shp, o;
+        frq = sonilo_port_read(&p_frq, n);
+        shp = sonilo_port_read(&p_shp, n);
+        sk_glot_shape(glt, shp);
+        sk_glot_freq(glt, frq);
+        o = sk_glot_tick(glt);
+        sonilo_port_write(&p_out, n, o);
+    }
+
+    return 0;
+}
+
+int ugen_glot(sonilo *s)
+{
+    uint16_t key;
+    int rc;
+
+    key = sonilo_key("GLT");
+    rc = sonilo_command(s, key, init);
+    if (rc) return 1;
+    rc = sonilo_command(s, sonilo_alt(key), render);
+    if (rc) return 2;
+
+    return 0;
 }
