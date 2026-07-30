@@ -92,7 +92,7 @@ static uint32_t render(uint32_t *mem, uint16_t ugen)
             sr = sonilo_srate(mem);
             T = 1.0 / (float)sr;
             fmt->c = -exp(-2.0*M_PI*bw*T);
-            fmt->b = 2*exp(-M_PI*bw*T)*cos(2*M_PI*frq*T);
+            fmt->b = 2*exp(-M_PI*bw*T)*cos(2.0*M_PI*frq*T);
             fmt->a = 1.0 - fmt->b - fmt->c;
 
             fmt->bw = bw;

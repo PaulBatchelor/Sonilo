@@ -61,6 +61,7 @@ build dsp/formant.o: c89 dsp/formant.c
 build dsp/dcblk.o: c89 dsp/dcblk.c
 build dsp/glot.o: c89 dsp/glot.c
 build dsp/noise.o: c89 dsp/noise.c
+build dsp/gpe.o: c89 dsp/gpe.c
 build cmp/cmp.o: c89 cmp/cmp.c
 build konilo/ilo.o: c89 konilo/ilo.c
 build konilo/unu.o: c89 konilo/unu.c
@@ -107,6 +108,7 @@ build libsonilo.a: ar $
     dsp/dcblk.o $
     dsp/glot.o $
     dsp/noise.o $
+    dsp/gpe.o $
     sonilo.o
 
 build ex/hello_ugen.o: c89 ex/hello_ugen.c

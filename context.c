@@ -160,7 +160,10 @@ int context_mkblock(uint32_t *mem, uint16_t ctx, uint16_t *addr)
     bsm = (mem[ctx + 1] >> 16) & 0xFFFF;
 
     blk = blocklist_pop(mem, blist);
-    if (blk == 0) return 1;
+    if (blk == 0) {
+        fprintf(stderr, "OUT OF BLOCKS\n");
+        return 1;
+    }
     bitset_add(mem, bsm, blk);
 
     if (addr == NULL) return 2;

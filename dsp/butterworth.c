@@ -95,7 +95,7 @@ static float butbp_tick(butterworth *bw, float in)
         a[0] = 1.0 / (1.0 + c);
         a[1] = 0.0;
         a[2] = -a[0];
-        a[3] = - c * d * a[0];
+        a[3] = -c * d * a[0];
         a[4] = (c - 1.0) * a[0];
     }
 
@@ -199,6 +199,83 @@ static uint32_t hpf_render(uint32_t *mem, uint16_t ugen)
     return 0;
 }
 
+static uint32_t bpf_init(uint32_t *mem, uint16_t ctx)
+{
+    int rc;
+    uint16_t stk;
+    uint32_t cmd;
+    uint16_t ugen;
+    butterworth *bw;
+    uint32_t sr;
+
+    /* command */
+    stk = CTX_STACK(mem, ctx);
+    cmd = 0;
+    rc = barray_pop(mem, stk, &cmd);
+    if (rc) return 1;
+
+    /* initialize ugen */
+    rc = ugen_create(mem,
+        ctx,
+        (uint16_t) cmd,
+        4, sizeof(butterworth) >> 2,
+        &ugen);
+    if (rc) return 2;
+
+    /* ports */
+    rc = ugen_iport(mem, ctx, ugen, 2);
+    if (rc) return 3;
+    rc = ugen_iport(mem, ctx, ugen, 1);
+    if (rc) return 3;
+    rc = ugen_iport(mem, ctx, ugen, 0);
+    if (rc) return 3;
+    rc = ugen_oport(mem, ctx, ugen, 3);
+    if (rc) return 5;
+
+    context_pstack_sweep(mem, ctx);
+
+    /* state */
+    bw = (butterworth *)ugen_state(mem, ugen);
+    if (bw == NULL) return 6;
+
+    sr = sonilo_srate(mem);
+    bw_init(bw, sr);
+
+    /* push ugen address */
+    rc = barray_append(mem, stk, ugen);
+    if (rc) return 7;
+
+    return 0;
+}
+
+static uint32_t bpf_render(uint32_t *mem, uint16_t ugen)
+{
+    butterworth *bw;
+    uint32_t *ports;
+    sonilo_port p_in, p_freq, p_bw, p_out;
+    int n;
+
+    bw = (butterworth *)ugen_state(mem, ugen);
+    ports = ugen_ports(mem, ugen);
+    p_in = sonilo_port_from_word(mem, ports[0]);
+    p_freq = sonilo_port_from_word(mem, ports[1]);
+    p_bw = sonilo_port_from_word(mem, ports[2]);
+    p_out = sonilo_port_from_word(mem, ports[3]);
+    
+    for (n = 0; n < UGEN_BLKSZ; n++) {
+        float f, i, o, b;
+        i = sonilo_port_read(&p_in, n);
+        f = sonilo_port_read(&p_freq, n);
+        b = sonilo_port_read(&p_bw, n);
+        bw->freq = f;
+        bw->bw = b;
+        o = butbp_tick(bw, i);
+        sonilo_port_write(&p_out, n, o);
+    }
+
+    return 0;
+}
+
 int ugen_butterworth(sonilo *s)
 {
     uint16_t key;
@@ -216,6 +293,13 @@ int ugen_butterworth(sonilo *s)
     rc = sonilo_command(s, key, lpf_init);
     if (rc) return 1;
     rc = sonilo_command(s, sonilo_alt(key), hpf_render);
+    if (rc) return 2;
+    
+    key = sonilo_key("BPF");
+
+    rc = sonilo_command(s, key, bpf_init);
+    if (rc) return 1;
+    rc = sonilo_command(s, sonilo_alt(key), bpf_render);
     if (rc) return 2;
 
     return 0;
