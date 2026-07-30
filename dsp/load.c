@@ -24,6 +24,7 @@ int ugen_powerwave(sonilo *s);
 int ugen_formant(sonilo *s);
 int ugen_dcblk(sonilo *s);
 int ugen_glot(sonilo *s);
+int ugen_noise(sonilo *s);
 
 /* top-level loader for ugen subroutines */
 int sonilo_load_ugens(sonilo *s)
@@ -57,6 +58,7 @@ int sonilo_load_ugens(sonilo *s)
     rc = ugen_formant(s); if (rc) return err; err++;
     rc = ugen_dcblk(s); if (rc) return err; err++;
     rc = ugen_glot(s); if (rc) return err; err++;
+    rc = ugen_noise(s); if (rc) return err; err++;
 
     return 0;
 }

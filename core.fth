@@ -128,6 +128,7 @@ save
 new #11 set
 0 (sonilo-core) (ugens)
 1 :glot 'GLT ugen ;
+1 :noise 'WNZ ugen ;
 save
 
 bye
