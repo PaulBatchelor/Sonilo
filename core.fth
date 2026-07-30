@@ -120,6 +120,14 @@ new #10 set
 10 :terp 'TRP ugen ;
 11 :div 'DIV ugen ;
 12 :hpf 'HPF ugen ;
+13 :vib 'VIB ugen ;
+14 :formant 'FMT ugen ;
+15 :dcblk 'DCB ugen ;
+save
+
+new #11 set
+0 (sonilo-core) (ugens)
+1 :glot 'GLT ugen ;
 save
 
 bye

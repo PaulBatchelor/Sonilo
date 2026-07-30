@@ -1,16 +1,12 @@
-:formant 'FMT ugen ;
-:vib 'VIB ugen ;
-:dcblk 'DCB ugen ;
-
 son:patch-setup
 
-#60 c mtof
-#5.800 cf phasor #1 #1 #1 c c c bez #80 c 
-
+#53 c mtof
+#5.800 cf phasor #1 #1 #1 c c c bez
+#90 c 
 #0.200 cf phasor crv:tri c curve
-#1.000 #0.400 cf cf scale mul vib
+#1.000 #0.100 cf cf scale mul vib
 mul
-phasor #0.100 cf #0.100 cf warp #1.000 cf #1.000 cf #1.000 cf bez
+phasor #0.600 cf glot
 
 bdup
 #650 c #80 c formant
@@ -21,12 +17,13 @@ bswap bdup
 bswap
 #2900 c #130 c formant #0.200 cf mul
 add add add
+
 #8000 c lpf #8000 c lpf
 
 #0.200 cf mul
 
 bdup bdup
-#0.700 cf #10000 c bigverb bdrop #0.200 cf mul dcblk add
+#0.800 cf #10000 c bigverb bdrop #0.300 cf mul dcblk add
 sink #0 tout
 #0 topen #10 render #0 tclose
 
