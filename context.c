@@ -144,7 +144,7 @@ int context_mktemp(uint32_t *mem, uint16_t ctx, uint16_t *addr)
 
     if (addr == NULL) return 2;
 
-    *addr = block_to_word(bst, blk);
+    *addr = block_to_word(blist, blk);
 
     return 0;
 }
@@ -168,7 +168,7 @@ int context_mkblock(uint32_t *mem, uint16_t ctx, uint16_t *addr)
 
     if (addr == NULL) return 2;
 
-    *addr = block_to_word(bsm, blk);
+    *addr = block_to_word(blist, blk);
 
     return 0;
 }

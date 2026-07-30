@@ -398,7 +398,6 @@ int mem_alloc(uint32_t *mem, uint16_t p_top, uint16_t k)
     }
 
     if (j < 0) {
-        fprintf(stderr, "OUT OF MEMORY\n");
         return -1;
     }
 
