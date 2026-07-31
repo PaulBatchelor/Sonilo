@@ -5,6 +5,10 @@ rule c89
     command = gcc -std=c89 -c $cflags $in -o $out
     description = c89 $in
 
+rule c99
+    command = gcc -std=c99 -c $cflags $in -o $out
+    description = c99 $in
+
 rule ar
     command = ar rcs $out $in
     description = creating $out
@@ -22,7 +26,7 @@ rule pali
 rule sh
     command = sh $in
 
-build sonilo.o: c89 sonilo.c
+build sonilo.o: c99 sonilo.c
 build t.o: c89 t.c
 build mw.o: c89 mw.c
 build mem.o: c89 mem.c
@@ -33,7 +37,7 @@ build context.o: c89 context.c
 build array.o: c89 array.c
 build iter.o: c89 iter.c
 build universe.o: c89 universe.c
-build wm.o: c89 wm.c
+build wm.o: c99 wm.c
 build op.o: c89 op.c
 build dsp/load.o: c89 dsp/load.c
 build dsp/sink.o: c89 dsp/sink.c
@@ -63,10 +67,10 @@ build dsp/glot.o: c89 dsp/glot.c
 build dsp/noise.o: c89 dsp/noise.c
 build dsp/gpe.o: c89 dsp/gpe.c
 build dsp/balance.o: c89 dsp/balance.c
-build cmp/cmp.o: c89 cmp/cmp.c
+build cmp/cmp.o: c99 cmp/cmp.c
 build konilo/ilo.o: c89 konilo/ilo.c
-build konilo/unu.o: c89 konilo/unu.c
-build konilo/pali.o: c89 konilo/pali.c
+build konilo/unu.o: c99 konilo/unu.c
+build konilo/pali.o: c99 konilo/pali.c
 build tape.o: c89 tape.c
 build ji.o: c89 ji.c
 build libsonilo.a: ar $
